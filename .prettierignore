@@ -1,0 +1,12 @@
+node_modules
+dist
+build
+playwright-report
+test-results
+packages/server/src/generated
+packages/server/prisma/migrations
+packages/client/src/routeTree.gen.ts
+*.db
+*.db-journal
+.test-db
+pnpm-lock.yaml

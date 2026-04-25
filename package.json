@@ -1,0 +1,24 @@
+{
+  "name": "cards",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm --filter client lint",
+    "test": "pnpm --filter server test",
+    "test:e2e": "pnpm --filter client test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:migrate": "pnpm --filter server prisma:migrate",
+    "db:seed": "pnpm --filter server prisma:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

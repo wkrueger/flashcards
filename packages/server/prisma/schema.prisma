@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- better-auth tables ----------
+// Schemas chosen to match better-auth's default Prisma adapter.
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions Session[]
+  accounts Account[]
+
+  decks    Deck[]
+  subjects Subject[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                    String    @id
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ---------- domain ----------
+
+model Language {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  emoji String
+}
+
+model Deck {
+  id        String   @id @default(cuid())
+  name      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards     Card[]
+  createdAt DateTime @default(now())
+
+  @@unique([userId, name])
+}
+
+model Subject {
+  id            String    @id @default(cuid())
+  subject       String
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastSeenAt    DateTime?
+  timesSeen     Int       @default(0)
+  fixationLevel String    @default("1")
+  cooldownAt    DateTime  @default(now())
+  cards         Card[]
+
+  @@unique([userId, subject])
+  @@index([userId, cooldownAt])
+}
+
+model Card {
+  id         String    @id @default(cuid())
+  deckId     String
+  deck       Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  subjectId  String
+  subject    Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  front      String
+  frontHash  String
+  back       String
+  lastSeenAt DateTime?
+  timesSeen  Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@unique([subjectId, frontHash])
+  @@index([subjectId, lastSeenAt])
+  @@index([deckId])
+}
