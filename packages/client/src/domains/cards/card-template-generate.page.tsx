@@ -132,7 +132,7 @@ export function CardTemplateGeneratePage() {
 
   if (previewCards) {
     return (
-      <div className="space-y-4">
+      <div className="flex flex-1 flex-col gap-4">
         <PageHeader
           title="Preview cards"
           onBack={() => navigate({ to: "/decks/$deckId/cards/new", params: { deckId } })}
@@ -191,7 +191,7 @@ export function CardTemplateGeneratePage() {
           <p className="text-sm text-destructive">{saveError ?? create.error?.message}</p>
         )}
 
-        <div className="space-y-2">
+        <div className="mt-auto space-y-2">
           <Button className="w-full" onClick={confirm} disabled={create.isPending}>
             {create.isPending ? "…" : "Confirm generation"}
           </Button>
@@ -219,13 +219,13 @@ export function CardTemplateGeneratePage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title="Generate card"
         onBack={() => navigate({ to: "/decks/$deckId/cards/new", params: { deckId } })}
       />
 
-      <form className="space-y-3" onSubmit={submitGenerate}>
+      <form className="flex flex-1 flex-col gap-3" onSubmit={submitGenerate}>
         <div className="space-y-1">
           <Label>Template</Label>
           <Select value={TEMPLATE} disabled>
@@ -336,7 +336,11 @@ export function CardTemplateGeneratePage() {
 
         {previewError && <p className="text-sm text-destructive">{previewError}</p>}
 
-        <Button type="submit" className="w-full gap-2" disabled={!canSubmit || generate.isPending}>
+        <Button
+          type="submit"
+          className="mt-auto w-full gap-2"
+          disabled={!canSubmit || generate.isPending}
+        >
           <Sparkles className="h-4 w-4" />
           {generate.isPending ? "Generating…" : "Generate previews"}
         </Button>

@@ -10,7 +10,7 @@ const HOUR = 60 * MIN
 const DAY = 24 * HOUR
 
 export const COOLDOWN_MS: Record<FixationLevel, number> = {
-  "1": 2 * MIN,
+  "1": 5_000,
   "2": 10 * MIN,
   "3": 12 * HOUR,
   "4": 2 * DAY,
@@ -18,7 +18,7 @@ export const COOLDOWN_MS: Record<FixationLevel, number> = {
 }
 
 export const COOLDOWN_LABEL: Record<FixationLevel, string> = {
-  "1": "2 min",
+  "1": "5 s",
   "2": "10 min",
   "3": "12 h",
   "4": "2 days",

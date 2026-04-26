@@ -28,8 +28,9 @@ export function DeckListPage() {
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="New deck">
-                <Plus className="h-5 w-5" />
+              <Button variant="ghost" size="sm" className="gap-1 px-3">
+                <Plus className="h-4 w-4" />
+                New deck
               </Button>
             </DialogTrigger>
             <DialogContent>

@@ -1,7 +1,8 @@
 import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
+import { Trash2 } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { CardForm } from "./card-form"
-import { PageHeader } from "../../components/AppShell"
+import { MenuItem, PageHeader } from "../../components/AppShell"
 
 export function CardEditPage() {
   const { deckId, cardId } = useParams({
@@ -37,8 +38,22 @@ export function CardEditPage() {
   if (!card.data) return <p>Not found</p>
 
   return (
-    <div className="space-y-3">
-      <PageHeader title="Edit card" onBack={goBack} />
+    <div className="flex flex-1 flex-col gap-3">
+      <PageHeader
+        title="Edit card"
+        onBack={goBack}
+        menuItems={
+          <MenuItem
+            icon={<Trash2 className="h-[18px] w-[18px]" />}
+            destructive
+            onSelect={() => {
+              if (confirm("Delete this card?")) del.mutate({ id: cardId })
+            }}
+          >
+            Delete card
+          </MenuItem>
+        }
+      />
       <CardForm
         initial={{
           subjectText: card.data.subject.subject,
@@ -50,15 +65,6 @@ export function CardEditPage() {
         error={update.error?.message ?? null}
         onSubmit={(v) => update.mutate({ id: cardId, ...v })}
       />
-      <button
-        type="button"
-        className="w-full text-sm text-destructive underline"
-        onClick={() => {
-          if (confirm("Delete this card?")) del.mutate({ id: cardId })
-        }}
-      >
-        Delete card
-      </button>
     </div>
   )
 }

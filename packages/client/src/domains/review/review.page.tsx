@@ -85,7 +85,7 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
   const options = buttonsForPrevious(prev)
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-1 flex-col gap-3">
       <PageHeader
         subtitle={mode === "free" ? "Free review" : undefined}
         onBack={() => navigate({ to: "/decks/$deckId", params: { deckId } })}
@@ -119,7 +119,7 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
               <MarkdownView source={card.back} />
             </CardContent>
           </Card>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="mt-auto grid grid-cols-4 gap-2">
             {options.map((lvl: FixationLevel) => (
               <button
                 key={lvl}
@@ -139,7 +139,7 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
           </div>
         </>
       ) : (
-        <Button className="w-full" onClick={() => setRevealed(true)}>
+        <Button className="mt-auto w-full" onClick={() => setRevealed(true)}>
           Reveal
         </Button>
       )}

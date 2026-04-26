@@ -1,9 +1,6 @@
-import { Link, useNavigate, useParams, useRouter } from "@tanstack/react-router"
-import { Sparkles } from "lucide-react"
+import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
 import { trpc } from "../../infra/trpc"
 import { CardForm } from "./card-form"
-import { buttonVariants } from "../../ui/button"
-import { cn } from "../../lib/utils"
 import { PageHeader } from "../../components/AppShell"
 
 export function CardNewPage() {
@@ -27,7 +24,7 @@ export function CardNewPage() {
   })
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-1 flex-col gap-3">
       <PageHeader title="New card" onBack={goBack} />
       <CardForm
         initial={{ subjectText: "", front: "", back: "" }}
@@ -36,14 +33,6 @@ export function CardNewPage() {
         error={create.error?.message ?? null}
         onSubmit={(v) => create.mutate({ deckId, ...v })}
       />
-      <Link
-        to="/decks/$deckId/cards/generate"
-        params={{ deckId }}
-        className={cn(buttonVariants({ variant: "secondary", className: "w-full gap-2" }))}
-      >
-        <Sparkles className="h-4 w-4" />
-        Generate card from template
-      </Link>
     </div>
   )
 }

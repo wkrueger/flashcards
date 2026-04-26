@@ -29,7 +29,7 @@ export function CardForm({
 
   return (
     <form
-      className="space-y-3"
+      className="flex flex-1 flex-col gap-3"
       onSubmit={(e) => {
         e.preventDefault()
         onSubmit({
@@ -66,7 +66,7 @@ export function CardForm({
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button
         type="submit"
-        className="w-full"
+        className="mt-auto w-full"
         disabled={pending || !subjectText || !front || !back}
       >
         {pending ? "…" : submitLabel}

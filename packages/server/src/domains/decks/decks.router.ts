@@ -18,7 +18,8 @@ export const decksRouter = router({
   }),
 
   get: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
-    const [deck, cardCount, wordCount] = await Promise.all([
+    const now = new Date()
+    const [deck, cardCount, wordCount, cooldownCount] = await Promise.all([
       ctx.prisma.deck.findFirst({
         where: { id: input.id, userId: ctx.user.id },
       }),
@@ -26,9 +27,23 @@ export const decksRouter = router({
       ctx.prisma.subject.count({
         where: { cards: { some: { deckId: input.id } }, userId: ctx.user.id },
       }),
+      ctx.prisma.subject.count({
+        where: {
+          userId: ctx.user.id,
+          cards: { some: { deckId: input.id } },
+          cooldownAt: { gt: now },
+        },
+      }),
     ])
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
-    return { id: deck.id, name: deck.name, createdAt: deck.createdAt, cardCount, wordCount }
+    return {
+      id: deck.id,
+      name: deck.name,
+      createdAt: deck.createdAt,
+      cardCount,
+      wordCount,
+      cooldownCount,
+    }
   }),
 
   create: protectedProcedure.input(createDeckInput).mutation(async ({ ctx, input }) => {

@@ -3,12 +3,13 @@ import { useTheme } from "../infra/theme"
 import { Button } from "../ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { signOut, useSession } from "../infra/auth-client"
+import { cn } from "../lib/utils"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh w-full">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col border-x bg-background">
-        <main className="flex-1 p-3 sm:pt-8">{children}</main>
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x">
+        <main className="flex flex-1 flex-col p-3 sm:pt-8">{children}</main>
       </div>
     </div>
   )
@@ -19,11 +20,13 @@ export function PageHeader({
   subtitle,
   onBack,
   actions,
+  menuItems,
 }: {
   title?: string
   subtitle?: string
   onBack?: () => void
   actions?: React.ReactNode
+  menuItems?: React.ReactNode
 }) {
   return (
     <div className="flex items-center gap-2">
@@ -41,13 +44,44 @@ export function PageHeader({
       )}
       <div className="flex items-center gap-0.5 rounded-full border border-white/20 bg-popover/70 p-0.5 shadow-md shadow-black/10 backdrop-blur-xl backdrop-saturate-150 [&_button]:rounded-full dark:border-white/10 dark:bg-popover/60">
         {actions}
-        <GlobalMenu />
+        <GlobalMenu menuItems={menuItems} />
       </div>
     </div>
   )
 }
 
-function GlobalMenu() {
+export function MenuItem({
+  icon,
+  children,
+  destructive,
+  onSelect,
+}: {
+  icon?: React.ReactNode
+  children: React.ReactNode
+  destructive?: boolean
+  onSelect?: () => void
+}) {
+  return (
+    <button
+      className={cn(
+        "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors",
+        destructive
+          ? "text-destructive hover:bg-destructive/10 active:bg-destructive/15"
+          : "hover:bg-accent/70 active:bg-accent"
+      )}
+      onClick={onSelect}
+    >
+      <span>{children}</span>
+      {icon}
+    </button>
+  )
+}
+
+function MenuDivider() {
+  return <div className="mx-2 my-1 h-px bg-border/60" />
+}
+
+function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
   const { theme, toggle } = useTheme()
   const { data: session } = useSession()
   return (
@@ -62,27 +96,34 @@ function GlobalMenu() {
         sideOffset={8}
         className="w-56 overflow-hidden rounded-2xl border border-white/20 bg-popover/70 p-1.5 shadow-xl shadow-black/10 backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-popover/60"
       >
-        <button
-          className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors hover:bg-accent/70 active:bg-accent"
-          onClick={toggle}
+        {menuItems && (
+          <>
+            {menuItems}
+            <MenuDivider />
+          </>
+        )}
+        <MenuItem
+          icon={
+            theme === "dark" ? (
+              <Sun className="h-[18px] w-[18px]" />
+            ) : (
+              <Moon className="h-[18px] w-[18px]" />
+            )
+          }
+          onSelect={toggle}
         >
-          <span>{theme === "dark" ? "Light theme" : "Dark theme"}</span>
-          {theme === "dark" ? (
-            <Sun className="h-[18px] w-[18px]" />
-          ) : (
-            <Moon className="h-[18px] w-[18px]" />
-          )}
-        </button>
+          {theme === "dark" ? "Light theme" : "Dark theme"}
+        </MenuItem>
         {session?.user && (
           <>
-            <div className="mx-2 my-1 h-px bg-border/60" />
-            <button
-              className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/15"
-              onClick={() => signOut().then(() => (window.location.href = "/login"))}
+            <MenuDivider />
+            <MenuItem
+              icon={<LogOut className="h-[18px] w-[18px]" />}
+              destructive
+              onSelect={() => signOut().then(() => (window.location.href = "/login"))}
             >
-              <span>Log out</span>
-              <LogOut className="h-[18px] w-[18px]" />
-            </button>
+              Log out
+            </MenuItem>
           </>
         )}
       </PopoverContent>
