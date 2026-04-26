@@ -5,9 +5,11 @@ import { trpc } from "../../infra/trpc"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
+import { Card, CardContent } from "../../ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../ui/dialog"
 import { LanguageSelect } from "./language-select"
 import { PageHeader } from "../../components/AppShell"
+import { LightbulbIllustration } from "../../components/LightbulbIllustration"
 
 export function DeckListPage() {
   const utils = trpc.useUtils()
@@ -26,11 +28,10 @@ export function DeckListPage() {
   const [backLanguageId, setBackLanguageId] = useState("")
   const [open, setOpen] = useState(false)
 
-  const sameLanguage =
-    !!frontLanguageId && !!backLanguageId && frontLanguageId === backLanguageId
+  const sameLanguage = !!frontLanguageId && !!backLanguageId && frontLanguageId === backLanguageId
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title="Your decks"
         actions={
@@ -68,7 +69,7 @@ export function DeckListPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Default front language (optional)</Label>
+                  <Label>Translating from language (optional)</Label>
                   <LanguageSelect
                     value={frontLanguageId}
                     onChange={setFrontLanguageId}
@@ -76,7 +77,7 @@ export function DeckListPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Default back language (optional)</Label>
+                  <Label>Study language (optional)</Label>
                   <LanguageSelect
                     value={backLanguageId}
                     onChange={setBackLanguageId}
@@ -120,6 +121,43 @@ export function DeckListPage() {
       ) : (
         <p className="text-sm text-muted-foreground">No decks yet — create your first one.</p>
       )}
+
+      <Card
+        className="relative mt-auto overflow-hidden"
+        style={{
+          backgroundColor: "color-mix(in oklab, hsl(var(--accent)) 35%, hsl(var(--card)))",
+          backgroundImage:
+            "linear-gradient(168deg, hsl(var(--accent)) 0%, hsl(var(--accent)) 8%, transparent 22%)",
+        }}
+      >
+        <LightbulbIllustration
+          className="pointer-events-none absolute -right-16 -top-6 h-64 w-64 rotate-[18deg] opacity-25 dark:opacity-30"
+          style={{ color: "hsl(var(--primary))" }}
+        />
+        <CardContent className="relative space-y-3 p-4">
+          <h2
+            className="text-lg"
+            style={{
+              fontFamily: '"Quicksand", system-ui, sans-serif',
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              backgroundImage: "linear-gradient(120deg, #a7f3d0 0%, #34d399 45%, #047857 100%)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            How to use
+          </h2>
+          <ol className="list-decimal space-y-2 pl-5 text-sm">
+            <li>Consume content in the target language</li>
+            <li>Take note of new unknown words</li>
+            <li>Create cards for the new words</li>
+            <li>Practice the cards frequently</li>
+          </ol>
+        </CardContent>
+      </Card>
     </div>
   )
 }

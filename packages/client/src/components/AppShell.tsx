@@ -39,7 +39,7 @@ export function PageHeader({
       )}
       {title ? (
         <h1
-          className="flex-1 text-xl font-semibold"
+          className={cn("flex-1 text-xl font-semibold", !onBack && "pl-3")}
           style={{ viewTransitionName: "page-title" }}
         >
           {title}

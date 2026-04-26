@@ -51,8 +51,7 @@ export function DeckDetailPage() {
     }
   }, [editOpen, deck.data])
 
-  const editSameLanguage =
-    !!editFrontLang && !!editBackLang && editFrontLang === editBackLang
+  const editSameLanguage = !!editFrontLang && !!editBackLang && editFrontLang === editBackLang
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -128,7 +127,7 @@ export function DeckDetailPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Default front language (optional)</Label>
+              <Label>Translating from language (optional)</Label>
               <LanguageSelect
                 value={editFrontLang}
                 onChange={setEditFrontLang}
@@ -136,7 +135,7 @@ export function DeckDetailPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Default back language (optional)</Label>
+              <Label>Study language (optional)</Label>
               <LanguageSelect
                 value={editBackLang}
                 onChange={setEditBackLang}
