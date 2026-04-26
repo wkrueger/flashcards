@@ -29,6 +29,9 @@ const router = createRouter({
   defaultPreload: "viewport",
   defaultPreloadStaleTime: 30_000,
   defaultViewTransition: true,
+  defaultPendingMs: 0,
+  defaultPendingMinMs: 0,
+  defaultPendingComponent: () => null,
 })
 
 declare module "@tanstack/react-router" {

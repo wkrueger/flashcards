@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react"
 import { ArrowLeft, Moon, Sun, LogOut, MoreVertical } from "lucide-react"
 import { useTheme } from "../infra/theme"
 import { Button } from "../ui/button"
@@ -30,29 +31,92 @@ export function PageHeader({
   actions?: React.ReactNode
   menuItems?: React.ReactNode
 }) {
+  const measureRef = useRef<HTMLSpanElement>(null)
+  const pillRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [stacked, setStacked] = useState(false)
+
+  useLayoutEffect(() => {
+    const container = containerRef.current
+    const measure = measureRef.current
+    const pillEl = pillRef.current
+    if (!container || !measure || !pillEl) return
+    const check = () => {
+      const containerWidth = container.clientWidth
+      const titleNatural = measure.offsetWidth
+      const pillWidth = pillEl.offsetWidth
+      const backWidth = onBack ? 40 + 8 : 0
+      const gap = 8
+      const fits = backWidth + titleNatural + gap + pillWidth <= containerWidth
+      setStacked(!fits)
+    }
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(container)
+    ro.observe(pillEl)
+    return () => ro.disconnect()
+  }, [title, onBack, actions, menuItems])
+
   return (
-    <div className="flex items-center gap-2" style={{ viewTransitionName: "page-header" }}>
-      {onBack && (
+    <div
+      ref={containerRef}
+      className="relative flex flex-wrap items-center gap-x-2 gap-y-1"
+      style={{ viewTransitionName: "page-header" }}
+    >
+      {!stacked && onBack && (
         <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
       )}
-      {title ? (
+      {!stacked && title ? (
         <h1
-          className={cn("flex-1 text-xl font-semibold", !onBack && "pl-3")}
+          className={cn(
+            "min-w-0 flex-1 whitespace-nowrap text-xl font-semibold",
+            !onBack && "pl-3"
+          )}
           style={{ viewTransitionName: "page-title" }}
         >
           {title}
         </h1>
-      ) : subtitle ? (
+      ) : !stacked && subtitle ? (
         <span className="flex-1 text-xs uppercase text-muted-foreground">{subtitle}</span>
       ) : (
         <span className="flex-1" />
       )}
-      <div className="flex items-center gap-0.5 rounded-full border border-white/20 bg-popover/70 p-0.5 shadow-md shadow-black/10 backdrop-blur-xl backdrop-saturate-150 [&_button]:rounded-full dark:border-white/10 dark:bg-popover/60">
+      <div
+        ref={pillRef}
+        className="flex items-center gap-0.5 rounded-full border border-white/20 bg-popover/70 p-0.5 shadow-md shadow-black/10 backdrop-blur-xl backdrop-saturate-150 [&_button]:rounded-full dark:border-white/10 dark:bg-popover/60"
+      >
         {actions}
         <GlobalMenu menuItems={menuItems} />
       </div>
+      {stacked && title && (
+        <div className="flex w-full items-center gap-2">
+          {onBack && (
+            <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <h1
+            className={cn(
+              "min-w-0 flex-1 break-words text-xl font-semibold",
+              !onBack && "pl-3"
+            )}
+            style={{ viewTransitionName: "page-title" }}
+          >
+            {title}
+          </h1>
+        </div>
+      )}
+      {title && (
+        <span
+          ref={measureRef}
+          aria-hidden="true"
+          className="pointer-events-none invisible absolute whitespace-nowrap text-xl font-semibold"
+        >
+          {title}
+        </span>
+      )}
     </div>
   )
 }

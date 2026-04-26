@@ -56,7 +56,7 @@ export function DeckDetailPage() {
   return (
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
-        title={deck.data?.name ?? "Deck"}
+        title={deck.data?.name ?? ""}
         onBack={() => navigate({ to: "/" })}
         actions={
           <>
@@ -196,40 +196,44 @@ export function DeckDetailPage() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex gap-4">
-        <div className="text-center">
-          <p className="text-2xl font-semibold">{deck.data?.cardCount ?? "—"}</p>
-          <p className="text-xs text-muted-foreground">cards</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-semibold">{deck.data?.wordCount ?? "—"}</p>
-          <p className="text-xs text-muted-foreground">words</p>
-        </div>
-        <div className="text-center">
-          <p className="text-2xl font-semibold">{deck.data?.cooldownCount ?? "—"}</p>
-          <p className="text-xs text-muted-foreground">on cooldown</p>
-        </div>
-      </div>
+      {deck.data && (
+        <>
+          <div className="flex gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-semibold">{deck.data.cardCount}</p>
+              <p className="text-xs text-muted-foreground">cards</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-semibold">{deck.data.wordCount}</p>
+              <p className="text-xs text-muted-foreground">words</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-semibold">{deck.data.cooldownCount}</p>
+              <p className="text-xs text-muted-foreground">on cooldown</p>
+            </div>
+          </div>
 
-      <div className="flex flex-col gap-2">
-        {dueCount > 0 ? (
-          <Link
-            to="/decks/$deckId/review"
-            params={{ deckId }}
-            className={cn(buttonVariants({ variant: "default" }))}
-          >
-            Review {dueCount} due
-          </Link>
-        ) : (
-          <Link
-            to="/decks/$deckId/review/free"
-            params={{ deckId }}
-            className={cn(buttonVariants({ variant: "outline" }))}
-          >
-            Free review (no cards due)
-          </Link>
-        )}
-      </div>
+          <div className="flex flex-col gap-2">
+            {dueCount > 0 ? (
+              <Link
+                to="/decks/$deckId/review"
+                params={{ deckId }}
+                className={cn(buttonVariants({ variant: "default" }))}
+              >
+                Review {dueCount} due
+              </Link>
+            ) : (
+              <Link
+                to="/decks/$deckId/review/free"
+                params={{ deckId }}
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
+                Free review (no cards due)
+              </Link>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

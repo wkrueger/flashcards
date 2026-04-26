@@ -239,6 +239,14 @@ export function CardTemplateGeneratePage() {
     )
   }
 
+  if (!deck.data || !languages.data) {
+    return (
+      <div className="flex flex-1 flex-col gap-4">
+        <PageHeader title="Generate card" onBack={goBack} />
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader title="Generate card" onBack={goBack} />
