@@ -35,10 +35,7 @@ export const Route = createRootRoute({
           <p className="text-sm text-muted-foreground">
             {error instanceof Error ? error.message : "An unexpected error occurred."}
           </p>
-          <button
-            className="text-sm underline"
-            onClick={() => window.location.replace("/")}
-          >
+          <button className="text-sm underline" onClick={() => window.location.replace("/")}>
             Go home
           </button>
         </div>

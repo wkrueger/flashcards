@@ -1,8 +1,7 @@
 import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
-import { ArrowLeft } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { CardForm } from "./card-form"
-import { Button } from "../../ui/button"
+import { PageHeader } from "../../components/AppShell"
 
 export function CardEditPage() {
   const { deckId, cardId } = useParams({
@@ -39,12 +38,7 @@ export function CardEditPage() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" aria-label="Back" onClick={goBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-semibold">Edit card</h1>
-      </div>
+      <PageHeader title="Edit card" onBack={goBack} />
       <CardForm
         initial={{
           subjectText: card.data.subject.subject,

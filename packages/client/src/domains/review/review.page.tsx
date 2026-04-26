@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { ArrowLeft, Pencil } from "lucide-react"
+import { Pencil } from "lucide-react"
 import {
   buttonsForPrevious,
   COOLDOWN_LABEL,
@@ -18,6 +18,7 @@ const LEVEL_COLOR: Record<FixationLevel, string> = {
   "5": "bg-green-600 hover:bg-green-700 text-white",
 }
 import { trpc } from "../../infra/trpc"
+import { PageHeader } from "../../components/AppShell"
 import { Button, buttonVariants } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
 import { MarkdownView } from "../../components/MarkdownView"
@@ -85,32 +86,25 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Back to deck"
-          onClick={() => navigate({ to: "/decks/$deckId", params: { deckId } })}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        {mode === "free" && (
-          <span className="flex-1 text-xs uppercase text-muted-foreground">Free review</span>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Edit card"
-          onClick={() =>
-            navigate({
-              to: "/decks/$deckId/cards/$cardId/edit",
-              params: { deckId, cardId: card.id },
-            })
-          }
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-      </div>
+      <PageHeader
+        subtitle={mode === "free" ? "Free review" : undefined}
+        onBack={() => navigate({ to: "/decks/$deckId", params: { deckId } })}
+        actions={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Edit card"
+            onClick={() =>
+              navigate({
+                to: "/decks/$deckId/cards/$cardId/edit",
+                params: { deckId, cardId: card.id },
+              })
+            }
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        }
+      />
 
       <Card>
         <CardContent className="min-h-[8rem] p-4">

@@ -1,9 +1,10 @@
 import { Link, useNavigate, useParams, useRouter } from "@tanstack/react-router"
-import { ArrowLeft, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { CardForm } from "./card-form"
-import { Button, buttonVariants } from "../../ui/button"
+import { buttonVariants } from "../../ui/button"
 import { cn } from "../../lib/utils"
+import { PageHeader } from "../../components/AppShell"
 
 export function CardNewPage() {
   const { deckId } = useParams({ from: "/decks/$deckId/cards/new" })
@@ -27,12 +28,7 @@ export function CardNewPage() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" aria-label="Back" onClick={goBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-xl font-semibold">New card</h1>
-      </div>
+      <PageHeader title="New card" onBack={goBack} />
       <CardForm
         initial={{ subjectText: "", front: "", back: "" }}
         submitLabel="Create"

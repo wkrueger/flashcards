@@ -17,7 +17,10 @@ export const reviewRouter = router({
     try {
       return await completeReview(ctx.prisma, ctx.user.id, input.cardId, input.chosenLevel)
     } catch (err) {
-      if (err instanceof Error && (err as NodeJS.ErrnoException & { code?: string }).code === "CARD_NOT_FOUND") {
+      if (
+        err instanceof Error &&
+        (err as NodeJS.ErrnoException & { code?: string }).code === "CARD_NOT_FOUND"
+      ) {
         throw new TRPCError({ code: "NOT_FOUND" })
       }
       throw err

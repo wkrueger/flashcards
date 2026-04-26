@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react"
-import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { useNavigate, useParams } from "@tanstack/react-router"
 import { ArrowLeft, RefreshCw, RotateCw, Sparkles, Trash2 } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { cn } from "../../lib/utils"
@@ -9,6 +9,7 @@ import { Card, CardContent } from "../../ui/card"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select"
+import { PageHeader } from "../../components/AppShell"
 
 const TEMPLATE = "createPhrasesForWords"
 
@@ -132,17 +133,10 @@ export function CardTemplateGeneratePage() {
   if (previewCards) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Link
-            to="/decks/$deckId/cards/new"
-            params={{ deckId }}
-            aria-label="Back"
-            className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="text-xl font-semibold">Preview cards</h1>
-        </div>
+        <PageHeader
+          title="Preview cards"
+          onBack={() => navigate({ to: "/decks/$deckId/cards/new", params: { deckId } })}
+        />
 
         <ul className="space-y-3">
           {previewCards.map((card, index) => (
@@ -173,10 +167,7 @@ export function CardTemplateGeneratePage() {
                         onClick={() => regenerateCard(index)}
                       >
                         <RefreshCw
-                          className={cn(
-                            "h-4 w-4",
-                            regeneratingIndex === index && "animate-spin"
-                          )}
+                          className={cn("h-4 w-4", regeneratingIndex === index && "animate-spin")}
                         />
                       </Button>
                       <Button
@@ -229,17 +220,10 @@ export function CardTemplateGeneratePage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Link
-          to="/decks/$deckId/cards/new"
-          params={{ deckId }}
-          aria-label="Back"
-          className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="text-xl font-semibold">Generate card</h1>
-      </div>
+      <PageHeader
+        title="Generate card"
+        onBack={() => navigate({ to: "/decks/$deckId/cards/new", params: { deckId } })}
+      />
 
       <form className="space-y-3" onSubmit={submitGenerate}>
         <div className="space-y-1">

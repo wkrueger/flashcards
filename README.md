@@ -109,6 +109,7 @@ pnpm build
 `pnpm build` runs in order: `prisma migrate deploy` → `prisma generate` → server `tsc` → client Vite build.
 
 Output:
+
 - `packages/server/dist/main.js` — compiled Fastify server (run with Node)
 - `packages/client/dist/` — static SPA (serve behind any HTTP server or CDN)
 

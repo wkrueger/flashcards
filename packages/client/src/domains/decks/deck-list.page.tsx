@@ -5,13 +5,8 @@ import { trpc } from "../../infra/trpc"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../../ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../ui/dialog"
+import { PageHeader } from "../../components/AppShell"
 
 export function DeckListPage() {
   const utils = trpc.useUtils()
@@ -28,47 +23,46 @@ export function DeckListPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Your decks</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="mr-1 h-4 w-4" />
-              New deck
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>New deck</DialogTitle>
-            </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault()
-                if (!name.trim()) return
-                create.mutate({ name: name.trim() })
-              }}
-            >
-              <div className="space-y-1">
-                <Label htmlFor="deck-name">Name</Label>
-                <Input
-                  id="deck-name"
-                  placeholder="e.g. German A1"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              {create.error && (
-                <p className="text-sm text-destructive">{create.error.message}</p>
-              )}
-              <Button type="submit" disabled={create.isPending} className="w-full">
-                {create.isPending ? "Creating…" : "Create"}
+      <PageHeader
+        title="Your decks"
+        actions={
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="New deck">
+                <Plus className="h-5 w-5" />
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>New deck</DialogTitle>
+              </DialogHeader>
+              <form
+                className="space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!name.trim()) return
+                  create.mutate({ name: name.trim() })
+                }}
+              >
+                <div className="space-y-1">
+                  <Label htmlFor="deck-name">Name</Label>
+                  <Input
+                    id="deck-name"
+                    placeholder="e.g. German A1"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                {create.error && <p className="text-sm text-destructive">{create.error.message}</p>}
+                <Button type="submit" disabled={create.isPending} className="w-full">
+                  {create.isPending ? "Creating…" : "Create"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
       {decks.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
