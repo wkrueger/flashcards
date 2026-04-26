@@ -31,14 +31,19 @@ export function PageHeader({
   menuItems?: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" style={{ viewTransitionName: "page-header" }}>
       {onBack && (
         <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
       )}
       {title ? (
-        <h1 className="flex-1 text-xl font-semibold">{title}</h1>
+        <h1
+          className="flex-1 text-xl font-semibold"
+          style={{ viewTransitionName: "page-title" }}
+        >
+          {title}
+        </h1>
       ) : subtitle ? (
         <span className="flex-1 text-xs uppercase text-muted-foreground">{subtitle}</span>
       ) : (

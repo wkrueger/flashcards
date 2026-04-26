@@ -125,20 +125,22 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
         }
       />
 
-      <Card>
-        <CardContent className="min-h-[8rem] p-4">
-          <MarkdownView source={card.front} />
-        </CardContent>
-      </Card>
+      <div key={card.id} className="contents [&>*]:animate-card-in">
+        <Card>
+          <CardContent className="min-h-[8rem] p-4">
+            <MarkdownView source={card.front} />
+          </CardContent>
+        </Card>
+      </div>
 
       {revealed ? (
         <>
-          <Card>
+          <Card className="animate-reveal">
             <CardContent className="min-h-[8rem] p-4">
               <MarkdownView source={card.back} />
             </CardContent>
           </Card>
-          <div className="mt-auto grid grid-cols-4 gap-2">
+          <div className="mt-auto grid grid-cols-4 gap-2 animate-reveal">
             {options.map((lvl: FixationLevel) => (
               <button
                 key={lvl}
