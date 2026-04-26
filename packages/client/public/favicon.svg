@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <!-- deep green base, slightly lit toward the top -->
+    <linearGradient id="disc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a4329"/>
+      <stop offset="55%" stop-color="#06291a"/>
+      <stop offset="100%" stop-color="#031509"/>
+    </linearGradient>
+    <!-- specular sheen across the upper third of the disc -->
+    <radialGradient id="sheen" cx="50%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <!-- glass card fills (translucent so background bleeds through subtly) -->
+    <linearGradient id="card-light" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d6f3df"/>
+      <stop offset="100%" stop-color="#83c89a"/>
+    </linearGradient>
+    <linearGradient id="card-mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7fc99a"/>
+      <stop offset="100%" stop-color="#3c8b5d"/>
+    </linearGradient>
+    <linearGradient id="card-dark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a8a5b"/>
+      <stop offset="100%" stop-color="#194a30"/>
+    </linearGradient>
+    <!-- color-tinted (green) drop shadow per Liquid Glass guidance -->
+    <filter id="green-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0.8" stdDeviation="0.9" flood-color="#031509" flood-opacity="0.7"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="0.4" flood-color="#0a4329" flood-opacity="0.5"/>
+    </filter>
+    <clipPath id="disc-clip">
+      <circle cx="32" cy="32" r="30"/>
+    </clipPath>
+  </defs>
+
+  <!-- 1. Background layer: deep-green disc -->
+  <circle cx="32" cy="32" r="30" fill="url(#disc)"/>
+
+  <!-- 2. Foreground layer: glass cards (clipped to disc, soft green shadow) -->
+  <g clip-path="url(#disc-clip)" filter="url(#green-shadow)">
+    <g transform="translate(32 56)">
+      <g transform="rotate(-22)">
+        <rect x="-15" y="-40" width="30" height="54" rx="6" fill="url(#card-light)"/>
+        <!-- top rim light -->
+        <path d="M-13 -37 Q 0 -41 13 -37" fill="none" stroke="#ffffff" stroke-opacity="0.7" stroke-width="0.7" stroke-linecap="round"/>
+      </g>
+      <g>
+        <rect x="-15" y="-44" width="30" height="58" rx="6" fill="url(#card-mid)"/>
+        <path d="M-13 -41 Q 0 -45 13 -41" fill="none" stroke="#ffffff" stroke-opacity="0.7" stroke-width="0.7" stroke-linecap="round"/>
+      </g>
+      <g transform="rotate(22)">
+        <rect x="-15" y="-40" width="30" height="54" rx="6" fill="url(#card-dark)"/>
+        <path d="M-13 -37 Q 0 -41 13 -37" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="0.7" stroke-linecap="round"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- 3. Specular layer: soft sheen on the top of the disc -->
+  <g clip-path="url(#disc-clip)">
+    <ellipse cx="32" cy="10" rx="34" ry="14" fill="url(#sheen)"/>
+  </g>
+
+  <!-- 4. Subtle inner rim to define edge without a hard stroke -->
+  <circle cx="32" cy="32" r="29.4" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="0.6"/>
+  <circle cx="32" cy="32" r="30" fill="none" stroke="#000000" stroke-opacity="0.4" stroke-width="0.6"/>
+</svg>
