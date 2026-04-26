@@ -33,11 +33,6 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
   const next = trpc.review.next.useQuery({ deckId, mode }, { refetchOnWindowFocus: false })
   const currentCardId = next.data?.card?.id
 
-  useEffect(() => {
-    if (!currentCardId) return
-    utils.review.next.prefetch({ deckId, mode, excludeCardId: currentCardId })
-  }, [currentCardId, deckId, mode, utils])
-
   const complete = trpc.review.complete.useMutation({
     onMutate: () => {
       if (!currentCardId) return
@@ -57,6 +52,12 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
       utils.decks.get.invalidate({ id: deckId })
     },
   })
+
+  useEffect(() => {
+    if (!currentCardId) return
+    if (complete.isPending) return
+    utils.review.next.prefetch({ deckId, mode, excludeCardId: currentCardId })
+  }, [currentCardId, deckId, mode, utils, complete.isPending])
 
   if (next.isLoading) return <p>Loading…</p>
 
