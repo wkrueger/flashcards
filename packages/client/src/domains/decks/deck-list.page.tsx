@@ -6,6 +6,7 @@ import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../ui/dialog"
+import { LanguageSelect } from "./language-select"
 import { PageHeader } from "../../components/AppShell"
 
 export function DeckListPage() {
@@ -15,11 +16,18 @@ export function DeckListPage() {
     onSuccess: () => {
       utils.decks.list.invalidate()
       setName("")
+      setFrontLanguageId("")
+      setBackLanguageId("")
       setOpen(false)
     },
   })
   const [name, setName] = useState("")
+  const [frontLanguageId, setFrontLanguageId] = useState("")
+  const [backLanguageId, setBackLanguageId] = useState("")
   const [open, setOpen] = useState(false)
+
+  const sameLanguage =
+    !!frontLanguageId && !!backLanguageId && frontLanguageId === backLanguageId
 
   return (
     <div className="space-y-4">
@@ -41,8 +49,12 @@ export function DeckListPage() {
                 className="space-y-3"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  if (!name.trim()) return
-                  create.mutate({ name: name.trim() })
+                  if (!name.trim() || sameLanguage) return
+                  create.mutate({
+                    name: name.trim(),
+                    defaultFrontLanguageId: frontLanguageId ? Number(frontLanguageId) : null,
+                    defaultBackLanguageId: backLanguageId ? Number(backLanguageId) : null,
+                  })
                 }}
               >
                 <div className="space-y-1">
@@ -55,8 +67,31 @@ export function DeckListPage() {
                     autoFocus
                   />
                 </div>
+                <div className="space-y-1">
+                  <Label>Default front language (optional)</Label>
+                  <LanguageSelect
+                    value={frontLanguageId}
+                    onChange={setFrontLanguageId}
+                    disabledValue={backLanguageId}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Default back language (optional)</Label>
+                  <LanguageSelect
+                    value={backLanguageId}
+                    onChange={setBackLanguageId}
+                    disabledValue={frontLanguageId}
+                  />
+                  {sameLanguage && (
+                    <p className="text-sm text-destructive">Languages must be different.</p>
+                  )}
+                </div>
                 {create.error && <p className="text-sm text-destructive">{create.error.message}</p>}
-                <Button type="submit" disabled={create.isPending} className="w-full">
+                <Button
+                  type="submit"
+                  disabled={create.isPending || sameLanguage}
+                  className="w-full"
+                >
                   {create.isPending ? "Creating…" : "Create"}
                 </Button>
               </form>

@@ -1,6 +1,18 @@
 import { TRPCError } from "@trpc/server"
-import { createDeckInput, idInput, renameDeckInput } from "@cards/shared"
+import { createDeckInput, idInput, updateDeckInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
+
+async function assertLanguagesExist(
+  prisma: { language: { count: (args: { where: { id: { in: number[] } } }) => Promise<number> } },
+  ids: number[]
+) {
+  const unique = Array.from(new Set(ids))
+  if (unique.length === 0) return
+  const found = await prisma.language.count({ where: { id: { in: unique } } })
+  if (found !== unique.length) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Language not found." })
+  }
+}
 
 export const decksRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -40,6 +52,8 @@ export const decksRouter = router({
       id: deck.id,
       name: deck.name,
       createdAt: deck.createdAt,
+      defaultFrontLanguageId: deck.defaultFrontLanguageId,
+      defaultBackLanguageId: deck.defaultBackLanguageId,
       cardCount,
       wordCount,
       cooldownCount,
@@ -55,19 +69,46 @@ export const decksRouter = router({
         code: "CONFLICT",
         message: "A deck with that name already exists.",
       })
+    const langIds = [input.defaultFrontLanguageId, input.defaultBackLanguageId].filter(
+      (v): v is number => typeof v === "number"
+    )
+    await assertLanguagesExist(ctx.prisma, langIds)
     return ctx.prisma.deck.create({
-      data: { name: input.name, userId: ctx.user.id },
+      data: {
+        name: input.name,
+        userId: ctx.user.id,
+        defaultFrontLanguageId: input.defaultFrontLanguageId ?? null,
+        defaultBackLanguageId: input.defaultBackLanguageId ?? null,
+      },
     })
   }),
 
-  rename: protectedProcedure.input(renameDeckInput).mutation(async ({ ctx, input }) => {
+  update: protectedProcedure.input(updateDeckInput).mutation(async ({ ctx, input }) => {
     const deck = await ctx.prisma.deck.findFirst({
       where: { id: input.id, userId: ctx.user.id },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    if (input.name !== deck.name) {
+      const conflict = await ctx.prisma.deck.findFirst({
+        where: { userId: ctx.user.id, name: input.name, NOT: { id: deck.id } },
+      })
+      if (conflict)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A deck with that name already exists.",
+        })
+    }
+    const langIds = [input.defaultFrontLanguageId, input.defaultBackLanguageId].filter(
+      (v): v is number => typeof v === "number"
+    )
+    await assertLanguagesExist(ctx.prisma, langIds)
     return ctx.prisma.deck.update({
       where: { id: deck.id },
-      data: { name: input.name },
+      data: {
+        name: input.name,
+        defaultFrontLanguageId: input.defaultFrontLanguageId ?? null,
+        defaultBackLanguageId: input.defaultBackLanguageId ?? null,
+      },
     })
   }),
 

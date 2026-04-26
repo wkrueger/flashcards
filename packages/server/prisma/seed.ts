@@ -4,13 +4,26 @@ const prisma = new PrismaClient()
 
 async function main() {
   const seeds = [
-    { name: "English", emoji: "🇬🇧" },
-    { name: "Deutsch", emoji: "🇩🇪" },
+    { name: "English", englishName: "English", emoji: "🇬🇧" },
+    { name: "Deutsch", englishName: "German", emoji: "🇩🇪" },
+    { name: "Español", englishName: "Spanish", emoji: "🇪🇸" },
+    { name: "Français", englishName: "French", emoji: "🇫🇷" },
+    { name: "Italiano", englishName: "Italian", emoji: "🇮🇹" },
+    { name: "Português", englishName: "Portuguese", emoji: "🇧🇷" },
+    { name: "日本語", englishName: "Japanese", emoji: "🇯🇵" },
+    { name: "中文", englishName: "Mandarin Chinese", emoji: "🇨🇳" },
+    { name: "한국어", englishName: "Korean", emoji: "🇰🇷" },
+    { name: "Nederlands", englishName: "Dutch", emoji: "🇳🇱" },
+    { name: "Русский", englishName: "Russian", emoji: "🇷🇺" },
+    { name: "العربية", englishName: "Arabic", emoji: "🇸🇦" },
+    { name: "Polski", englishName: "Polish", emoji: "🇵🇱" },
+    { name: "Türkçe", englishName: "Turkish", emoji: "🇹🇷" },
+    { name: "Svenska", englishName: "Swedish", emoji: "🇸🇪" },
   ]
   for (const s of seeds) {
     await prisma.language.upsert({
       where: { name: s.name },
-      update: { emoji: s.emoji },
+      update: { englishName: s.englishName, emoji: s.emoji },
       create: s,
     })
   }

@@ -6,13 +6,19 @@ export type ReviewMode = z.infer<typeof reviewModeSchema>
 
 const id = z.string().min(1).max(64)
 
+const languageId = z.number().int().positive()
+
 export const createDeckInput = z.object({
   name: z.string().trim().min(1).max(100),
+  defaultFrontLanguageId: languageId.nullish(),
+  defaultBackLanguageId: languageId.nullish(),
 })
 
-export const renameDeckInput = z.object({
+export const updateDeckInput = z.object({
   id,
   name: z.string().trim().min(1).max(100),
+  defaultFrontLanguageId: languageId.nullish(),
+  defaultBackLanguageId: languageId.nullish(),
 })
 
 export const idInput = z.object({ id })

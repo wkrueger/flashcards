@@ -68,18 +68,26 @@ model Verification {
 // ---------- domain ----------
 
 model Language {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  emoji String
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  englishName String?
+  emoji       String
+
+  decksAsDefaultFront Deck[] @relation("DeckDefaultFrontLanguage")
+  decksAsDefaultBack  Deck[] @relation("DeckDefaultBackLanguage")
 }
 
 model Deck {
-  id        String   @id @default(cuid())
-  name      String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cards     Card[]
-  createdAt DateTime @default(now())
+  id                    String    @id @default(cuid())
+  name                  String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultFrontLanguageId Int?
+  defaultFrontLanguage  Language? @relation("DeckDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
+  defaultBackLanguageId  Int?
+  defaultBackLanguage   Language? @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
+  cards                 Card[]
+  createdAt             DateTime  @default(now())
 
   @@unique([userId, name])
 }

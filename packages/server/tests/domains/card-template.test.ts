@@ -8,13 +8,13 @@ const originalModel = process.env.OPENAI_MODEL
 async function seedLanguages() {
   const english = await prisma.language.upsert({
     where: { name: "English" },
-    update: { emoji: "🇬🇧" },
-    create: { name: "English", emoji: "🇬🇧" },
+    update: { emoji: "🇬🇧", englishName: "English" },
+    create: { name: "English", emoji: "🇬🇧", englishName: "English" },
   })
   const deutsch = await prisma.language.upsert({
     where: { name: "Deutsch" },
-    update: { emoji: "🇩🇪" },
-    create: { name: "Deutsch", emoji: "🇩🇪" },
+    update: { emoji: "🇩🇪", englishName: "German" },
+    create: { name: "Deutsch", emoji: "🇩🇪", englishName: "German" },
   })
   return { english, deutsch }
 }

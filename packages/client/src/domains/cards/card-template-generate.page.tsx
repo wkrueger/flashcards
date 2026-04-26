@@ -27,18 +27,20 @@ export function CardTemplateGeneratePage() {
   const navigate = useNavigate()
   const utils = trpc.useUtils()
   const languages = trpc.languages.list.useQuery()
+  const deck = trpc.decks.get.useQuery({ id: deckId })
 
-  const english = useMemo(
+  const englishFallback = useMemo(
     () => languages.data?.find((language) => language.name.toLowerCase() === "english"),
     [languages.data]
   )
-  const deutsch = useMemo(
+  const deutschFallback = useMemo(
     () => languages.data?.find((language) => language.name.toLowerCase() === "deutsch"),
     [languages.data]
   )
 
   const [frontLanguageId, setFrontLanguageId] = useState("")
   const [backLanguageId, setBackLanguageId] = useState("")
+  const [defaultsApplied, setDefaultsApplied] = useState(false)
   const [wordOrExpression, setWordOrExpression] = useState("")
   const [count, setCount] = useState("3")
   const [previewCards, setPreviewCards] = useState<PreviewCard[] | null>(null)
@@ -47,9 +49,24 @@ export function CardTemplateGeneratePage() {
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null)
 
   useEffect(() => {
-    if (!frontLanguageId && english) setFrontLanguageId(String(english.id))
-    if (!backLanguageId && deutsch) setBackLanguageId(String(deutsch.id))
-  }, [backLanguageId, deutsch, english, frontLanguageId])
+    if (defaultsApplied) return
+    if (!deck.data || !languages.data) return
+    const front =
+      deck.data.defaultFrontLanguageId != null
+        ? String(deck.data.defaultFrontLanguageId)
+        : englishFallback
+          ? String(englishFallback.id)
+          : ""
+    const back =
+      deck.data.defaultBackLanguageId != null
+        ? String(deck.data.defaultBackLanguageId)
+        : deutschFallback
+          ? String(deutschFallback.id)
+          : ""
+    setFrontLanguageId(front)
+    setBackLanguageId(back)
+    setDefaultsApplied(true)
+  }, [defaultsApplied, deck.data, languages.data, englishFallback, deutschFallback])
 
   const generate = trpc.cardTemplate.generatePreviews.useMutation({
     onSuccess: (data) => {

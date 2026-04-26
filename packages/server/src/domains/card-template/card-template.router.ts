@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server"
 import { cardTemplateGeneratePreviewInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { createOpenAIStructuredResponse } from "../../infra/openai.js"
-import { cardTemplatePreviewOutput, promptLanguageName } from "./card-template.service.js"
+import { cardTemplatePreviewOutput } from "./card-template.service.js"
 
 export const cardTemplateRouter = router({
   generatePreviews: protectedProcedure
@@ -17,8 +17,8 @@ export const cardTemplateRouter = router({
       if (!frontLanguage || !backLanguage) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Language not found." })
       }
-      const frontPromptLanguage = promptLanguageName(frontLanguage.name)
-      const backPromptLanguage = promptLanguageName(backLanguage.name)
+      const frontPromptLanguage = frontLanguage.englishName ?? frontLanguage.name
+      const backPromptLanguage = backLanguage.englishName ?? backLanguage.name
 
       const output = await createOpenAIStructuredResponse({
         schemaName: "card_template_previews",

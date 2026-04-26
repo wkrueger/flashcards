@@ -1,10 +1,13 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { Plus, Sparkles, Trash2 } from "lucide-react"
+import { Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { Button, buttonVariants } from "../../ui/button"
 import { cn } from "../../lib/utils"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog"
+import { Input } from "../../ui/input"
+import { Label } from "../../ui/label"
+import { LanguageSelect } from "./language-select"
 import { MenuItem, PageHeader } from "../../components/AppShell"
 
 export function DeckDetailPage() {
@@ -22,7 +25,34 @@ export function DeckDetailPage() {
     },
   })
 
+  const updateDeck = trpc.decks.update.useMutation({
+    onSuccess: () => {
+      utils.decks.list.invalidate()
+      utils.decks.get.invalidate({ id: deckId })
+      setEditOpen(false)
+    },
+  })
+
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editName, setEditName] = useState("")
+  const [editFrontLang, setEditFrontLang] = useState("")
+  const [editBackLang, setEditBackLang] = useState("")
+
+  useEffect(() => {
+    if (editOpen && deck.data) {
+      setEditName(deck.data.name)
+      setEditFrontLang(
+        deck.data.defaultFrontLanguageId ? String(deck.data.defaultFrontLanguageId) : ""
+      )
+      setEditBackLang(
+        deck.data.defaultBackLanguageId ? String(deck.data.defaultBackLanguageId) : ""
+      )
+    }
+  }, [editOpen, deck.data])
+
+  const editSameLanguage =
+    !!editFrontLang && !!editBackLang && editFrontLang === editBackLang
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -52,15 +82,91 @@ export function DeckDetailPage() {
           </>
         }
         menuItems={
-          <MenuItem
-            icon={<Trash2 className="h-[18px] w-[18px]" />}
-            destructive
-            onSelect={() => setDeleteOpen(true)}
-          >
-            Delete deck
-          </MenuItem>
+          <>
+            <MenuItem
+              icon={<Pencil className="h-[18px] w-[18px]" />}
+              onSelect={() => setEditOpen(true)}
+            >
+              Edit deck
+            </MenuItem>
+            <MenuItem
+              icon={<Trash2 className="h-[18px] w-[18px]" />}
+              destructive
+              onSelect={() => setDeleteOpen(true)}
+            >
+              Delete deck
+            </MenuItem>
+          </>
         }
       />
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit deck</DialogTitle>
+          </DialogHeader>
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!editName.trim() || editSameLanguage) return
+              updateDeck.mutate({
+                id: deckId,
+                name: editName.trim(),
+                defaultFrontLanguageId: editFrontLang ? Number(editFrontLang) : null,
+                defaultBackLanguageId: editBackLang ? Number(editBackLang) : null,
+              })
+            }}
+          >
+            <div className="space-y-1">
+              <Label htmlFor="edit-deck-name">Name</Label>
+              <Input
+                id="edit-deck-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Default front language (optional)</Label>
+              <LanguageSelect
+                value={editFrontLang}
+                onChange={setEditFrontLang}
+                disabledValue={editBackLang}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Default back language (optional)</Label>
+              <LanguageSelect
+                value={editBackLang}
+                onChange={setEditBackLang}
+                disabledValue={editFrontLang}
+              />
+              {editSameLanguage && (
+                <p className="text-sm text-destructive">Languages must be different.</p>
+              )}
+            </div>
+            {updateDeck.error && (
+              <p className="text-sm text-destructive">{updateDeck.error.message}</p>
+            )}
+            <div className="mt-4 flex gap-2">
+              <DialogClose asChild>
+                <Button type="button" variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={updateDeck.isPending || editSameLanguage}
+              >
+                {updateDeck.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
