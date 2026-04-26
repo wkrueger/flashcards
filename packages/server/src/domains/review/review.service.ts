@@ -6,6 +6,7 @@ export interface PickArgs {
   userId: string
   deckId?: string
   includeOnCooldown: boolean
+  excludeCardId?: string
   now?: Date
   rng?: () => number
 }
@@ -24,12 +25,20 @@ export async function pickNextCard({
   userId,
   deckId,
   includeOnCooldown,
+  excludeCardId,
   now = new Date(),
   rng = Math.random,
 }: PickArgs): Promise<PickResult> {
   const subjectWhere: any = { userId }
   if (!includeOnCooldown) subjectWhere.cooldownAt = { lte: now }
   if (deckId) subjectWhere.cards = { some: { deckId } }
+  if (excludeCardId) {
+    const excluded = await prisma.card.findFirst({
+      where: { id: excludeCardId, deck: { userId } },
+      select: { subjectId: true },
+    })
+    if (excluded) subjectWhere.id = { not: excluded.subjectId }
+  }
 
   const candidates = await prisma.subject.findMany({
     where: subjectWhere,

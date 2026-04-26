@@ -51,6 +51,7 @@ export const cardTemplateGeneratePreviewInput = z
 export const reviewNextInput = z.object({
   deckId: id.optional(),
   mode: reviewModeSchema,
+  excludeCardId: id.optional(),
 })
 
 export const reviewCompleteInput = z.object({

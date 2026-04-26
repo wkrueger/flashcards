@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 import { Pencil } from "lucide-react"
 import {
@@ -31,11 +31,30 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
   const [revealed, setRevealed] = useState(false)
 
   const next = trpc.review.next.useQuery({ deckId, mode }, { refetchOnWindowFocus: false })
+  const currentCardId = next.data?.card?.id
+
+  useEffect(() => {
+    if (!currentCardId) return
+    utils.review.next.prefetch({ deckId, mode, excludeCardId: currentCardId })
+  }, [currentCardId, deckId, mode, utils])
+
   const complete = trpc.review.complete.useMutation({
+    onMutate: () => {
+      if (!currentCardId) return
+      const prefetched = utils.review.next.getData({
+        deckId,
+        mode,
+        excludeCardId: currentCardId,
+      })
+      if (prefetched) {
+        utils.review.next.setData({ deckId, mode }, prefetched)
+        setRevealed(false)
+      }
+    },
     onSuccess: () => {
       setRevealed(false)
-      utils.review.next.invalidate()
       utils.cards.listByDeck.invalidate({ id: deckId })
+      utils.decks.get.invalidate({ id: deckId })
     },
   })
 
