@@ -7,8 +7,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { theme, toggle } = useTheme()
   const { data: session } = useSession()
   return (
-    <div className="min-h-screen w-full">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col border-x bg-background">
+    <div className="min-h-dvh w-full">
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col border-x bg-background">
         <header className="flex items-center justify-between border-b p-3">
           <div />
           <div className="flex items-center gap-1">
