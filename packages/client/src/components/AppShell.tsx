@@ -57,14 +57,17 @@ export function MenuItem({
   children,
   destructive,
   onSelect,
+  testId,
 }: {
   icon?: React.ReactNode
   children: React.ReactNode
   destructive?: boolean
   onSelect?: () => void
+  testId?: string
 }) {
   return (
     <button
+      data-testid={testId}
       className={cn(
         "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors",
         destructive
@@ -89,7 +92,7 @@ function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Menu">
+        <Button variant="ghost" size="icon" aria-label="Menu" data-testid="global-menu-trigger">
           <MoreVertical className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
@@ -122,6 +125,7 @@ function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
             <MenuItem
               icon={<LogOut className="h-[18px] w-[18px]" />}
               destructive
+              testId="logout-menu-item"
               onSelect={() => signOut().then(() => (window.location.href = "/login"))}
             >
               Log out

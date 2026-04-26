@@ -10,13 +10,21 @@ test("signup → deck → card → review → free review → edit → logout", 
   await page.getByLabel("Password").fill(password)
   await page.getByRole("button", { name: "Sign up" }).click()
 
+  // With email verification on, signup lands on the "Check your email" screen.
+  // The e2e env auto-verifies (AUTH_E2E_AUTOVERIFY=1), so we can log in directly.
+  await page.getByRole("link", { name: "Back to log in" }).click()
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Log in" }).click()
+
   await expect(page.getByRole("heading", { name: "Your decks" })).toBeVisible()
 
-  await page.getByPlaceholder("New deck name").fill("German A1")
-  await page.getByRole("button", { name: "Add" }).click()
+  await page.getByRole("button", { name: "New deck" }).click()
+  await page.getByPlaceholder("e.g. German A1").fill("German A1")
+  await page.getByRole("button", { name: "Create" }).click()
   await page.getByRole("link", { name: /German A1/ }).click()
 
-  await page.getByRole("link", { name: "+ New card" }).click()
+  await page.getByRole("link", { name: "New card" }).click()
   await page.getByPlaceholder("Subject (e.g. Haus)").fill("Haus")
   await page.getByLabel("Front (markdown)").fill("**Haus** ist groß.")
   await page.getByLabel("Back (markdown)").fill("The **house** is big.")
@@ -40,7 +48,9 @@ test("signup → deck → card → review → free review → edit → logout", 
   await page.getByRole("button", { name: "Save" }).click()
   await expect(page).toHaveURL(/\/decks\/.+$/)
 
-  // Log out.
-  await page.getByRole("button", { name: "Log out" }).click()
+  // Log out via the global menu (uses data-testid hooks because the menu items
+  // live in a portal and the icon-only trigger is hard to disambiguate by role).
+  await page.getByTestId("global-menu-trigger").click({ force: true })
+  await page.getByTestId("logout-menu-item").click({ force: true })
   await expect(page).toHaveURL(/\/login$/)
 })

@@ -3,7 +3,13 @@ import { Toaster } from "sonner"
 import { AppShell } from "../components/AppShell"
 import { authClient } from "../infra/auth-client"
 
-const PUBLIC = new Set(["/login", "/signup"])
+const PUBLIC = new Set([
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+])
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {

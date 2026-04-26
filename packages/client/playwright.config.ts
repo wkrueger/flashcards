@@ -7,7 +7,7 @@ const E2E_DB = path.resolve(__dirname, "../server/prisma/e2e.db")
 
 export default defineConfig({
   testDir: "./e2e",
-  timeout: 30_000,
+  timeout: 15_000,
   fullyParallel: false,
   workers: 1,
   reporter: "list",
@@ -30,6 +30,7 @@ export default defineConfig({
         BETTER_AUTH_URL: "http://localhost:3001",
         SERVER_PORT: "3001",
         CLIENT_ORIGIN: "http://localhost:5173",
+        AUTH_E2E_AUTOVERIFY: "1",
       },
     },
     {

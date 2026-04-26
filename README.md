@@ -50,6 +50,36 @@ DISABLE_USER_CREATION=true
 Accepted enabled values are `true`, `1`, and `yes`. Leave it unset or set it to `false` in local
 development when you want the signup page to create users.
 
+### Email (Mailgun)
+
+Verification and password-reset emails go through Mailgun. In dev you can leave the variables
+blank — the server will log the email body (with the link) to stdout instead of sending.
+
+```env
+MAILGUN_API_KEY=key-...
+MAILGUN_DOMAIN=mg.yourdomain.com
+MAILGUN_FROM="Cards <no-reply@mg.yourdomain.com>"
+MAILGUN_REGION=us            # or "eu"
+```
+
+### Google SSO
+
+Optional. Create OAuth credentials at <https://console.cloud.google.com/apis/credentials>; the
+authorized redirect URI is `${BETTER_AUTH_URL}/api/auth/callback/google`.
+
+Server (`packages/server/.env`):
+
+```env
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+```
+
+Client (`packages/client/.env`, optional — defaults to disabled):
+
+```env
+VITE_GOOGLE_SSO_ENABLED=true
+```
+
 ### OpenAI setup
 
 The "Generate card from template" flow calls the OpenAI API from the server. Add these to

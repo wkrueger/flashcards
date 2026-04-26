@@ -30,6 +30,8 @@
     "@trpc/server": "^11.0.0-rc.659",
     "better-auth": "^1.1.7",
     "fastify": "^5.2.0",
+    "form-data": "^4.0.5",
+    "mailgun.js": "^13.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
