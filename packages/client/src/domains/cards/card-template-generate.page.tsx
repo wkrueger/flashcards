@@ -74,11 +74,6 @@ export function CardTemplateGeneratePage() {
   }, [defaultsApplied, deck.data, languages.data, englishFallback, deutschFallback])
 
   const generate = trpc.cardTemplate.generatePreviews.useMutation({
-    onSuccess: (data) => {
-      setPreviewCards(data.cards)
-      setPreviewError(null)
-      setSaveError(null)
-    },
     onError: (error) => {
       setPreviewError(error.message)
     },
@@ -92,16 +87,23 @@ export function CardTemplateGeneratePage() {
   const canSubmit =
     !!frontLanguageId && !!backLanguageId && !selectionsMatch && !!subjectText && !!count
 
-  const submitGenerate = (event?: FormEvent) => {
+  const submitGenerate = async (event?: FormEvent) => {
     event?.preventDefault()
     if (!canSubmit) return
-    generate.mutate({
-      template: TEMPLATE,
-      frontLanguageId: selectedFrontId,
-      backLanguageId: selectedBackId,
-      wordOrExpression: subjectText,
-      count: Number(count),
-    })
+    try {
+      const result = await generate.mutateAsync({
+        template: TEMPLATE,
+        frontLanguageId: selectedFrontId,
+        backLanguageId: selectedBackId,
+        wordOrExpression: subjectText,
+        count: Number(count),
+      })
+      setPreviewCards(result.cards)
+      setPreviewError(null)
+      setSaveError(null)
+    } catch {
+      // error already shown via previewError state from onError
+    }
   }
 
   const regenerateCard = async (index: number) => {
