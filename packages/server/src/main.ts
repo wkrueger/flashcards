@@ -48,6 +48,7 @@ export async function buildServer() {
   app.route({
     method: ["GET", "POST"],
     url: "/api/auth/*",
+    bodyLimit: 16 * 1024, // 16 KB — more than enough for auth payloads
     async handler(req, reply) {
       const url = new URL(req.url, `http://${req.headers.host}`)
       if (isUserCreationDisabled() && isSignupRequest(url.pathname)) {

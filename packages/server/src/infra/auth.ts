@@ -2,7 +2,10 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { prisma } from "./db.js"
 
-const secret = process.env.BETTER_AUTH_SECRET ?? "dev-secret-change-me-please-32-chars-min"
+const secret = process.env.BETTER_AUTH_SECRET
+if (!secret) throw new Error("BETTER_AUTH_SECRET env var is required")
+
+const isProd = process.env.NODE_ENV === "production"
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "sqlite" }),
@@ -17,7 +20,7 @@ export const auth = betterAuth({
   advanced: {
     defaultCookieAttributes: {
       sameSite: "lax",
-      secure: false,
+      secure: isProd,
     },
   },
 })

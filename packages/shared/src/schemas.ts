@@ -4,30 +4,32 @@ import { fixationLevelSchema } from "./fixation.js"
 export const reviewModeSchema = z.enum(["normal", "free"])
 export type ReviewMode = z.infer<typeof reviewModeSchema>
 
+const id = z.string().min(1).max(64)
+
 export const createDeckInput = z.object({
   name: z.string().trim().min(1).max(100),
 })
 
 export const renameDeckInput = z.object({
-  id: z.string(),
+  id,
   name: z.string().trim().min(1).max(100),
 })
 
-export const idInput = z.object({ id: z.string() })
+export const idInput = z.object({ id })
 
 export const subjectAutocompleteInput = z.object({
   query: z.string().trim().max(100),
 })
 
 export const createCardInput = z.object({
-  deckId: z.string(),
+  deckId: id,
   subjectText: z.string().trim().min(1).max(200),
   front: z.string().min(1),
   back: z.string().min(1),
 })
 
 export const updateCardInput = z.object({
-  id: z.string(),
+  id,
   subjectText: z.string().trim().min(1).max(200).optional(),
   front: z.string().min(1).optional(),
   back: z.string().min(1).optional(),
@@ -47,11 +49,11 @@ export const cardTemplateGeneratePreviewInput = z
   })
 
 export const reviewNextInput = z.object({
-  deckId: z.string().optional(),
+  deckId: id.optional(),
   mode: reviewModeSchema,
 })
 
 export const reviewCompleteInput = z.object({
-  cardId: z.string(),
+  cardId: id,
   chosenLevel: fixationLevelSchema,
 })

@@ -88,7 +88,7 @@ export async function completeReview(
     where: { id: cardId, deck: { userId } },
     include: { subject: true },
   })
-  if (!card) throw new Error("Card not found")
+  if (!card) throw Object.assign(new Error("Card not found"), { code: "CARD_NOT_FOUND" })
 
   const cooldown = nextCooldownAt(chosenLevel, now)
 

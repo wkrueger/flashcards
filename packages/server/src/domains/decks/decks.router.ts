@@ -28,7 +28,7 @@ export const decksRouter = router({
       }),
     ])
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
-    return { ...deck, cardCount, wordCount }
+    return { id: deck.id, name: deck.name, createdAt: deck.createdAt, cardCount, wordCount }
   }),
 
   create: protectedProcedure.input(createDeckInput).mutation(async ({ ctx, input }) => {

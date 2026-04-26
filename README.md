@@ -2,6 +2,8 @@
 
 Mobile-first vocabulary flashcards with spaced-repetition cooldowns. Multi-user, email + password auth.
 
+> PS: this is built with A1 with very low code reviewing.
+
 ## Stack
 
 - **Monorepo**: pnpm workspaces (`packages/shared`, `packages/server`, `packages/client`).
@@ -35,6 +37,8 @@ Server runtime and Prisma CLI read environment variables from `packages/server/.
 Languages have no UI — add new ones by editing the SQLite `Language` table directly.
 
 ### User creation
+
+> While the app was built for multi user from start to avoid future refactors, the multi-user feature is latent and insecure. For now I'm adding a feature to disable user creation for personal safe use.
 
 Set this in `packages/server/.env` to disable new signups while keeping existing user login
 available:
@@ -77,6 +81,62 @@ pnpm test:e2e     # Playwright happy path (signup → review → free review →
 pnpm format       # Prettier write
 pnpm format:check # Prettier check
 ```
+
+## Deploy
+
+### Environment
+
+Create `packages/server/.env` on the server:
+
+```env
+NODE_ENV=production
+DATABASE_URL="file:/absolute/path/to/cards/packages/server/prisma/prod.db"
+BETTER_AUTH_SECRET="<random 32+ char string — required, server won't start without it>"
+BETTER_AUTH_URL="https://yourdomain.com"
+SERVER_PORT=3001
+CLIENT_ORIGIN="https://yourdomain.com"
+OPENAI_API_KEY="sk-..."
+DISABLE_USER_CREATION=true   # optional: lock signups after initial setup
+```
+
+### Build
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+```
+
+`pnpm build` runs in order: `prisma migrate deploy` → `prisma generate` → server `tsc` → client Vite build.
+
+Output:
+- `packages/server/dist/main.js` — compiled Fastify server (run with Node)
+- `packages/client/dist/` — static SPA (serve behind any HTTP server or CDN)
+
+### Run
+
+```bash
+node packages/server/dist/main.js
+```
+
+Ensure environment variables are set before starting (e.g. via your process manager or host
+platform). The frontend is static — serve `packages/client/dist/` from any static host and
+proxy `/trpc` and `/api` to the Fastify process.
+
+### First-time user setup
+
+Visit `/signup` to create your account, then set `DISABLE_USER_CREATION=true` in `.env`
+and restart the server to prevent further signups.
+
+### Subsequent deployments
+
+```bash
+git pull
+pnpm install --frozen-lockfile
+pnpm build
+# restart the server process
+```
+
+---
 
 ## Domain notes
 
