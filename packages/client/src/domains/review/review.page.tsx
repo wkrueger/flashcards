@@ -119,8 +119,8 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
               <MarkdownView source={card.back} />
             </CardContent>
           </Card>
-          <div className="mt-auto grid grid-cols-4 gap-2">
-            {options.map((lvl: FixationLevel) => (
+          <div className="-mx-3 mt-auto grid grid-cols-4 gap-2">
+            {options.map((lvl: FixationLevel, idx: number) => (
               <button
                 key={lvl}
                 type="button"
@@ -128,12 +128,14 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
                 onClick={() => complete.mutate({ cardId: card.id, chosenLevel: lvl })}
                 aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
                 className={cn(
-                  "flex h-16 flex-col items-center justify-center gap-0.5 rounded-md font-medium transition-colors disabled:opacity-50",
+                  "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
+                  idx === 0 && "rounded-bl-[2.5rem]",
+                  idx === options.length - 1 && "rounded-br-[2.5rem]",
                   LEVEL_COLOR[lvl]
                 )}
               >
-                <span className="text-2xl leading-none">{FIXATION_EMOJI[lvl]}</span>
-                <span className="text-[10px] opacity-90">{COOLDOWN_LABEL[lvl]}</span>
+                <span className="text-3xl leading-none">{FIXATION_EMOJI[lvl]}</span>
+                <span className="text-sm opacity-90">{COOLDOWN_LABEL[lvl]}</span>
               </button>
             ))}
           </div>

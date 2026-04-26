@@ -9,7 +9,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh w-full">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x">
-        <main className="flex flex-1 flex-col p-3 sm:pt-8">{children}</main>
+        <main className="flex flex-1 flex-col p-3 pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:pt-8">
+          {children}
+        </main>
       </div>
     </div>
   )
