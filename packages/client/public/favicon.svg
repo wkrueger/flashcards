@@ -29,16 +29,16 @@
       <feDropShadow dx="0" dy="0.8" stdDeviation="0.9" flood-color="#031509" flood-opacity="0.7"/>
       <feDropShadow dx="0" dy="0" stdDeviation="0.4" flood-color="#0a4329" flood-opacity="0.5"/>
     </filter>
-    <clipPath id="disc-clip">
-      <circle cx="32" cy="32" r="30"/>
+    <clipPath id="squircle-clip">
+      <rect width="64" height="64" rx="14" ry="14"/>
     </clipPath>
   </defs>
 
-  <!-- 1. Background layer: deep-green disc -->
-  <circle cx="32" cy="32" r="30" fill="url(#disc)"/>
+  <!-- 1. Background layer: deep-green squircle filling entire canvas -->
+  <rect width="64" height="64" rx="14" ry="14" fill="url(#disc)"/>
 
-  <!-- 2. Foreground layer: glass cards (clipped to disc, soft green shadow) -->
-  <g clip-path="url(#disc-clip)" filter="url(#green-shadow)">
+  <!-- 2. Foreground layer: glass cards (clipped to squircle, soft green shadow) -->
+  <g clip-path="url(#squircle-clip)" filter="url(#green-shadow)">
     <g transform="translate(32 56)">
       <g transform="rotate(-22)">
         <rect x="-15" y="-40" width="30" height="54" rx="6" fill="url(#card-light)"/>
@@ -56,12 +56,12 @@
     </g>
   </g>
 
-  <!-- 3. Specular layer: soft sheen on the top of the disc -->
-  <g clip-path="url(#disc-clip)">
+  <!-- 3. Specular layer: soft sheen on the top -->
+  <g clip-path="url(#squircle-clip)">
     <ellipse cx="32" cy="10" rx="34" ry="14" fill="url(#sheen)"/>
   </g>
 
   <!-- 4. Subtle inner rim to define edge without a hard stroke -->
-  <circle cx="32" cy="32" r="29.4" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="0.6"/>
-  <circle cx="32" cy="32" r="30" fill="none" stroke="#000000" stroke-opacity="0.4" stroke-width="0.6"/>
+  <rect width="64" height="64" rx="14" ry="14" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="0.6"/>
+  <rect width="64" height="64" rx="14" ry="14" fill="none" stroke="#000000" stroke-opacity="0.4" stroke-width="0.6"/>
 </svg>
