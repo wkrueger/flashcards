@@ -1,6 +1,6 @@
 {
-  "name": "Cards",
-  "short_name": "Cards",
+  "name": "flashcards",
+  "short_name": "flashcards",
   "description": "Vocabulary flashcards with spaced repetition",
   "start_url": "/",
   "scope": "/",

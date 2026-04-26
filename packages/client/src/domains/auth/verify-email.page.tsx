@@ -6,7 +6,7 @@ export function VerifyEmailPage() {
 
   if (error) {
     return (
-      <div className="space-y-3">
+      <div className="m-auto w-full space-y-3">
         <h1 className="text-xl font-semibold">Verification failed</h1>
         <p className="text-sm text-muted-foreground">
           The verification link is invalid or has expired. Try logging in to request a new one.
@@ -19,7 +19,7 @@ export function VerifyEmailPage() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="m-auto w-full space-y-3">
       <h1 className="text-xl font-semibold">Email verified</h1>
       <p className="text-sm text-muted-foreground">Your email is now verified. You can log in.</p>
       <Link to="/login" className="text-sm underline">

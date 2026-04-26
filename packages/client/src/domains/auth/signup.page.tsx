@@ -4,6 +4,7 @@ import { authClient, googleSsoEnabled, signUp } from "../../infra/auth-client"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
+import { GoogleIcon } from "../../components/GoogleIcon"
 
 export function SignupPage() {
   const [name, setName] = useState("")
@@ -32,7 +33,7 @@ export function SignupPage() {
 
   if (submittedEmail) {
     return (
-      <div className="space-y-3">
+      <div className="m-auto w-full space-y-3">
         <h1 className="text-xl font-semibold">Check your email</h1>
         <p className="text-sm text-muted-foreground">
           We sent a verification link to <strong>{submittedEmail}</strong>. Click the link to
@@ -46,7 +47,7 @@ export function SignupPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={onSubmit} className="m-auto w-full space-y-3">
       <h1 className="text-xl font-semibold">Sign up</h1>
       <div className="space-y-1">
         <Label htmlFor="name">Name</Label>
@@ -80,7 +81,13 @@ export function SignupPage() {
         {loading ? "..." : "Sign up"}
       </Button>
       {googleSsoEnabled && (
-        <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full gap-2"
+          onClick={onGoogle}
+        >
+          <GoogleIcon className="h-4 w-4" />
           Continue with Google
         </Button>
       )}

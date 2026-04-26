@@ -7,8 +7,11 @@ import {
   signIn,
 } from "../../infra/auth-client"
 import { Button } from "../../ui/button"
+import { Card, CardContent } from "../../ui/card"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
+import { AppTitle } from "../../components/AppTitle"
+import { GoogleIcon } from "../../components/GoogleIcon"
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -51,8 +54,11 @@ export function LoginPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      <h1 className="text-xl font-semibold">Log in</h1>
+    <div className="m-auto w-full space-y-4">
+      <AppTitle />
+      <Card>
+        <CardContent className="p-4">
+          <form onSubmit={onSubmit} className="space-y-3">
       <div className="space-y-1">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -89,7 +95,13 @@ export function LoginPage() {
         {loading ? "..." : "Log in"}
       </Button>
       {googleSsoEnabled && (
-        <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full gap-2"
+          onClick={onGoogle}
+        >
+          <GoogleIcon className="h-4 w-4" />
           Continue with Google
         </Button>
       )}
@@ -104,6 +116,9 @@ export function LoginPage() {
           Sign up
         </Link>
       </p>
-    </form>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
