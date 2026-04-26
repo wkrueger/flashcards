@@ -25,13 +25,39 @@ Source under `src/` is grouped by **domain** (decks, cards, subjects, review, au
 
 ```bash
 pnpm install
-cp .env.example .env                          # root + server use the same vars
-cp .env.example packages/server/.env
+cp packages/server/.env.example packages/server/.env
 pnpm --filter server prisma:migrate           # creates SQLite DB and applies migrations
 pnpm --filter server prisma:seed              # seeds languages (English, Deutsch)
 ```
 
+Server runtime and Prisma CLI read environment variables from `packages/server/.env`.
+
 Languages have no UI — add new ones by editing the SQLite `Language` table directly.
+
+### User creation
+
+Set this in `packages/server/.env` to disable new signups while keeping existing user login
+available:
+
+```env
+DISABLE_USER_CREATION=true
+```
+
+Accepted enabled values are `true`, `1`, and `yes`. Leave it unset or set it to `false` in local
+development when you want the signup page to create users.
+
+### OpenAI setup
+
+The "Generate card from template" flow calls the OpenAI API from the server. Add these to
+`packages/server/.env`:
+
+```env
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-5-mini
+```
+
+`OPENAI_MODEL` is optional; the server defaults to `gpt-5-mini` when it is not set.
+Restart `pnpm dev` after changing `.env`.
 
 ## Develop
 
@@ -82,6 +108,6 @@ Stored as a string on `Subject.fixationLevel` to allow future levels without a c
 
 After revealing the back, the user sees four buttons. If the previous fixation was 4 or 5, they get `2..5`; otherwise `1..4`.
 
-## Deferred (Stage 2)
+### Card template generation
 
-AI-assisted card generation (front/back markdown via OpenAI given a word + front/back languages) is intentionally not in this build.
+The new-card screen includes "Generate card from template". The current template creates 1-5 phrase cards for a word or expression using the selected front/back languages. Preview generation uses OpenAI; saving confirmed previews uses the normal card creation API.

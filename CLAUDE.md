@@ -82,18 +82,18 @@ packages/
 
 Run from repo root unless noted.
 
-| Command            | Purpose                                                         |
-| ------------------ | --------------------------------------------------------------- |
-| `pnpm install`     | Install workspace deps                                          |
-| `pnpm dev`         | server (`:3001`) + client (`:5173`) concurrently                |
-| `pnpm typecheck`   | `tsc --noEmit` across all packages                              |
-| `pnpm lint`        | ESLint, client only                                             |
-| `pnpm test`        | Vitest server integration tests                                 |
-| `pnpm test:e2e`    | Playwright happy path (signup → review → free review → logout)  |
-| `pnpm format`      | Prettier write whole repo                                       |
-| `pnpm format:check`| Prettier check                                                  |
-| `pnpm db:migrate`  | `prisma migrate dev` in server                                  |
-| `pnpm db:seed`     | seed languages                                                  |
+| Command             | Purpose                                                        |
+| ------------------- | -------------------------------------------------------------- |
+| `pnpm install`      | Install workspace deps                                         |
+| `pnpm dev`          | server (`:3001`) + client (`:5173`) concurrently               |
+| `pnpm typecheck`    | `tsc --noEmit` across all packages                             |
+| `pnpm lint`         | ESLint, client only                                            |
+| `pnpm test`         | Vitest server integration tests                                |
+| `pnpm test:e2e`     | Playwright happy path (signup → review → free review → logout) |
+| `pnpm format`       | Prettier write whole repo                                      |
+| `pnpm format:check` | Prettier check                                                 |
+| `pnpm db:migrate`   | `prisma migrate dev` in server                                 |
+| `pnpm db:seed`      | seed languages                                                 |
 
 After editing `prisma/schema.prisma`, run `pnpm db:migrate`. After editing `routes/`, the TanStack router plugin regenerates `routeTree.gen.ts` on the next vite dev/build (or run `pnpm --filter client build`).
 
@@ -112,13 +112,17 @@ After editing `prisma/schema.prisma`, run `pnpm db:migrate`. After editing `rout
 These are durable preferences for this project — apply them on every change.
 
 ### Domain-first source layout
+
 Group source files by **business domain** (`domains/decks/`, `domains/cards/`, `domains/review/`, `domains/auth/`), not by technical layer. Each domain folder holds its router/service/schema (server) or page/sub-components (client). Cross-cutting plumbing (db, auth, trpc init, theme provider, generic UI primitives) lives under `infra/` or `ui/`. Don't introduce top-level `routers/`, `services/`, or `components/` buckets that span domains.
 
 ### Prettier
+
 `.prettierrc.json` at the repo root: `printWidth: 100`, `semi: false`, otherwise defaults. Always run `pnpm format` after introducing or moving code; `pnpm format:check` is one of the quality gates. `.prettierignore` covers the Prisma generated client, `routeTree.gen.ts`, migrations, lockfile, and DB files.
 
 ### Frontend ESLint — minimal only
+
 `packages/client/eslint.config.js` configures **only** these rules:
+
 - `@typescript-eslint/no-unused-vars` (`argsIgnorePattern: "^_"`)
 - `eslint-plugin-react` recommended rules
 - `eslint-plugin-react-hooks` (rules-of-hooks + exhaustive-deps)
@@ -126,4 +130,5 @@ Group source files by **business domain** (`domains/decks/`, `domains/cards/`, `
 Do not add `eslint-config-airbnb`, `eslint-plugin-import`, prettier-eslint integration, a11y plugins, stylistic rules, or any other plugin unless explicitly requested. Server and shared packages have no ESLint config — typecheck is the only gate there.
 
 ### Plans include QA
+
 When producing implementation plans (especially for new features or scaffolding), always list TypeScript typecheck, ESLint, Vitest integration tests, and Playwright e2e as first-class deliverables and verification steps. Do not omit them as "out of scope" unless the user explicitly says so.

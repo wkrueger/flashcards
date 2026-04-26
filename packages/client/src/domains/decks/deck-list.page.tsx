@@ -1,35 +1,74 @@
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
+import { Plus } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
+import { Label } from "../../ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../ui/dialog"
 
 export function DeckListPage() {
   const utils = trpc.useUtils()
   const decks = trpc.decks.list.useQuery()
   const create = trpc.decks.create.useMutation({
-    onSuccess: () => utils.decks.list.invalidate(),
+    onSuccess: () => {
+      utils.decks.list.invalidate()
+      setName("")
+      setOpen(false)
+    },
   })
   const [name, setName] = useState("")
+  const [open, setOpen] = useState(false)
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Your decks</h1>
-
-      <form
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (!name.trim()) return
-          create.mutate({ name: name.trim() }, { onSuccess: () => setName("") })
-        }}
-      >
-        <Input placeholder="New deck name" value={name} onChange={(e) => setName(e.target.value)} />
-        <Button type="submit" disabled={create.isPending}>
-          Add
-        </Button>
-      </form>
-      {create.error && <p className="text-sm text-destructive">{create.error.message}</p>}
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Your decks</h1>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm">
+              <Plus className="mr-1 h-4 w-4" />
+              New deck
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New deck</DialogTitle>
+            </DialogHeader>
+            <form
+              className="space-y-3"
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!name.trim()) return
+                create.mutate({ name: name.trim() })
+              }}
+            >
+              <div className="space-y-1">
+                <Label htmlFor="deck-name">Name</Label>
+                <Input
+                  id="deck-name"
+                  placeholder="e.g. German A1"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              {create.error && (
+                <p className="text-sm text-destructive">{create.error.message}</p>
+              )}
+              <Button type="submit" disabled={create.isPending} className="w-full">
+                {create.isPending ? "Creating…" : "Create"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {decks.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
@@ -49,7 +88,7 @@ export function DeckListPage() {
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">No decks yet — create one above.</p>
+        <p className="text-sm text-muted-foreground">No decks yet — create your first one.</p>
       )}
     </div>
   )

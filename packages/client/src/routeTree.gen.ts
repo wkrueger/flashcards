@@ -18,6 +18,7 @@ import { Route as DecksDeckIdReviewRouteImport } from './routes/decks.$deckId.re
 import { Route as DecksDeckIdReviewIndexRouteImport } from './routes/decks.$deckId.review.index'
 import { Route as DecksDeckIdReviewFreeRouteImport } from './routes/decks.$deckId.review.free'
 import { Route as DecksDeckIdCardsNewRouteImport } from './routes/decks.$deckId.cards.new'
+import { Route as DecksDeckIdCardsGenerateRouteImport } from './routes/decks.$deckId.cards.generate'
 import { Route as DecksDeckIdCardsCardIdEditRouteImport } from './routes/decks.$deckId.cards.$cardId.edit'
 
 const SignupRoute = SignupRouteImport.update({
@@ -65,6 +66,12 @@ const DecksDeckIdCardsNewRoute = DecksDeckIdCardsNewRouteImport.update({
   path: '/cards/new',
   getParentRoute: () => DecksDeckIdRoute,
 } as any)
+const DecksDeckIdCardsGenerateRoute =
+  DecksDeckIdCardsGenerateRouteImport.update({
+    id: '/cards/generate',
+    path: '/cards/generate',
+    getParentRoute: () => DecksDeckIdRoute,
+  } as any)
 const DecksDeckIdCardsCardIdEditRoute =
   DecksDeckIdCardsCardIdEditRouteImport.update({
     id: '/cards/$cardId/edit',
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/decks/$deckId': typeof DecksDeckIdRouteWithChildren
   '/decks/$deckId/review': typeof DecksDeckIdReviewRouteWithChildren
   '/decks/$deckId/': typeof DecksDeckIdIndexRoute
+  '/decks/$deckId/cards/generate': typeof DecksDeckIdCardsGenerateRoute
   '/decks/$deckId/cards/new': typeof DecksDeckIdCardsNewRoute
   '/decks/$deckId/review/free': typeof DecksDeckIdReviewFreeRoute
   '/decks/$deckId/review/': typeof DecksDeckIdReviewIndexRoute
@@ -89,6 +97,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/decks/$deckId': typeof DecksDeckIdIndexRoute
+  '/decks/$deckId/cards/generate': typeof DecksDeckIdCardsGenerateRoute
   '/decks/$deckId/cards/new': typeof DecksDeckIdCardsNewRoute
   '/decks/$deckId/review/free': typeof DecksDeckIdReviewFreeRoute
   '/decks/$deckId/review': typeof DecksDeckIdReviewIndexRoute
@@ -102,6 +111,7 @@ export interface FileRoutesById {
   '/decks/$deckId': typeof DecksDeckIdRouteWithChildren
   '/decks/$deckId/review': typeof DecksDeckIdReviewRouteWithChildren
   '/decks/$deckId/': typeof DecksDeckIdIndexRoute
+  '/decks/$deckId/cards/generate': typeof DecksDeckIdCardsGenerateRoute
   '/decks/$deckId/cards/new': typeof DecksDeckIdCardsNewRoute
   '/decks/$deckId/review/free': typeof DecksDeckIdReviewFreeRoute
   '/decks/$deckId/review/': typeof DecksDeckIdReviewIndexRoute
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId'
     | '/decks/$deckId/review'
     | '/decks/$deckId/'
+    | '/decks/$deckId/cards/generate'
     | '/decks/$deckId/cards/new'
     | '/decks/$deckId/review/free'
     | '/decks/$deckId/review/'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/decks/$deckId'
+    | '/decks/$deckId/cards/generate'
     | '/decks/$deckId/cards/new'
     | '/decks/$deckId/review/free'
     | '/decks/$deckId/review'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId'
     | '/decks/$deckId/review'
     | '/decks/$deckId/'
+    | '/decks/$deckId/cards/generate'
     | '/decks/$deckId/cards/new'
     | '/decks/$deckId/review/free'
     | '/decks/$deckId/review/'
@@ -216,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DecksDeckIdCardsNewRouteImport
       parentRoute: typeof DecksDeckIdRoute
     }
+    '/decks/$deckId/cards/generate': {
+      id: '/decks/$deckId/cards/generate'
+      path: '/cards/generate'
+      fullPath: '/decks/$deckId/cards/generate'
+      preLoaderRoute: typeof DecksDeckIdCardsGenerateRouteImport
+      parentRoute: typeof DecksDeckIdRoute
+    }
     '/decks/$deckId/cards/$cardId/edit': {
       id: '/decks/$deckId/cards/$cardId/edit'
       path: '/cards/$cardId/edit'
@@ -242,6 +262,7 @@ const DecksDeckIdReviewRouteWithChildren =
 interface DecksDeckIdRouteChildren {
   DecksDeckIdReviewRoute: typeof DecksDeckIdReviewRouteWithChildren
   DecksDeckIdIndexRoute: typeof DecksDeckIdIndexRoute
+  DecksDeckIdCardsGenerateRoute: typeof DecksDeckIdCardsGenerateRoute
   DecksDeckIdCardsNewRoute: typeof DecksDeckIdCardsNewRoute
   DecksDeckIdCardsCardIdEditRoute: typeof DecksDeckIdCardsCardIdEditRoute
 }
@@ -249,6 +270,7 @@ interface DecksDeckIdRouteChildren {
 const DecksDeckIdRouteChildren: DecksDeckIdRouteChildren = {
   DecksDeckIdReviewRoute: DecksDeckIdReviewRouteWithChildren,
   DecksDeckIdIndexRoute: DecksDeckIdIndexRoute,
+  DecksDeckIdCardsGenerateRoute: DecksDeckIdCardsGenerateRoute,
   DecksDeckIdCardsNewRoute: DecksDeckIdCardsNewRoute,
   DecksDeckIdCardsCardIdEditRoute: DecksDeckIdCardsCardIdEditRoute,
 }

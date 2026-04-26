@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router"
 import { Moon, Sun, LogOut } from "lucide-react"
 import { useTheme } from "../infra/theme"
 import { Button } from "../ui/button"
@@ -11,9 +10,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen w-full">
       <div className="mx-auto flex min-h-screen max-w-md flex-col border-x bg-background">
         <header className="flex items-center justify-between border-b p-3">
-          <Link to="/" className="text-lg font-semibold">
-            Cards
-          </Link>
+          <div />
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

@@ -1,8 +1,9 @@
-import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
-import { ArrowLeft } from "lucide-react"
+import { Link, useNavigate, useParams, useRouter } from "@tanstack/react-router"
+import { ArrowLeft, Sparkles } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { CardForm } from "./card-form"
-import { Button } from "../../ui/button"
+import { Button, buttonVariants } from "../../ui/button"
+import { cn } from "../../lib/utils"
 
 export function CardNewPage() {
   const { deckId } = useParams({ from: "/decks/$deckId/cards/new" })
@@ -39,6 +40,14 @@ export function CardNewPage() {
         error={create.error?.message ?? null}
         onSubmit={(v) => create.mutate({ deckId, ...v })}
       />
+      <Link
+        to="/decks/$deckId/cards/generate"
+        params={{ deckId }}
+        className={cn(buttonVariants({ variant: "secondary", className: "w-full gap-2" }))}
+      >
+        <Sparkles className="h-4 w-4" />
+        Generate card from template
+      </Link>
     </div>
   )
 }

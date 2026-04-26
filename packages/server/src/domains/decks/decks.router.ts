@@ -18,11 +18,17 @@ export const decksRouter = router({
   }),
 
   get: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
-    const deck = await ctx.prisma.deck.findFirst({
-      where: { id: input.id, userId: ctx.user.id },
-    })
+    const [deck, cardCount, wordCount] = await Promise.all([
+      ctx.prisma.deck.findFirst({
+        where: { id: input.id, userId: ctx.user.id },
+      }),
+      ctx.prisma.card.count({ where: { deckId: input.id } }),
+      ctx.prisma.subject.count({
+        where: { cards: { some: { deckId: input.id } }, userId: ctx.user.id },
+      }),
+    ])
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
-    return deck
+    return { ...deck, cardCount, wordCount }
   }),
 
   create: protectedProcedure.input(createDeckInput).mutation(async ({ ctx, input }) => {
@@ -55,7 +61,28 @@ export const decksRouter = router({
       where: { id: input.id, userId: ctx.user.id },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
-    await ctx.prisma.deck.delete({ where: { id: deck.id } })
+
+    // Collect subjects that only have cards in this deck before we delete.
+    const orphanedSubjects = await ctx.prisma.subject.findMany({
+      where: {
+        userId: ctx.user.id,
+        cards: {
+          every: { deckId: deck.id },
+          some: {},
+        },
+      },
+      select: { id: true },
+    })
+    const orphanedIds = orphanedSubjects.map((s) => s.id)
+
+    await ctx.prisma.$transaction([
+      // Cascade deletes cards automatically; subjects need explicit cleanup.
+      ctx.prisma.deck.delete({ where: { id: deck.id } }),
+      ...(orphanedIds.length
+        ? [ctx.prisma.subject.deleteMany({ where: { id: { in: orphanedIds } } })]
+        : []),
+    ])
+
     return { ok: true }
   }),
 })

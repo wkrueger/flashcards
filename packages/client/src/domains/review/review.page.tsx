@@ -94,9 +94,9 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <span className="flex-1 text-xs uppercase text-muted-foreground">
-          {mode === "free" ? "Free review" : `Subject: ${card.subject.subject}`}
-        </span>
+        {mode === "free" && (
+          <span className="flex-1 text-xs uppercase text-muted-foreground">Free review</span>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -132,7 +132,7 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
                 type="button"
                 disabled={complete.isPending}
                 onClick={() => complete.mutate({ cardId: card.id, chosenLevel: lvl })}
-                aria-label={`Level ${lvl} — ${COOLDOWN_LABEL[lvl]}`}
+                aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
                 className={cn(
                   "flex h-16 flex-col items-center justify-center gap-0.5 rounded-md font-medium transition-colors disabled:opacity-50",
                   LEVEL_COLOR[lvl]

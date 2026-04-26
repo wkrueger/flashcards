@@ -8,8 +8,36 @@ import { appRouter } from "./domains/_app.router.js"
 const port = Number(process.env.SERVER_PORT ?? 3001)
 const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:5173"
 
+function isUserCreationDisabled() {
+  return ["1", "true", "yes"].includes(
+    (process.env.DISABLE_USER_CREATION ?? "").trim().toLowerCase()
+  )
+}
+
+function isSignupRequest(pathname: string) {
+  return pathname.split("/").includes("sign-up")
+}
+
+const isProd = process.env.NODE_ENV === "production"
+
 export async function buildServer() {
-  const app = Fastify({ logger: { level: "info" } })
+  const app = Fastify({
+    logger: isProd
+      ? { level: "info" }
+      : {
+          level: "info",
+          transport: {
+            target: "pino-pretty",
+            options: {
+              colorize: true,
+              translateTime: "HH:MM:ss",
+              ignore: "pid,hostname",
+              messageFormat: "{req.method} {req.url} {res.statusCode} — {msg}",
+              singleLine: true,
+            },
+          },
+        },
+  })
 
   await app.register(cors, {
     origin: clientOrigin,
@@ -22,6 +50,12 @@ export async function buildServer() {
     url: "/api/auth/*",
     async handler(req, reply) {
       const url = new URL(req.url, `http://${req.headers.host}`)
+      if (isUserCreationDisabled() && isSignupRequest(url.pathname)) {
+        req.log.warn({ path: url.pathname }, "User creation is disabled")
+        reply.status(403).send({ message: "User creation is disabled." })
+        return
+      }
+
       const headers = new Headers()
       for (const [k, v] of Object.entries(req.headers)) {
         if (Array.isArray(v)) headers.set(k, v.join(", "))

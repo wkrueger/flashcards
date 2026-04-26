@@ -33,6 +33,19 @@ export const updateCardInput = z.object({
   back: z.string().min(1).optional(),
 })
 
+export const cardTemplateGeneratePreviewInput = z
+  .object({
+    template: z.literal("createPhrasesForWords"),
+    frontLanguageId: z.number().int().positive(),
+    backLanguageId: z.number().int().positive(),
+    wordOrExpression: z.string().trim().min(1).max(200),
+    count: z.number().int().min(1).max(5),
+  })
+  .refine((input) => input.frontLanguageId !== input.backLanguageId, {
+    message: "Front and back languages must be different.",
+    path: ["backLanguageId"],
+  })
+
 export const reviewNextInput = z.object({
   deckId: z.string().optional(),
   mode: reviewModeSchema,
