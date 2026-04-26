@@ -58,8 +58,8 @@ export default {
         },
       },
       animation: {
-        "card-in": "card-in 220ms ease-out both",
-        reveal: "reveal 180ms ease-out both",
+        "card-in": "card-in 420ms ease-out both",
+        reveal: "reveal 360ms ease-out both",
       },
     },
   },
