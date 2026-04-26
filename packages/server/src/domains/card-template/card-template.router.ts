@@ -2,12 +2,17 @@ import { TRPCError } from "@trpc/server"
 import { cardTemplateGeneratePreviewInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { createOpenAIStructuredResponse } from "../../infra/openai.js"
+import { rateLimit } from "../../infra/rate-limit.js"
 import { cardTemplatePreviewOutput } from "./card-template.service.js"
 
 export const cardTemplateRouter = router({
   generatePreviews: protectedProcedure
     .input(cardTemplateGeneratePreviewInput)
     .mutation(async ({ ctx, input }) => {
+      rateLimit(`cardTemplate.generatePreviews:${ctx.user.id}`, {
+        windowMs: 60_000,
+        max: 3,
+      })
       const languages = await ctx.prisma.language.findMany({
         where: { id: { in: [input.frontLanguageId, input.backLanguageId] } },
       })
