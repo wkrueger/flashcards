@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react"
-import { useNavigate, useParams } from "@tanstack/react-router"
+import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
 import { ArrowLeft, RefreshCw, RotateCw, Sparkles, Trash2 } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { cn } from "../../lib/utils"
@@ -25,6 +25,11 @@ function languageLabel(language: { emoji: string; name: string }) {
 export function CardTemplateGeneratePage() {
   const { deckId } = useParams({ from: "/decks/$deckId/cards/generate" })
   const navigate = useNavigate()
+  const router = useRouter()
+  const goBack = () => {
+    if (router.history.length > 1) router.history.back()
+    else navigate({ to: "/decks/$deckId", params: { deckId } })
+  }
   const utils = trpc.useUtils()
   const languages = trpc.languages.list.useQuery()
   const deck = trpc.decks.get.useQuery({ id: deckId })
@@ -150,10 +155,7 @@ export function CardTemplateGeneratePage() {
   if (previewCards) {
     return (
       <div className="flex flex-1 flex-col gap-4">
-        <PageHeader
-          title="Preview cards"
-          onBack={() => navigate({ to: "/decks/$deckId/cards/new", params: { deckId } })}
-        />
+        <PageHeader title="Preview cards" onBack={() => setPreviewCards(null)} />
 
         <ul className="space-y-3">
           {previewCards.map((card, index) => (
@@ -237,10 +239,7 @@ export function CardTemplateGeneratePage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <PageHeader
-        title="Generate card"
-        onBack={() => navigate({ to: "/decks/$deckId/cards/new", params: { deckId } })}
-      />
+      <PageHeader title="Generate card" onBack={goBack} />
 
       <form className="flex flex-1 flex-col gap-3" onSubmit={submitGenerate}>
         <div className="space-y-1">
