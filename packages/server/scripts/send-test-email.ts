@@ -44,6 +44,17 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(err)
+  console.error("[send-test-email] FAILED")
+  if (err && typeof err === "object") {
+    const e = err as Record<string, unknown>
+    console.error("message:", e.message)
+    console.error("status:", e.status)
+    console.error("details:", e.details)
+    console.error("type:", e.type)
+    console.error("body:", e.body)
+    console.error("full:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2))
+  } else {
+    console.error(err)
+  }
   process.exit(1)
 })
