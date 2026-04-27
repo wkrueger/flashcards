@@ -48,9 +48,9 @@ export const cardTemplateRouter = router({
       let task =
         `Write ${input.count} phrases in ${backPromptLanguage} using the requested word` +
         ` or expression, then translate each phrase to ${frontPromptLanguage}. The front field ` +
-        `is the ${frontPromptLanguage} translation only — a natural sentence with no parentheses,` +
-        ` neither annotations. The back field is the ${backPromptLanguage} phrase only — a ` +
-        `natural sentence with no English words, no parentheses, and no dashes showing the translation.` +
+        `is the ${frontPromptLanguage} translation — a natural sentence with no` +
+        ` annotations. The back field is the ${backPromptLanguage} phrase — a ` +
+        `natural sentence with no annotations.` +
         expressionPrompt
 
       if (backPromptLanguage === "German") {
@@ -61,7 +61,7 @@ export const cardTemplateRouter = router({
         schemaName: "card_template_previews",
         schema: {
           type: "object",
-          additionalProperties: false,
+          // additionalProperties: false,
           required: ["cards"],
           properties: {
             cards: {
@@ -70,7 +70,7 @@ export const cardTemplateRouter = router({
               maxItems: input.count,
               items: {
                 type: "object",
-                additionalProperties: false,
+                // additionalProperties: false,
                 required: ["front", "back"],
                 properties: {
                   front: { type: "string" },
