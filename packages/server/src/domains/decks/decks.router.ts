@@ -16,16 +16,27 @@ async function assertLanguagesExist(
 
 export const decksRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
+    const now = new Date()
     const decks = await ctx.prisma.deck.findMany({
       where: { userId: ctx.user.id },
-      orderBy: { createdAt: "desc" },
-      include: { _count: { select: { cards: true } } },
+      orderBy: { name: "asc" },
     })
-    return decks.map((d) => ({
+    const cooldownCounts = await Promise.all(
+      decks.map((d) =>
+        ctx.prisma.subject.count({
+          where: {
+            userId: ctx.user.id,
+            cards: { some: { deckId: d.id } },
+            cooldownAt: { gt: now },
+          },
+        })
+      )
+    )
+    return decks.map((d, i) => ({
       id: d.id,
       name: d.name,
       createdAt: d.createdAt,
-      cardCount: d._count.cards,
+      cooldownCount: cooldownCounts[i] ?? 0,
     }))
   }),
 

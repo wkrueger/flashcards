@@ -110,10 +110,10 @@ export function DeckListPage() {
               <Link
                 to="/decks/$deckId"
                 params={{ deckId: d.id }}
-                className="flex items-center justify-between rounded-md border p-3 hover:bg-accent"
+                className="flex min-h-[88px] items-center justify-between rounded-md border bg-card px-4 py-4 text-sm transition duration-150 hover:bg-accent active:bg-[hsl(var(--accent-strong))] active:opacity-80"
               >
                 <span className="font-medium">{d.name}</span>
-                <span className="text-xs text-muted-foreground">{d.cardCount} cards</span>
+                <span className="text-xs text-muted-foreground">{d.cooldownCount} to do</span>
               </Link>
             </li>
           ))}
@@ -125,7 +125,6 @@ export function DeckListPage() {
       <Card
         className="relative mt-auto overflow-hidden"
         style={{
-          backgroundColor: "color-mix(in oklab, hsl(var(--accent)) 35%, hsl(var(--card)))",
           backgroundImage:
             "linear-gradient(168deg, hsl(var(--accent)) 0%, hsl(var(--accent)) 8%, transparent 22%)",
         }}
@@ -136,22 +135,17 @@ export function DeckListPage() {
         />
         <CardContent className="relative space-y-3 p-4">
           <h2
-            className="text-lg"
+            className="app-gradient-text text-lg"
             style={{
               fontFamily: '"Quicksand", system-ui, sans-serif',
               fontWeight: 700,
               letterSpacing: "-0.01em",
-              backgroundImage: "linear-gradient(120deg, #a7f3d0 0%, #34d399 45%, #047857 100%)",
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
-              WebkitTextFillColor: "transparent",
             }}
           >
             How to use
           </h2>
           <ol className="list-decimal space-y-2 pl-5 text-sm">
-            <li>Consume content in the target language</li>
+            <li>Watch and read content in the target language</li>
             <li>Take note of new unknown words</li>
             <li>Create cards for the new words</li>
             <li>Practice the cards frequently</li>

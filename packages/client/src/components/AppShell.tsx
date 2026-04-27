@@ -3,6 +3,7 @@ import { ArrowLeft, Moon, Sun, LogOut, MoreVertical } from "lucide-react"
 import { useTheme } from "../infra/theme"
 import { Button } from "../ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 import { signOut, useSession } from "../infra/auth-client"
 import { cn } from "../lib/utils"
 
@@ -71,7 +72,7 @@ export function PageHeader({
       {!stacked && title ? (
         <h1
           className={cn(
-            "min-w-0 flex-1 whitespace-nowrap text-xl font-semibold",
+            "min-w-0 flex-1 whitespace-nowrap text-base font-semibold",
             !onBack && "pl-3"
           )}
           style={{ viewTransitionName: "page-title" }}
@@ -85,7 +86,7 @@ export function PageHeader({
       )}
       <div
         ref={pillRef}
-        className="flex items-center gap-0.5 rounded-full border border-white/20 bg-popover/70 p-0.5 shadow-md shadow-black/10 backdrop-blur-xl backdrop-saturate-150 [&_button]:rounded-full dark:border-white/10 dark:bg-popover/60"
+        className="flex items-center gap-0 rounded-full border border-border bg-popover p-0.5 text-xs shadow-md shadow-black/10 backdrop-blur-xl backdrop-saturate-150 [&_a]:rounded-full [&_a]:px-1.5 [&_a]:text-xs [&_button]:rounded-full [&_button]:px-1.5 [&_button]:text-xs dark:border-white/10 dark:bg-popover/60"
       >
         {actions}
         <GlobalMenu menuItems={menuItems} />
@@ -99,7 +100,7 @@ export function PageHeader({
           )}
           <h1
             className={cn(
-              "min-w-0 flex-1 break-words text-xl font-semibold",
+              "min-w-0 flex-1 break-words text-base font-semibold",
               !onBack && "pl-3"
             )}
             style={{ viewTransitionName: "page-title" }}
@@ -112,7 +113,7 @@ export function PageHeader({
         <span
           ref={measureRef}
           aria-hidden="true"
-          className="pointer-events-none invisible absolute whitespace-nowrap text-xl font-semibold"
+          className="pointer-events-none invisible absolute whitespace-nowrap text-base font-semibold"
         >
           {title}
         </span>
@@ -158,17 +159,25 @@ function MenuDivider() {
 function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
   const { theme, toggle } = useTheme()
   const { data: session } = useSession()
+  const [logoutOpen, setLogoutOpen] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Menu" data-testid="global-menu-trigger">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Menu"
+          data-testid="global-menu-trigger"
+          className="data-[state=open]:bg-[hsl(var(--accent-strong))]"
+        >
           <MoreVertical className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-56 overflow-hidden rounded-2xl border border-white/20 bg-popover/70 p-1.5 shadow-xl shadow-black/10 backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-popover/60"
+        className="w-56 overflow-hidden rounded-2xl border border-border bg-popover p-1.5 shadow-xl shadow-black/10 backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-popover/60"
       >
         {menuItems && (
           <>
@@ -195,7 +204,7 @@ function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
               icon={<LogOut className="h-[18px] w-[18px]" />}
               destructive
               testId="logout-menu-item"
-              onSelect={() => signOut().then(() => (window.location.href = "/login"))}
+              onSelect={() => setLogoutOpen(true)}
             >
               Log out
             </MenuItem>
@@ -209,6 +218,35 @@ function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
           </>
         )}
       </PopoverContent>
+      <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Log out?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            You&apos;ll need to sign in again to access your decks.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <DialogClose asChild>
+              <Button variant="outline" className="flex-1" disabled={loggingOut}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              disabled={loggingOut}
+              onClick={async () => {
+                setLoggingOut(true)
+                await signOut()
+                window.location.href = "/login"
+              }}
+            >
+              {loggingOut ? "Logging out…" : "Log out"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Popover>
   )
 }
