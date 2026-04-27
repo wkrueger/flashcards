@@ -42,8 +42,13 @@ export async function pickNextCard({
 
   const candidates = await prisma.subject.findMany({
     where: subjectWhere,
-    orderBy: { cooldownAt: "asc" },
+    orderBy: includeOnCooldown ? { cooldownAt: "asc" } : { lastSeenAt: "desc" },
     select: { id: true, cooldownAt: true },
+    take: 5,
+  })
+
+  const count = await prisma.subject.count({
+    where: subjectWhere,
   })
 
   const dueCount = includeOnCooldown
@@ -54,13 +59,11 @@ export async function pickNextCard({
           ...(deckId ? { cards: { some: { deckId } } } : {}),
         },
       })
-    : candidates.length
+    : count
 
   if (candidates.length === 0) return { card: null, dueCount }
 
-  const sliceSize = Math.max(1, Math.ceil(candidates.length * 0.3))
-  const pool = candidates.slice(0, sliceSize)
-  const chosen = pool[Math.floor(rng() * pool.length)]!
+  const chosen = candidates[Math.floor(rng() * candidates.length)]!
 
   const card = await prisma.card.findFirst({
     where: {

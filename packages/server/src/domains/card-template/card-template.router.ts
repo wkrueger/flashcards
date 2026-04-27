@@ -6,10 +6,16 @@ import { rateLimit } from "../../infra/rate-limit.js"
 import { cardTemplatePreviewOutput } from "./card-template.service.js"
 
 const germanExtraPrompt =
-  "\n\nSpecifically for German: If the input word is a verb, the output phrase " +
-  "may use any tense or form of the same verb. If the verb is a separated verb, you can build phrases " +
-  "with the verb either split or joined. For any kind of word, you may use any declination or form of " +
-  "that word."
+  "\n\n## Specifically for German: \nIf the input word is a verb, the output phrase " +
+  "may use any tense of the same verb, ensure we have one German phrase in the past perfect and one in the simple present. " +
+  "When the German phrase is in past perfect, also bold the auxiliary verb. " +
+  "Avoid repeating tenses between German phrases. " +
+  "When the verb is reflexive, also bold the reflexive pronoun. " +
+  "Avoid repeating the grammatical person between German phrases and also include phrases with the 2nd grammatical person. " +
+  "If the input verb is a separated verb (a verb with a prefix), you can build phrases " +
+  "with the verb either split or joined. When splitting the verb, also bold the prefix. When an English translation is a phrasal verb, bold both parts of the verb. " +
+  "If the input verb does not include a prefix, only build phrases with the same verb without a prefix. " +
+  "For any type of word (nouns, adjectives, adverbs, etc), you may use any declination and mode of that word."
 
 const expressionPrompt =
   "\n\nIf the input text contains multiple words, don't attain yourself on keeping " +
@@ -40,18 +46,14 @@ export const cardTemplateRouter = router({
       let instructions =
         "Generate vocabulary flashcard previews. Return JSON only. " +
         "Each card must have front and back markdown strings. Bold the requested word or " +
-        "expression and its translation with double asterisks. Keep phrases natural, and distinct." +
-        "Each field must be a clean sentence in its language only — do not add the translation, " +
-        "the original word, synonyms, or any parenthetical or dash-separated gloss inside either " +
-        " field."
+        "expression and its translation with double asterisks. Keep phrases natural, complete, and distinct."
 
       let task =
         `Write ${input.count} phrases in ${backPromptLanguage} using the requested word` +
         ` or expression, then translate each phrase to ${frontPromptLanguage}. The front field ` +
-        `is the ${frontPromptLanguage} translation — a natural sentence with no` +
-        ` annotations. The back field is the ${backPromptLanguage} phrase — a ` +
-        `natural sentence with no annotations.` +
-        expressionPrompt
+        `is the ${frontPromptLanguage} translation.  The back field is the ${backPromptLanguage} phrase. ` +
+        `All phrases must be natural and complete sentences without annotations.\n\n`
+      expressionPrompt
 
       if (backPromptLanguage === "German") {
         instructions += germanExtraPrompt

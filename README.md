@@ -87,10 +87,10 @@ The "Generate card from template" flow calls the OpenAI API from the server. Add
 
 ```env
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-5-mini
+OPENAI_MODEL=gpt-5.4-mini
 ```
 
-`OPENAI_MODEL` is optional; the server defaults to `gpt-5-mini` when it is not set.
+`OPENAI_MODEL` is optional; the server defaults to `gpt-5.4-mini` when it is not set.
 Restart `pnpm dev` after changing `.env`.
 
 ## Develop
