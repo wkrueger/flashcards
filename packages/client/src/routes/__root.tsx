@@ -1,7 +1,7 @@
 import { createRootRoute, Outlet, redirect } from "@tanstack/react-router"
 import { Toaster } from "sonner"
 import { AppShell } from "../components/AppShell"
-import { authClient } from "../infra/auth-client"
+import { getSessionCached } from "../infra/auth-client"
 
 const PUBLIC = new Set([
   "/login",
@@ -15,7 +15,7 @@ export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
     if (PUBLIC.has(location.pathname)) return
     try {
-      const { data } = await authClient.getSession()
+      const { data } = await getSessionCached()
       if (!data?.user) {
         throw redirect({ to: "/login" })
       }

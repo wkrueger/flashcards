@@ -42,11 +42,18 @@ export const auth = betterAuth({
   },
   socialProviders,
   account: { accountLinking: { enabled: true } },
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
   rateLimit: {
     enabled: true,
     window: 60,
-    max: 20,
+    max: 60,
     customRules: {
+      "/get-session": { window: 60, max: 240 },
       "/sign-in/email": { window: 60, max: 5 },
       "/sign-up/email": { window: 60, max: 3 },
       "/request-password-reset": { window: 60, max: 3 },
