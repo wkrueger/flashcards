@@ -61,7 +61,7 @@ export const cardTemplateRouter = router({
         schemaName: "card_template_previews",
         schema: {
           type: "object",
-          // additionalProperties: false,
+          additionalProperties: false,
           required: ["cards"],
           properties: {
             cards: {
@@ -70,7 +70,7 @@ export const cardTemplateRouter = router({
               maxItems: input.count,
               items: {
                 type: "object",
-                // additionalProperties: false,
+                additionalProperties: false,
                 required: ["front", "back"],
                 properties: {
                   front: { type: "string" },
