@@ -21,13 +21,13 @@ export const decksRouter = router({
       where: { userId: ctx.user.id },
       orderBy: { name: "asc" },
     })
-    const cooldownCounts = await Promise.all(
+    const dueCounts = await Promise.all(
       decks.map((d) =>
         ctx.prisma.subject.count({
           where: {
             userId: ctx.user.id,
             cards: { some: { deckId: d.id } },
-            cooldownAt: { gt: now },
+            cooldownAt: { lte: now },
           },
         })
       )
@@ -36,7 +36,7 @@ export const decksRouter = router({
       id: d.id,
       name: d.name,
       createdAt: d.createdAt,
-      cooldownCount: cooldownCounts[i] ?? 0,
+      dueCount: dueCounts[i] ?? 0,
     }))
   }),
 
