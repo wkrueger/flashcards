@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import { Plus } from "lucide-react"
 import { trpc } from "../../infra/trpc"
@@ -27,6 +27,13 @@ export function DeckListPage() {
   const [frontLanguageId, setFrontLanguageId] = useState("")
   const [backLanguageId, setBackLanguageId] = useState("")
   const [open, setOpen] = useState(false)
+  const [showLoader, setShowLoader] = useState(false)
+
+  useEffect(() => {
+    if (!decks.isLoading) return
+    const id = setTimeout(() => setShowLoader(true), 1500)
+    return () => clearTimeout(id)
+  }, [decks.isLoading])
 
   const sameLanguage = !!frontLanguageId && !!backLanguageId && frontLanguageId === backLanguageId
 
@@ -102,9 +109,15 @@ export function DeckListPage() {
       />
 
       {decks.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        showLoader && (
+          <div className="flex items-center justify-center gap-1.5 py-8">
+            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
+          </div>
+        )
       ) : decks.data && decks.data.length > 0 ? (
-        <ul className="space-y-2">
+        <ul className="animate-reveal space-y-2">
           {decks.data.map((d) => (
             <li key={d.id}>
               <Link
@@ -119,7 +132,9 @@ export function DeckListPage() {
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">No decks yet — create your first one.</p>
+        <p className="animate-reveal text-sm text-muted-foreground">
+          No decks yet — create your first one.
+        </p>
       )}
 
       <Card
