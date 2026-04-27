@@ -1,5 +1,5 @@
 import { trpc } from "../../infra/trpc"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select"
+import { NativeSelect } from "../../ui/native-select"
 
 interface Props {
   value: string
@@ -15,22 +15,20 @@ export function LanguageSelect({
   placeholder = "Choose language",
 }: Props) {
   const languages = trpc.languages.list.useQuery()
+  const options =
+    languages.data?.map((l) => ({
+      value: String(l.id),
+      label: `${l.emoji} ${l.name}`,
+      disabled: !!disabledValue && String(l.id) === disabledValue,
+    })) ?? []
+
   return (
-    <Select value={value} onValueChange={onChange} disabled={languages.isLoading}>
-      <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {languages.data?.map((language) => (
-          <SelectItem
-            key={language.id}
-            value={String(language.id)}
-            disabled={!!disabledValue && String(language.id) === disabledValue}
-          >
-            {language.emoji} {language.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <NativeSelect
+      value={value}
+      onChange={onChange}
+      options={options}
+      placeholder={placeholder}
+      disabled={languages.isLoading}
+    />
   )
 }

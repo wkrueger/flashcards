@@ -8,7 +8,7 @@ import { Button, buttonVariants } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select"
+import { NativeSelect } from "../../ui/native-select"
 import { PageHeader } from "../../components/AppShell"
 
 const TEMPLATE = "createPhrasesForWords"
@@ -254,68 +254,52 @@ export function CardTemplateGeneratePage() {
       <form className="flex flex-1 flex-col gap-3" onSubmit={submitGenerate}>
         <div className="space-y-1">
           <Label>Template</Label>
-          <Select value={TEMPLATE} disabled>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={TEMPLATE}>Create phrases for words</SelectItem>
-            </SelectContent>
-          </Select>
+          <NativeSelect
+            value={TEMPLATE}
+            onChange={() => {}}
+            options={[{ value: TEMPLATE, label: "Create phrases for words" }]}
+            disabled
+          />
         </div>
 
         <div className="space-y-1">
           <Label>Front Language</Label>
-          <Select
+          <NativeSelect
             value={frontLanguageId}
-            onValueChange={(next) => {
+            onChange={(next) => {
               setFrontLanguageId(next)
               if (next === backLanguageId) setBackLanguageId("")
             }}
             disabled={languages.isLoading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Choose language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.data?.map((language) => (
-                <SelectItem
-                  key={language.id}
-                  value={String(language.id)}
-                  disabled={String(language.id) === backLanguageId}
-                >
-                  {languageLabel(language)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Choose language"
+            options={
+              languages.data?.map((language) => ({
+                value: String(language.id),
+                label: languageLabel(language),
+                disabled: String(language.id) === backLanguageId,
+              })) ?? []
+            }
+          />
         </div>
 
         <div className="space-y-1">
           <Label>Back Language</Label>
-          <Select
+          <NativeSelect
             value={backLanguageId}
-            onValueChange={(next) => {
+            onChange={(next) => {
               setBackLanguageId(next)
               if (next === frontLanguageId) setFrontLanguageId("")
             }}
             disabled={languages.isLoading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Choose language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.data?.map((language) => (
-                <SelectItem
-                  key={language.id}
-                  value={String(language.id)}
-                  disabled={String(language.id) === frontLanguageId}
-                >
-                  {languageLabel(language)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder="Choose language"
+            options={
+              languages.data?.map((language) => ({
+                value: String(language.id),
+                label: languageLabel(language),
+                disabled: String(language.id) === frontLanguageId,
+              })) ?? []
+            }
+          />
           {selectionsMatch && (
             <p className="text-sm text-destructive">Languages must be different.</p>
           )}
@@ -346,18 +330,11 @@ export function CardTemplateGeneratePage() {
 
         <div className="space-y-1">
           <Label>Number of cards to generate</Label>
-          <Select value={count} onValueChange={setCount}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[1, 2, 3, 4, 5].map((option) => (
-                <SelectItem key={option} value={String(option)}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <NativeSelect
+            value={count}
+            onChange={setCount}
+            options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))}
+          />
         </div>
 
         {previewError && <p className="text-sm text-destructive">{previewError}</p>}
