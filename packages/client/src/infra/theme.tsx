@@ -19,7 +19,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement
     root.classList.toggle("dark", theme === "dark")
     window.localStorage.setItem("theme", theme)
-    document.body.classList.add("theme-ready")
   }, [theme])
 
   return (
