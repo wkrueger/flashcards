@@ -6,9 +6,9 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#06291a" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5fbf6" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#06291a" />
+    <meta name="theme-color" content="#111814" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fcfa" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111814" />
     <title>flashcards</title>
     <script>
       (function () {
@@ -18,18 +18,27 @@
             stored === "dark" ||
             (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches)
           if (dark) document.documentElement.classList.add("dark")
-          document.documentElement.style.backgroundColor = dark ? "#06291a" : "#f5fbf6"
+          document.documentElement.style.backgroundColor = dark ? "#111814" : "#f8fcfa"
         } catch (e) {}
       })()
     </script>
     <style>
       html {
-        background-color: #06291a;
+        background-color: #111814;
+        transition: background-color 200ms ease-out;
       }
       @media (prefers-color-scheme: light) {
         html {
-          background-color: #f5fbf6;
+          background-color: #f8fcfa;
         }
+      }
+      /* Hide body until JS-set theme is committed, prevents initial paint flash. */
+      body {
+        opacity: 0;
+        transition: opacity 200ms ease-out;
+      }
+      body.theme-ready {
+        opacity: 1;
       }
     </style>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -37,6 +46,10 @@
     <link rel="alternate icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="flashcards" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
