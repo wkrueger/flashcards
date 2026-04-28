@@ -81,12 +81,7 @@ export function SignupPage() {
         {loading ? "..." : "Sign up"}
       </Button>
       {googleSsoEnabled && (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full gap-2"
-          onClick={onGoogle}
-        >
+        <Button type="button" variant="outline" className="w-full gap-2" onClick={onGoogle}>
           <GoogleIcon className="h-4 w-4" />
           Continue with Google
         </Button>

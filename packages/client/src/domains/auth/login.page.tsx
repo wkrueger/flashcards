@@ -59,63 +59,60 @@ export function LoginPage() {
       <Card>
         <CardContent className="p-4">
           <form onSubmit={onSubmit} className="space-y-3">
-      <div className="space-y-1">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          minLength={6}
-        />
-      </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      {unverified && (
-        <div className="space-y-1">
-          <Button type="button" variant="outline" className="w-full" onClick={onResend}>
-            Resend verification email
-          </Button>
-          {resent && <p className="text-sm text-muted-foreground">Verification email sent.</p>}
-        </div>
-      )}
-      <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "..." : "Log in"}
-      </Button>
-      {googleSsoEnabled && (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full gap-2"
-          onClick={onGoogle}
-        >
-          <GoogleIcon className="h-4 w-4" />
-          Continue with Google
-        </Button>
-      )}
-      <p className="text-sm text-muted-foreground">
-        <Link to="/forgot-password" className="underline">
-          Forgot password?
-        </Link>
-      </p>
-      <p className="text-sm text-muted-foreground">
-        No account?{" "}
-        <Link to="/signup" className="underline">
-          Sign up
-        </Link>
-      </p>
+            <div className="space-y-1">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            {unverified && (
+              <div className="space-y-1">
+                <Button type="button" variant="outline" className="w-full" onClick={onResend}>
+                  Resend verification email
+                </Button>
+                {resent && (
+                  <p className="text-sm text-muted-foreground">Verification email sent.</p>
+                )}
+              </div>
+            )}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? "..." : "Log in"}
+            </Button>
+            {googleSsoEnabled && (
+              <Button type="button" variant="outline" className="w-full gap-2" onClick={onGoogle}>
+                <GoogleIcon className="h-4 w-4" />
+                Continue with Google
+              </Button>
+            )}
+            <p className="text-sm text-muted-foreground">
+              <Link to="/forgot-password" className="underline">
+                Forgot password?
+              </Link>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              No account?{" "}
+              <Link to="/signup" className="underline">
+                Sign up
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>

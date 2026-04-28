@@ -3,7 +3,7 @@ import { Toaster } from "sonner"
 import { AppShell } from "../components/AppShell"
 import { getSessionCached } from "../infra/auth-client"
 
-const PUBLIC = new Set([
+const PUBLIC_PATHS = new Set([
   "/login",
   "/signup",
   "/forgot-password",
@@ -13,16 +13,10 @@ const PUBLIC = new Set([
 
 export const Route = createRootRoute({
   beforeLoad: async ({ location }) => {
-    if (PUBLIC.has(location.pathname)) return
-    try {
-      const { data } = await getSessionCached()
-      if (!data?.user) {
-        throw redirect({ to: "/login" })
-      }
-    } catch (err) {
-      // Only redirect to login for auth failures, not for server errors.
-      if (err && typeof err === "object" && "href" in err) throw err // it's a redirect
-      // Network / 500 errors: let the page render (tRPC will show its own error)
+    if (PUBLIC_PATHS.has(location.pathname)) return
+    const { data } = await getSessionCached()
+    if (!data?.user) {
+      throw redirect({ to: "/login", replace: true })
     }
   },
   component: () => (

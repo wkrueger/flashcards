@@ -99,10 +99,7 @@ export function PageHeader({
             </Button>
           )}
           <h1
-            className={cn(
-              "min-w-0 flex-1 break-words text-base font-semibold",
-              !onBack && "pl-3"
-            )}
+            className={cn("min-w-0 flex-1 break-words text-base font-semibold", !onBack && "pl-3")}
             style={{ viewTransitionName: "page-title" }}
           >
             {title}
@@ -210,9 +207,7 @@ function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
             </MenuItem>
             <MenuDivider />
             <div className="px-3 py-2">
-              <p className="truncate text-[15px] font-medium leading-tight">
-                {session.user.name}
-              </p>
+              <p className="truncate text-[15px] font-medium leading-tight">{session.user.name}</p>
               <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
             </div>
           </>

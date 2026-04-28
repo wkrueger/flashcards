@@ -4,7 +4,7 @@
 
 - the output phrase may use any tense of the same verb
 - ensure we have one German phrase in the past perfect and one in the simple present.
-%%REROLL_SIMPLE_PAST%%
+  %%REROLL_SIMPLE_PAST%%
 - avoid repeating tenses between German phrases.
 - When the German phrase is in past perfect, also bold the auxiliary verb.
 
