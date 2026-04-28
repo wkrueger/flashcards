@@ -175,20 +175,11 @@ pnpm build
 
 Stored as a string on `Subject.fixationLevel` to allow future levels without a column-type migration.
 
-| Level | Cooldown |
-| ----- | -------- |
-| 1     | 2 min    |
-| 2     | 10 min   |
-| 3     | 12 h     |
-| 4     | 2 days   |
-| 5     | 1 week   |
+-- not up to date --
 
 ### Pickup algorithm
 
-1. Take the user's subjects whose `cooldownAt <= now()` (normal mode) or all subjects (free mode).
-2. Slice the oldest 30 % by `cooldownAt` (`ceil(count * 0.3)`, min 1).
-3. Random subject from that slice.
-4. Within the subject, the card with the oldest `lastSeenAt` (nulls first).
+-- not up to date --
 
 ### Review modes
 
