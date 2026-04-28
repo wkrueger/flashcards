@@ -4,18 +4,22 @@ import { protectedProcedure, router } from "../../infra/trpc.js"
 import { createOpenAIStructuredResponse } from "../../infra/openai.js"
 import { rateLimit } from "../../infra/rate-limit.js"
 import { cardTemplatePreviewOutput } from "./card-template.service.js"
+import fs from "node:fs"
 
-const germanExtraPrompt =
-  "\n\n## Specifically for German: \nIf the input word is a verb, the output phrase " +
-  "may use any tense of the same verb, ensure we have one German phrase in the past perfect and one in the simple present. " +
-  "When the German phrase is in past perfect, also bold the auxiliary verb. " +
-  "Avoid repeating tenses between German phrases. " +
-  "When the verb is reflexive, also bold the reflexive pronoun. " +
-  "Avoid repeating the grammatical person between German phrases and also include phrases with the 2nd grammatical person. " +
-  "If the input verb is a separated verb (a verb with a prefix), you can build phrases " +
-  "with the verb either split or joined. When splitting the verb, also bold the prefix. When an English translation is a phrasal verb, bold both parts of the verb. " +
-  "If the input verb does not include a prefix, only build phrases with the same verb without a prefix. " +
-  "For any type of word (nouns, adjectives, adverbs, etc), you may use any declination and mode of that word."
+const _germanExtraPrompt =
+  "\n\n" + fs.readFileSync(new URL("./german-extra-prompt.md", import.meta.url), "utf-8")
+
+function getGermanPrompt() {
+  const reroll = Math.random() > 0.2
+  if (!reroll) {
+    return _germanExtraPrompt
+  } else {
+    return _germanExtraPrompt.replace(
+      "%%REROLL_SIMPLE_PAST%%",
+      "- Ih the generated phrase is in the simple past, rewrite it in the past perfect."
+    )
+  }
+}
 
 const expressionPrompt =
   "\n\nIf the input text contains multiple words, don't attain yourself on keeping " +
@@ -56,7 +60,7 @@ export const cardTemplateRouter = router({
       expressionPrompt
 
       if (backPromptLanguage === "German") {
-        instructions += germanExtraPrompt
+        instructions += getGermanPrompt()
       }
 
       const output = await createOpenAIStructuredResponse({

@@ -60,7 +60,7 @@ export async function createOpenAIStructuredResponse({
     })
   }
 
-  const model = process.env.OPENAI_MODEL ?? "gpt-5.4-mini"
+  const model = process.env.OPENAI_MODEL ?? "gpt-5.4"
   const startedAt = performance.now()
   logOpenAI("info", "request_started", {
     model,
