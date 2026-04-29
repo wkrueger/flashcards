@@ -13,3 +13,5 @@ coverage
 packages/server/prisma/*.db*
 packages/server/.test-db
 packages/server/src/generated
+.trace-inspect/*
+**/.trace-inspect-**/*

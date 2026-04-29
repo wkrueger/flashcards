@@ -4,7 +4,7 @@ import { useTheme } from "../infra/theme"
 import { Button } from "../ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
-import { signOut, useSession } from "../infra/auth-client"
+import { invalidateSessionCache, signOut, useSession } from "../infra/auth-client"
 import { cn } from "../lib/utils"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -156,63 +156,69 @@ function MenuDivider() {
 function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
   const { theme, toggle } = useTheme()
   const { data: session } = useSession()
+  const [menuOpen, setMenuOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Menu"
-          data-testid="global-menu-trigger"
-          className="data-[state=open]:bg-[hsl(var(--accent-strong))]"
+    <>
+      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Menu"
+            data-testid="global-menu-trigger"
+            className="data-[state=open]:bg-[hsl(var(--accent-strong))]"
+          >
+            <MoreVertical className="h-5 w-5" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          sideOffset={8}
+          className="w-56 overflow-hidden rounded-2xl border border-border bg-popover p-1.5 shadow-xl shadow-black/10 backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-popover/60"
         >
-          <MoreVertical className="h-5 w-5" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        sideOffset={8}
-        className="w-56 overflow-hidden rounded-2xl border border-border bg-popover p-1.5 shadow-xl shadow-black/10 backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-popover/60"
-      >
-        {menuItems && (
-          <>
-            {menuItems}
-            <MenuDivider />
-          </>
-        )}
-        <MenuItem
-          icon={
-            theme === "dark" ? (
-              <Sun className="h-[18px] w-[18px]" />
-            ) : (
-              <Moon className="h-[18px] w-[18px]" />
-            )
-          }
-          onSelect={toggle}
-        >
-          {theme === "dark" ? "Light theme" : "Dark theme"}
-        </MenuItem>
-        {session?.user && (
-          <>
-            <MenuDivider />
-            <MenuItem
-              icon={<LogOut className="h-[18px] w-[18px]" />}
-              destructive
-              testId="logout-menu-item"
-              onSelect={() => setLogoutOpen(true)}
-            >
-              Log out
-            </MenuItem>
-            <MenuDivider />
-            <div className="px-3 py-2">
-              <p className="truncate text-[15px] font-medium leading-tight">{session.user.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
-            </div>
-          </>
-        )}
-      </PopoverContent>
+          {menuItems && (
+            <>
+              {menuItems}
+              <MenuDivider />
+            </>
+          )}
+          <MenuItem
+            icon={
+              theme === "dark" ? (
+                <Sun className="h-[18px] w-[18px]" />
+              ) : (
+                <Moon className="h-[18px] w-[18px]" />
+              )
+            }
+            onSelect={toggle}
+          >
+            {theme === "dark" ? "Light theme" : "Dark theme"}
+          </MenuItem>
+          {session?.user && (
+            <>
+              <MenuDivider />
+              <MenuItem
+                icon={<LogOut className="h-[18px] w-[18px]" />}
+                destructive
+                testId="logout-menu-item"
+                onSelect={() => {
+                  setMenuOpen(false)
+                  requestAnimationFrame(() => setLogoutOpen(true))
+                }}
+              >
+                Log out
+              </MenuItem>
+              <MenuDivider />
+              <div className="px-3 py-2">
+                <p className="truncate text-[15px] font-medium leading-tight">{session.user.name}</p>
+                <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
+              </div>
+            </>
+          )}
+        </PopoverContent>
+      </Popover>
       <Dialog open={logoutOpen} onOpenChange={setLogoutOpen}>
         <DialogContent>
           <DialogHeader>
@@ -230,11 +236,16 @@ function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
             <Button
               variant="destructive"
               className="flex-1"
+              data-testid="logout-confirm-button"
               disabled={loggingOut}
               onClick={async () => {
                 setLoggingOut(true)
-                await signOut()
-                window.location.href = "/login"
+                try {
+                  await signOut()
+                } finally {
+                  invalidateSessionCache()
+                  window.location.href = "/login"
+                }
               }}
             >
               {loggingOut ? "Logging out…" : "Log out"}
@@ -242,6 +253,6 @@ function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
           </div>
         </DialogContent>
       </Dialog>
-    </Popover>
+    </>
   )
 }

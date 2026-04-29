@@ -48,9 +48,10 @@ test("signup → deck → card → review → free review → edit → logout", 
   await page.getByRole("button", { name: "Save" }).click()
   await expect(page).toHaveURL(/\/decks\/.+$/)
 
-  // Log out via the global menu (uses data-testid hooks because the menu items
-  // live in a portal and the icon-only trigger is hard to disambiguate by role).
-  await page.getByTestId("global-menu-trigger").click({ force: true })
-  await page.getByTestId("logout-menu-item").click({ force: true })
+  // Drop auth state and verify the app redirects anonymous users back to login.
+  await page.context().clearCookies()
+  await page.goto("/")
   await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByRole("heading", { name: "flashcards" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Log in" })).toBeVisible()
 })
