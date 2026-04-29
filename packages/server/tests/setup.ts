@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process"
-import { existsSync, mkdirSync, rmSync } from "node:fs"
+import { closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs"
 import path from "node:path"
 import { afterAll, beforeAll } from "vitest"
 
@@ -17,6 +17,7 @@ beforeAll(() => {
     const f = `${DB_FILE}${ext}`
     if (existsSync(f)) rmSync(f)
   }
+  closeSync(openSync(DB_FILE, "w"))
   execSync("pnpm exec prisma migrate deploy", {
     stdio: "inherit",
     env: { ...process.env, DATABASE_URL: `file:${DB_FILE}` },

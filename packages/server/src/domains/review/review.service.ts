@@ -30,7 +30,7 @@ export async function pickNextCard({
   now = new Date(),
   rng = Math.random,
 }: PickArgs): Promise<PickResult> {
-  const subjectWhere: any = { userId }
+  const subjectWhere: Prisma.SubjectWhereInput = { userId }
   if (!includeOnCooldown) subjectWhere.cooldownAt = { lte: now }
   if (deckId) subjectWhere.cards = { some: { deckId } }
   let excludedSubjectId: string | undefined
@@ -45,34 +45,15 @@ export async function pickNextCard({
     }
   }
 
-  const candidates1 = await prisma.subject.findMany({
-    where: subjectWhere,
-    orderBy: includeOnCooldown ? { cooldownAt: "asc" } : { lastSeenAt: "desc" },
-    select: { id: true, cooldownAt: true },
-    take: 5,
-  })
-
-  // include some candidates from outside the recents list
-  const c2Where: Prisma.Sql[] = [Prisma.sql`userId = ${userId}`]
-  if (!includeOnCooldown) c2Where.push(Prisma.sql`cooldownAt <= ${now}`)
-  if (deckId)
-    c2Where.push(
-      Prisma.sql`EXISTS (SELECT 1 FROM Card WHERE Card.subjectId = Subject.id AND Card.deckId = ${deckId})`
-    )
-  if (excludedSubjectId) c2Where.push(Prisma.sql`id != ${excludedSubjectId}`)
-  if (candidates1.length > 0)
-    c2Where.push(Prisma.sql`id NOT IN (${Prisma.join(candidates1.map((c) => c.id))})`)
-  const candidates2 = await prisma.$queryRaw<{ id: string; cooldownAt: Date }[]>`
-    SELECT id, cooldownAt FROM Subject
-    WHERE ${Prisma.join(c2Where, " AND ")}
-    ORDER BY RANDOM()
-    LIMIT 3
-  `
-
-  const candidates = [...candidates1, ...candidates2]
-
   const count = await prisma.subject.count({
     where: subjectWhere,
+  })
+
+  const candidates = await prisma.subject.findMany({
+    where: subjectWhere,
+    orderBy: { cooldownAt: "asc" },
+    select: { id: true, cooldownAt: true },
+    take: Math.max(1, Math.ceil(count * 0.3)),
   })
 
   const dueCount = includeOnCooldown
