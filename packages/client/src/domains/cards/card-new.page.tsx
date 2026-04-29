@@ -4,7 +4,7 @@ import { CardForm } from "./card-form"
 import { PageHeader } from "../../components/AppShell"
 
 export function CardNewPage() {
-  const { deckId } = useParams({ from: "/decks/$deckId/cards/new" })
+  const { deckId } = useParams({ from: "/(app)/decks/$deckId/cards/new" })
   const navigate = useNavigate()
   const router = useRouter()
   const utils = trpc.useUtils()

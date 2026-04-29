@@ -14,15 +14,16 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as DecksDeckIdRouteImport } from './routes/decks.$deckId'
-import { Route as DecksDeckIdIndexRouteImport } from './routes/decks.$deckId.index'
-import { Route as DecksDeckIdReviewRouteImport } from './routes/decks.$deckId.review'
-import { Route as DecksDeckIdReviewIndexRouteImport } from './routes/decks.$deckId.review.index'
-import { Route as DecksDeckIdReviewFreeRouteImport } from './routes/decks.$deckId.review.free'
-import { Route as DecksDeckIdCardsNewRouteImport } from './routes/decks.$deckId.cards.new'
-import { Route as DecksDeckIdCardsGenerateRouteImport } from './routes/decks.$deckId.cards.generate'
-import { Route as DecksDeckIdCardsCardIdEditRouteImport } from './routes/decks.$deckId.cards.$cardId.edit'
+import { Route as appRouteRouteImport } from './routes/(app)/route'
+import { Route as appIndexRouteImport } from './routes/(app)/index'
+import { Route as appDecksDeckIdRouteImport } from './routes/(app)/decks.$deckId'
+import { Route as appDecksDeckIdIndexRouteImport } from './routes/(app)/decks.$deckId.index'
+import { Route as appDecksDeckIdReviewRouteImport } from './routes/(app)/decks.$deckId.review'
+import { Route as appDecksDeckIdReviewIndexRouteImport } from './routes/(app)/decks.$deckId.review.index'
+import { Route as appDecksDeckIdReviewFreeRouteImport } from './routes/(app)/decks.$deckId.review.free'
+import { Route as appDecksDeckIdCardsNewRouteImport } from './routes/(app)/decks.$deckId.cards.new'
+import { Route as appDecksDeckIdCardsGenerateRouteImport } from './routes/(app)/decks.$deckId.cards.generate'
+import { Route as appDecksDeckIdCardsCardIdEditRouteImport } from './routes/(app)/decks.$deckId.cards.$cardId.edit'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -49,110 +50,117 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const appRouteRoute = appRouteRouteImport.update({
+  id: '/(app)',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DecksDeckIdRoute = DecksDeckIdRouteImport.update({
+const appIndexRoute = appIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appDecksDeckIdRoute = appDecksDeckIdRouteImport.update({
   id: '/decks/$deckId',
   path: '/decks/$deckId',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => appRouteRoute,
 } as any)
-const DecksDeckIdIndexRoute = DecksDeckIdIndexRouteImport.update({
+const appDecksDeckIdIndexRoute = appDecksDeckIdIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DecksDeckIdRoute,
+  getParentRoute: () => appDecksDeckIdRoute,
 } as any)
-const DecksDeckIdReviewRoute = DecksDeckIdReviewRouteImport.update({
+const appDecksDeckIdReviewRoute = appDecksDeckIdReviewRouteImport.update({
   id: '/review',
   path: '/review',
-  getParentRoute: () => DecksDeckIdRoute,
+  getParentRoute: () => appDecksDeckIdRoute,
 } as any)
-const DecksDeckIdReviewIndexRoute = DecksDeckIdReviewIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DecksDeckIdReviewRoute,
-} as any)
-const DecksDeckIdReviewFreeRoute = DecksDeckIdReviewFreeRouteImport.update({
-  id: '/free',
-  path: '/free',
-  getParentRoute: () => DecksDeckIdReviewRoute,
-} as any)
-const DecksDeckIdCardsNewRoute = DecksDeckIdCardsNewRouteImport.update({
+const appDecksDeckIdReviewIndexRoute =
+  appDecksDeckIdReviewIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => appDecksDeckIdReviewRoute,
+  } as any)
+const appDecksDeckIdReviewFreeRoute =
+  appDecksDeckIdReviewFreeRouteImport.update({
+    id: '/free',
+    path: '/free',
+    getParentRoute: () => appDecksDeckIdReviewRoute,
+  } as any)
+const appDecksDeckIdCardsNewRoute = appDecksDeckIdCardsNewRouteImport.update({
   id: '/cards/new',
   path: '/cards/new',
-  getParentRoute: () => DecksDeckIdRoute,
+  getParentRoute: () => appDecksDeckIdRoute,
 } as any)
-const DecksDeckIdCardsGenerateRoute =
-  DecksDeckIdCardsGenerateRouteImport.update({
+const appDecksDeckIdCardsGenerateRoute =
+  appDecksDeckIdCardsGenerateRouteImport.update({
     id: '/cards/generate',
     path: '/cards/generate',
-    getParentRoute: () => DecksDeckIdRoute,
+    getParentRoute: () => appDecksDeckIdRoute,
   } as any)
-const DecksDeckIdCardsCardIdEditRoute =
-  DecksDeckIdCardsCardIdEditRouteImport.update({
+const appDecksDeckIdCardsCardIdEditRoute =
+  appDecksDeckIdCardsCardIdEditRouteImport.update({
     id: '/cards/$cardId/edit',
     path: '/cards/$cardId/edit',
-    getParentRoute: () => DecksDeckIdRoute,
+    getParentRoute: () => appDecksDeckIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/decks/$deckId': typeof DecksDeckIdRouteWithChildren
-  '/decks/$deckId/review': typeof DecksDeckIdReviewRouteWithChildren
-  '/decks/$deckId/': typeof DecksDeckIdIndexRoute
-  '/decks/$deckId/cards/generate': typeof DecksDeckIdCardsGenerateRoute
-  '/decks/$deckId/cards/new': typeof DecksDeckIdCardsNewRoute
-  '/decks/$deckId/review/free': typeof DecksDeckIdReviewFreeRoute
-  '/decks/$deckId/review/': typeof DecksDeckIdReviewIndexRoute
-  '/decks/$deckId/cards/$cardId/edit': typeof DecksDeckIdCardsCardIdEditRoute
+  '/': typeof appIndexRoute
+  '/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
+  '/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
+  '/decks/$deckId/': typeof appDecksDeckIdIndexRoute
+  '/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
+  '/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
+  '/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
+  '/decks/$deckId/review/': typeof appDecksDeckIdReviewIndexRoute
+  '/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/decks/$deckId': typeof DecksDeckIdIndexRoute
-  '/decks/$deckId/cards/generate': typeof DecksDeckIdCardsGenerateRoute
-  '/decks/$deckId/cards/new': typeof DecksDeckIdCardsNewRoute
-  '/decks/$deckId/review/free': typeof DecksDeckIdReviewFreeRoute
-  '/decks/$deckId/review': typeof DecksDeckIdReviewIndexRoute
-  '/decks/$deckId/cards/$cardId/edit': typeof DecksDeckIdCardsCardIdEditRoute
+  '/': typeof appIndexRoute
+  '/decks/$deckId': typeof appDecksDeckIdIndexRoute
+  '/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
+  '/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
+  '/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
+  '/decks/$deckId/review': typeof appDecksDeckIdReviewIndexRoute
+  '/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/(app)': typeof appRouteRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/decks/$deckId': typeof DecksDeckIdRouteWithChildren
-  '/decks/$deckId/review': typeof DecksDeckIdReviewRouteWithChildren
-  '/decks/$deckId/': typeof DecksDeckIdIndexRoute
-  '/decks/$deckId/cards/generate': typeof DecksDeckIdCardsGenerateRoute
-  '/decks/$deckId/cards/new': typeof DecksDeckIdCardsNewRoute
-  '/decks/$deckId/review/free': typeof DecksDeckIdReviewFreeRoute
-  '/decks/$deckId/review/': typeof DecksDeckIdReviewIndexRoute
-  '/decks/$deckId/cards/$cardId/edit': typeof DecksDeckIdCardsCardIdEditRoute
+  '/(app)/': typeof appIndexRoute
+  '/(app)/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
+  '/(app)/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
+  '/(app)/decks/$deckId/': typeof appDecksDeckIdIndexRoute
+  '/(app)/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
+  '/(app)/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
+  '/(app)/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
+  '/(app)/decks/$deckId/review/': typeof appDecksDeckIdReviewIndexRoute
+  '/(app)/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
     | '/signup'
     | '/verify-email'
+    | '/'
     | '/decks/$deckId'
     | '/decks/$deckId/review'
     | '/decks/$deckId/'
@@ -163,12 +171,12 @@ export interface FileRouteTypes {
     | '/decks/$deckId/cards/$cardId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
     | '/signup'
     | '/verify-email'
+    | '/'
     | '/decks/$deckId'
     | '/decks/$deckId/cards/generate'
     | '/decks/$deckId/cards/new'
@@ -177,30 +185,30 @@ export interface FileRouteTypes {
     | '/decks/$deckId/cards/$cardId/edit'
   id:
     | '__root__'
-    | '/'
+    | '/(app)'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
     | '/signup'
     | '/verify-email'
-    | '/decks/$deckId'
-    | '/decks/$deckId/review'
-    | '/decks/$deckId/'
-    | '/decks/$deckId/cards/generate'
-    | '/decks/$deckId/cards/new'
-    | '/decks/$deckId/review/free'
-    | '/decks/$deckId/review/'
-    | '/decks/$deckId/cards/$cardId/edit'
+    | '/(app)/'
+    | '/(app)/decks/$deckId'
+    | '/(app)/decks/$deckId/review'
+    | '/(app)/decks/$deckId/'
+    | '/(app)/decks/$deckId/cards/generate'
+    | '/(app)/decks/$deckId/cards/new'
+    | '/(app)/decks/$deckId/review/free'
+    | '/(app)/decks/$deckId/review/'
+    | '/(app)/decks/$deckId/cards/$cardId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  appRouteRoute: typeof appRouteRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
-  DecksDeckIdRoute: typeof DecksDeckIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -240,113 +248,133 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/(app)': {
+      id: '/(app)'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof appRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(app)/': {
+      id: '/(app)/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof appIndexRouteImport
+      parentRoute: typeof appRouteRoute
     }
-    '/decks/$deckId': {
-      id: '/decks/$deckId'
+    '/(app)/decks/$deckId': {
+      id: '/(app)/decks/$deckId'
       path: '/decks/$deckId'
       fullPath: '/decks/$deckId'
-      preLoaderRoute: typeof DecksDeckIdRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof appDecksDeckIdRouteImport
+      parentRoute: typeof appRouteRoute
     }
-    '/decks/$deckId/': {
-      id: '/decks/$deckId/'
+    '/(app)/decks/$deckId/': {
+      id: '/(app)/decks/$deckId/'
       path: '/'
       fullPath: '/decks/$deckId/'
-      preLoaderRoute: typeof DecksDeckIdIndexRouteImport
-      parentRoute: typeof DecksDeckIdRoute
+      preLoaderRoute: typeof appDecksDeckIdIndexRouteImport
+      parentRoute: typeof appDecksDeckIdRoute
     }
-    '/decks/$deckId/review': {
-      id: '/decks/$deckId/review'
+    '/(app)/decks/$deckId/review': {
+      id: '/(app)/decks/$deckId/review'
       path: '/review'
       fullPath: '/decks/$deckId/review'
-      preLoaderRoute: typeof DecksDeckIdReviewRouteImport
-      parentRoute: typeof DecksDeckIdRoute
+      preLoaderRoute: typeof appDecksDeckIdReviewRouteImport
+      parentRoute: typeof appDecksDeckIdRoute
     }
-    '/decks/$deckId/review/': {
-      id: '/decks/$deckId/review/'
+    '/(app)/decks/$deckId/review/': {
+      id: '/(app)/decks/$deckId/review/'
       path: '/'
       fullPath: '/decks/$deckId/review/'
-      preLoaderRoute: typeof DecksDeckIdReviewIndexRouteImport
-      parentRoute: typeof DecksDeckIdReviewRoute
+      preLoaderRoute: typeof appDecksDeckIdReviewIndexRouteImport
+      parentRoute: typeof appDecksDeckIdReviewRoute
     }
-    '/decks/$deckId/review/free': {
-      id: '/decks/$deckId/review/free'
+    '/(app)/decks/$deckId/review/free': {
+      id: '/(app)/decks/$deckId/review/free'
       path: '/free'
       fullPath: '/decks/$deckId/review/free'
-      preLoaderRoute: typeof DecksDeckIdReviewFreeRouteImport
-      parentRoute: typeof DecksDeckIdReviewRoute
+      preLoaderRoute: typeof appDecksDeckIdReviewFreeRouteImport
+      parentRoute: typeof appDecksDeckIdReviewRoute
     }
-    '/decks/$deckId/cards/new': {
-      id: '/decks/$deckId/cards/new'
+    '/(app)/decks/$deckId/cards/new': {
+      id: '/(app)/decks/$deckId/cards/new'
       path: '/cards/new'
       fullPath: '/decks/$deckId/cards/new'
-      preLoaderRoute: typeof DecksDeckIdCardsNewRouteImport
-      parentRoute: typeof DecksDeckIdRoute
+      preLoaderRoute: typeof appDecksDeckIdCardsNewRouteImport
+      parentRoute: typeof appDecksDeckIdRoute
     }
-    '/decks/$deckId/cards/generate': {
-      id: '/decks/$deckId/cards/generate'
+    '/(app)/decks/$deckId/cards/generate': {
+      id: '/(app)/decks/$deckId/cards/generate'
       path: '/cards/generate'
       fullPath: '/decks/$deckId/cards/generate'
-      preLoaderRoute: typeof DecksDeckIdCardsGenerateRouteImport
-      parentRoute: typeof DecksDeckIdRoute
+      preLoaderRoute: typeof appDecksDeckIdCardsGenerateRouteImport
+      parentRoute: typeof appDecksDeckIdRoute
     }
-    '/decks/$deckId/cards/$cardId/edit': {
-      id: '/decks/$deckId/cards/$cardId/edit'
+    '/(app)/decks/$deckId/cards/$cardId/edit': {
+      id: '/(app)/decks/$deckId/cards/$cardId/edit'
       path: '/cards/$cardId/edit'
       fullPath: '/decks/$deckId/cards/$cardId/edit'
-      preLoaderRoute: typeof DecksDeckIdCardsCardIdEditRouteImport
-      parentRoute: typeof DecksDeckIdRoute
+      preLoaderRoute: typeof appDecksDeckIdCardsCardIdEditRouteImport
+      parentRoute: typeof appDecksDeckIdRoute
     }
   }
 }
 
-interface DecksDeckIdReviewRouteChildren {
-  DecksDeckIdReviewFreeRoute: typeof DecksDeckIdReviewFreeRoute
-  DecksDeckIdReviewIndexRoute: typeof DecksDeckIdReviewIndexRoute
+interface appDecksDeckIdReviewRouteChildren {
+  appDecksDeckIdReviewFreeRoute: typeof appDecksDeckIdReviewFreeRoute
+  appDecksDeckIdReviewIndexRoute: typeof appDecksDeckIdReviewIndexRoute
 }
 
-const DecksDeckIdReviewRouteChildren: DecksDeckIdReviewRouteChildren = {
-  DecksDeckIdReviewFreeRoute: DecksDeckIdReviewFreeRoute,
-  DecksDeckIdReviewIndexRoute: DecksDeckIdReviewIndexRoute,
+const appDecksDeckIdReviewRouteChildren: appDecksDeckIdReviewRouteChildren = {
+  appDecksDeckIdReviewFreeRoute: appDecksDeckIdReviewFreeRoute,
+  appDecksDeckIdReviewIndexRoute: appDecksDeckIdReviewIndexRoute,
 }
 
-const DecksDeckIdReviewRouteWithChildren =
-  DecksDeckIdReviewRoute._addFileChildren(DecksDeckIdReviewRouteChildren)
+const appDecksDeckIdReviewRouteWithChildren =
+  appDecksDeckIdReviewRoute._addFileChildren(appDecksDeckIdReviewRouteChildren)
 
-interface DecksDeckIdRouteChildren {
-  DecksDeckIdReviewRoute: typeof DecksDeckIdReviewRouteWithChildren
-  DecksDeckIdIndexRoute: typeof DecksDeckIdIndexRoute
-  DecksDeckIdCardsGenerateRoute: typeof DecksDeckIdCardsGenerateRoute
-  DecksDeckIdCardsNewRoute: typeof DecksDeckIdCardsNewRoute
-  DecksDeckIdCardsCardIdEditRoute: typeof DecksDeckIdCardsCardIdEditRoute
+interface appDecksDeckIdRouteChildren {
+  appDecksDeckIdReviewRoute: typeof appDecksDeckIdReviewRouteWithChildren
+  appDecksDeckIdIndexRoute: typeof appDecksDeckIdIndexRoute
+  appDecksDeckIdCardsGenerateRoute: typeof appDecksDeckIdCardsGenerateRoute
+  appDecksDeckIdCardsNewRoute: typeof appDecksDeckIdCardsNewRoute
+  appDecksDeckIdCardsCardIdEditRoute: typeof appDecksDeckIdCardsCardIdEditRoute
 }
 
-const DecksDeckIdRouteChildren: DecksDeckIdRouteChildren = {
-  DecksDeckIdReviewRoute: DecksDeckIdReviewRouteWithChildren,
-  DecksDeckIdIndexRoute: DecksDeckIdIndexRoute,
-  DecksDeckIdCardsGenerateRoute: DecksDeckIdCardsGenerateRoute,
-  DecksDeckIdCardsNewRoute: DecksDeckIdCardsNewRoute,
-  DecksDeckIdCardsCardIdEditRoute: DecksDeckIdCardsCardIdEditRoute,
+const appDecksDeckIdRouteChildren: appDecksDeckIdRouteChildren = {
+  appDecksDeckIdReviewRoute: appDecksDeckIdReviewRouteWithChildren,
+  appDecksDeckIdIndexRoute: appDecksDeckIdIndexRoute,
+  appDecksDeckIdCardsGenerateRoute: appDecksDeckIdCardsGenerateRoute,
+  appDecksDeckIdCardsNewRoute: appDecksDeckIdCardsNewRoute,
+  appDecksDeckIdCardsCardIdEditRoute: appDecksDeckIdCardsCardIdEditRoute,
 }
 
-const DecksDeckIdRouteWithChildren = DecksDeckIdRoute._addFileChildren(
-  DecksDeckIdRouteChildren,
+const appDecksDeckIdRouteWithChildren = appDecksDeckIdRoute._addFileChildren(
+  appDecksDeckIdRouteChildren,
+)
+
+interface appRouteRouteChildren {
+  appIndexRoute: typeof appIndexRoute
+  appDecksDeckIdRoute: typeof appDecksDeckIdRouteWithChildren
+}
+
+const appRouteRouteChildren: appRouteRouteChildren = {
+  appIndexRoute: appIndexRoute,
+  appDecksDeckIdRoute: appDecksDeckIdRouteWithChildren,
+}
+
+const appRouteRouteWithChildren = appRouteRoute._addFileChildren(
+  appRouteRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  appRouteRoute: appRouteRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
-  DecksDeckIdRoute: DecksDeckIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -6,7 +6,7 @@ import { MenuItem, PageHeader } from "../../components/AppShell"
 
 export function CardEditPage() {
   const { deckId, cardId } = useParams({
-    from: "/decks/$deckId/cards/$cardId/edit",
+    from: "/(app)/decks/$deckId/cards/$cardId/edit",
   })
   const navigate = useNavigate()
   const router = useRouter()

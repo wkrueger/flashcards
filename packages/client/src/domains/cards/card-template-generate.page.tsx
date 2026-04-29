@@ -23,7 +23,7 @@ function languageLabel(language: { emoji: string; name: string }) {
 }
 
 export function CardTemplateGeneratePage() {
-  const { deckId } = useParams({ from: "/decks/$deckId/cards/generate" })
+  const { deckId } = useParams({ from: "/(app)/decks/$deckId/cards/generate" })
   const navigate = useNavigate()
   const router = useRouter()
   const goBack = () => {

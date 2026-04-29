@@ -11,7 +11,7 @@ import { LanguageSelect } from "./language-select"
 import { MenuItem, PageHeader } from "../../components/AppShell"
 
 export function DeckDetailPage() {
-  const { deckId } = useParams({ from: "/decks/$deckId" })
+  const { deckId } = useParams({ from: "/(app)/decks/$deckId" })
   const navigate = useNavigate()
   const utils = trpc.useUtils()
   const deck = trpc.decks.get.useQuery({ id: deckId })
