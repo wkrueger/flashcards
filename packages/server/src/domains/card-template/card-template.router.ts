@@ -31,9 +31,10 @@ export const cardTemplateRouter = router({
   generatePreviews: protectedProcedure
     .input(cardTemplateGeneratePreviewInput)
     .mutation(async ({ ctx, input }) => {
+      // fixme: local memory
       rateLimit(`cardTemplate.generatePreviews:${ctx.user.id}`, {
-        windowMs: 60_000,
-        max: 3,
+        windowMs: 60_000 * 2,
+        max: 6,
       })
       const languages = await ctx.prisma.language.findMany({
         where: { id: { in: [input.frontLanguageId, input.backLanguageId] } },
