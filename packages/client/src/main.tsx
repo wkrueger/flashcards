@@ -18,6 +18,7 @@ const queryClient = new QueryClient({
           window.location.href = "/login"
           return
         }
+        console.error("[trpc query]", err)
         toast.error(err.message)
       }
     },

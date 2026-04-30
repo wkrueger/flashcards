@@ -21,8 +21,10 @@ export function handleTRPCError(err: unknown) {
       window.location.href = "/login"
       return
     }
+    console.error("[trpc]", err)
     toast.error(err.message)
   } else {
+    console.error("[trpc] unexpected error", err)
     toast.error("An unexpected error occurred.")
   }
 }

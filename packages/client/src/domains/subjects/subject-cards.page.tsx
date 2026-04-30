@@ -84,12 +84,12 @@ export function SubjectCardsPage() {
 
   const deleteSubject = trpc.subjects.delete.useMutation({
     onSuccess: () => {
-      utils.subjects.get.invalidate({ id: subjectId })
+      goToDeck()
+      utils.subjects.autocomplete.invalidate()
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.decks.list.invalidate()
       utils.decks.get.invalidate({ id: deckId })
       utils.review.next.invalidate()
-      goToDeck()
     },
   })
 
