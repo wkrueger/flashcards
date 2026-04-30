@@ -49,6 +49,8 @@ describe("card template domain", () => {
 
       return new Response(
         JSON.stringify({
+          id: "resp_test_123",
+          object: "response",
           output_text: JSON.stringify({
             cards: [
               {
