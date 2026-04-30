@@ -20,6 +20,7 @@ import { Route as appDecksDeckIdRouteImport } from './routes/(app)/decks.$deckId
 import { Route as appDecksDeckIdIndexRouteImport } from './routes/(app)/decks.$deckId.index'
 import { Route as appDecksDeckIdReviewRouteImport } from './routes/(app)/decks.$deckId.review'
 import { Route as appDecksDeckIdReviewIndexRouteImport } from './routes/(app)/decks.$deckId.review.index'
+import { Route as appDecksDeckIdSubjectsSubjectIdRouteImport } from './routes/(app)/decks.$deckId.subjects.$subjectId'
 import { Route as appDecksDeckIdReviewFreeRouteImport } from './routes/(app)/decks.$deckId.review.free'
 import { Route as appDecksDeckIdCardsNewRouteImport } from './routes/(app)/decks.$deckId.cards.new'
 import { Route as appDecksDeckIdCardsGenerateRouteImport } from './routes/(app)/decks.$deckId.cards.generate'
@@ -80,6 +81,12 @@ const appDecksDeckIdReviewIndexRoute =
     path: '/',
     getParentRoute: () => appDecksDeckIdReviewRoute,
   } as any)
+const appDecksDeckIdSubjectsSubjectIdRoute =
+  appDecksDeckIdSubjectsSubjectIdRouteImport.update({
+    id: '/subjects/$subjectId',
+    path: '/subjects/$subjectId',
+    getParentRoute: () => appDecksDeckIdRoute,
+  } as any)
 const appDecksDeckIdReviewFreeRoute =
   appDecksDeckIdReviewFreeRouteImport.update({
     id: '/free',
@@ -117,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
   '/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
   '/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
+  '/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
   '/decks/$deckId/review/': typeof appDecksDeckIdReviewIndexRoute
   '/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
 }
@@ -131,6 +139,7 @@ export interface FileRoutesByTo {
   '/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
   '/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
   '/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
+  '/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
   '/decks/$deckId/review': typeof appDecksDeckIdReviewIndexRoute
   '/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
 }
@@ -149,6 +158,7 @@ export interface FileRoutesById {
   '/(app)/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
   '/(app)/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
   '/(app)/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
+  '/(app)/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
   '/(app)/decks/$deckId/review/': typeof appDecksDeckIdReviewIndexRoute
   '/(app)/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
 }
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId/cards/generate'
     | '/decks/$deckId/cards/new'
     | '/decks/$deckId/review/free'
+    | '/decks/$deckId/subjects/$subjectId'
     | '/decks/$deckId/review/'
     | '/decks/$deckId/cards/$cardId/edit'
   fileRoutesByTo: FileRoutesByTo
@@ -181,6 +192,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId/cards/generate'
     | '/decks/$deckId/cards/new'
     | '/decks/$deckId/review/free'
+    | '/decks/$deckId/subjects/$subjectId'
     | '/decks/$deckId/review'
     | '/decks/$deckId/cards/$cardId/edit'
   id:
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
     | '/(app)/decks/$deckId/cards/generate'
     | '/(app)/decks/$deckId/cards/new'
     | '/(app)/decks/$deckId/review/free'
+    | '/(app)/decks/$deckId/subjects/$subjectId'
     | '/(app)/decks/$deckId/review/'
     | '/(app)/decks/$deckId/cards/$cardId/edit'
   fileRoutesById: FileRoutesById
@@ -290,6 +303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appDecksDeckIdReviewIndexRouteImport
       parentRoute: typeof appDecksDeckIdReviewRoute
     }
+    '/(app)/decks/$deckId/subjects/$subjectId': {
+      id: '/(app)/decks/$deckId/subjects/$subjectId'
+      path: '/subjects/$subjectId'
+      fullPath: '/decks/$deckId/subjects/$subjectId'
+      preLoaderRoute: typeof appDecksDeckIdSubjectsSubjectIdRouteImport
+      parentRoute: typeof appDecksDeckIdRoute
+    }
     '/(app)/decks/$deckId/review/free': {
       id: '/(app)/decks/$deckId/review/free'
       path: '/free'
@@ -339,6 +359,7 @@ interface appDecksDeckIdRouteChildren {
   appDecksDeckIdIndexRoute: typeof appDecksDeckIdIndexRoute
   appDecksDeckIdCardsGenerateRoute: typeof appDecksDeckIdCardsGenerateRoute
   appDecksDeckIdCardsNewRoute: typeof appDecksDeckIdCardsNewRoute
+  appDecksDeckIdSubjectsSubjectIdRoute: typeof appDecksDeckIdSubjectsSubjectIdRoute
   appDecksDeckIdCardsCardIdEditRoute: typeof appDecksDeckIdCardsCardIdEditRoute
 }
 
@@ -347,6 +368,7 @@ const appDecksDeckIdRouteChildren: appDecksDeckIdRouteChildren = {
   appDecksDeckIdIndexRoute: appDecksDeckIdIndexRoute,
   appDecksDeckIdCardsGenerateRoute: appDecksDeckIdCardsGenerateRoute,
   appDecksDeckIdCardsNewRoute: appDecksDeckIdCardsNewRoute,
+  appDecksDeckIdSubjectsSubjectIdRoute: appDecksDeckIdSubjectsSubjectIdRoute,
   appDecksDeckIdCardsCardIdEditRoute: appDecksDeckIdCardsCardIdEditRoute,
 }
 

@@ -1,8 +1,10 @@
-import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
-import { Trash2 } from "lucide-react"
+import { Link, useNavigate, useParams, useRouter } from "@tanstack/react-router"
+import { Layers, Trash2 } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { CardForm } from "./card-form"
 import { MenuItem, PageHeader } from "../../components/AppShell"
+import { buttonVariants } from "../../ui/button"
+import { cn } from "../../lib/utils"
 
 export function CardEditPage() {
   const { deckId, cardId } = useParams({
@@ -42,6 +44,17 @@ export function CardEditPage() {
       <PageHeader
         title="Edit card"
         onBack={goBack}
+        actions={
+          <Link
+            to="/decks/$deckId/subjects/$subjectId"
+            params={{ deckId, subjectId: card.data.subjectId }}
+            aria-label="View subject cards"
+            className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 px-3")}
+          >
+            <Layers className="h-4 w-4" />
+            Subject
+          </Link>
+        }
         menuItems={
           <MenuItem
             icon={<Trash2 className="h-[18px] w-[18px]" />}

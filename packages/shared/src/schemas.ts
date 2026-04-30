@@ -29,6 +29,11 @@ export const subjectAutocompleteInput = z.object({
   query: z.string().trim().max(100),
 })
 
+export const renameSubjectInput = z.object({
+  id,
+  subject: z.string().trim().min(1).max(200),
+})
+
 export const createCardInput = z.object({
   deckId: id,
   subjectText: z.string().trim().min(1).max(200),
