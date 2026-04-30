@@ -60,7 +60,7 @@ export const cardTemplateRouter = router({
         (input.count >= 3 ? bigStatement : "") +
         `Then translate each phrase to ${frontPromptLanguage}. The front field ` +
         `is the ${frontPromptLanguage} translation.  The back field is the ${backPromptLanguage} phrase. ` +
-        `Do not include annotations. ` +
+        `Don't include any extra annotations, keep just the raw phrases.` +
         (input.count > 1
           ? `The last card should describe the meaning of the input. Example: "<word> means ..." Set variant=meaning for that card.`
           : "")

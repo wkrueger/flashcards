@@ -1,11 +1,38 @@
-import { useState } from "react"
-import { RefreshCw, Trash2 } from "lucide-react"
+import { ChangeEvent, useEffect, useRef, useState } from "react"
+import { Check, RefreshCw, Trash2, X } from "lucide-react"
 import { MarkdownView } from "../../components/MarkdownView"
 import { Button } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
-import { Textarea } from "../../ui/textarea"
 import { cn } from "../../lib/utils"
 import { displayFrontWithGeneratedTagPrefix } from "./card-front-prefix"
+
+function AutoGrowTextarea({
+  value,
+  onChange,
+  autoFocus,
+}: {
+  value: string
+  onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void
+  autoFocus?: boolean
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      autoFocus={autoFocus}
+      rows={1}
+      className="block w-full resize-none border-0 bg-transparent p-0 text-lg leading-7 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+    />
+  )
+}
 
 export interface PreviewCard {
   front: string
@@ -97,10 +124,9 @@ function CardTemplatePreviewCard({
             <div>
               <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Front</p>
               {editing ? (
-                <Textarea
+                <AutoGrowTextarea
                   value={draftFront}
                   onChange={(event) => setDraftFront(event.target.value)}
-                  rows={4}
                   autoFocus
                 />
               ) : (
@@ -118,10 +144,9 @@ function CardTemplatePreviewCard({
             <div className="border-t pt-3">
               <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Back</p>
               {editing ? (
-                <Textarea
+                <AutoGrowTextarea
                   value={draftBack}
                   onChange={(event) => setDraftBack(event.target.value)}
-                  rows={4}
                 />
               ) : (
                 <button
@@ -139,14 +164,22 @@ function CardTemplatePreviewCard({
               <>
                 <Button
                   type="button"
-                  size="sm"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Confirm edit"
                   disabled={!draftFront.trim() || !draftBack.trim()}
                   onClick={confirmEditing}
                 >
-                  Confirm
+                  <Check className="h-4 w-4 text-primary" />
                 </Button>
-                <Button type="button" size="sm" variant="outline" onClick={cancelEditing}>
-                  Cancel
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Cancel edit"
+                  onClick={cancelEditing}
+                >
+                  <X className="h-4 w-4" />
                 </Button>
               </>
             ) : (
