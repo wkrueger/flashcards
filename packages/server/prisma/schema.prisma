@@ -95,6 +95,7 @@ model Deck {
 model Subject {
   id            String    @id @default(cuid())
   subject       String
+  subjectKey    String
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   lastSeenAt    DateTime?
@@ -103,7 +104,7 @@ model Subject {
   cooldownAt    DateTime  @default(now())
   cards         Card[]
 
-  @@unique([userId, subject])
+  @@unique([userId, subjectKey])
   @@index([userId, cooldownAt])
 }
 
