@@ -47,7 +47,7 @@ export function CardTemplateGeneratePage() {
   const [backLanguageId, setBackLanguageId] = useState("")
   const [defaultsApplied, setDefaultsApplied] = useState(false)
   const [wordOrExpression, setWordOrExpression] = useState("")
-  const [count, setCount] = useState("3")
+  const [count, setCount] = useState("4")
   const [previewCards, setPreviewCards] = useState<PreviewCard[] | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)

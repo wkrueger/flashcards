@@ -73,6 +73,7 @@ export async function createOpenAIStructuredResponse({
   try {
     const response = await client.responses.create({
       model,
+      reasoning: { effort: "low" },
       input: [
         { role: "system", content: systemPrompt },
         { role: "user", content: input },

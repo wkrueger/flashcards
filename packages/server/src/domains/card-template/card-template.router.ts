@@ -23,8 +23,7 @@ function getGermanPrompt() {
 
 const expressionPrompt =
   "\n\nIf the input text contains multiple words, don't attain yourself on keeping " +
-  "the same order of words, as long as the meaning of the input is preserved. If the input text" +
-  " contains '...'` + ` (three dots) or 'something', consider " +
+  "the same order of words. If the input text contains '...'` + ` (three dots), consider " +
   "that the input may surround other words of the generated phrase."
 
 export const cardTemplateRouter = router({
@@ -53,11 +52,17 @@ export const cardTemplateRouter = router({
         "Each card must have front and back markdown strings. Bold the requested word or " +
         "expression and its translation with double asterisks. Keep phrases natural, complete, and distinct."
 
+      const bigStatement = `Statement number ${input.count - 1} must be bigger and have around 170 characters. `
+
       let task =
-        `Write ${input.count} phrases in ${backPromptLanguage} using the requested word` +
-        ` or expression, then translate each phrase to ${frontPromptLanguage}. The front field ` +
+        `Write ${input.count} small statements in ${backPromptLanguage} using the requested word or expression. ` +
+        (input.count >= 3 ? bigStatement : "") +
+        `Then translate each phrase to ${frontPromptLanguage}. The front field ` +
         `is the ${frontPromptLanguage} translation.  The back field is the ${backPromptLanguage} phrase. ` +
-        `All phrases must be natural and complete sentences without annotations.\n\n`
+        `Do not include annotations. ` +
+        (input.count > 1
+          ? `If the requested word is a noun or verb, the last card should describe the meaning of the word. Example: "<word> means ..."`
+          : "")
       expressionPrompt
 
       if (backPromptLanguage === "German") {
