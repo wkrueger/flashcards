@@ -3,9 +3,43 @@ import { Prisma } from "../../generated/prisma/client.js"
 import { createCardInput, idInput, updateCardInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { upsertSubjectByText } from "../subjects/subjects.service.js"
-import { hashFront } from "./cards.service.js"
+import { hashFront, normalizeCardTags } from "./cards.service.js"
 
 type Db = import("../../generated/prisma/client.js").PrismaClient
+
+const cardInclude = Prisma.validator<Prisma.CardInclude>()({
+  subject: { select: { subject: true } },
+  deck: true,
+  cardTags: {
+    include: { tag: true },
+  },
+})
+
+function serializeCard(card: Prisma.CardGetPayload<{ include: typeof cardInclude }>) {
+  return {
+    ...card,
+    tags: card.cardTags.map((cardTag) => cardTag.tag.name).sort(),
+  }
+}
+
+function buildTagLinks(userId: string, tags: string[]) {
+  return normalizeCardTags(tags).map((name) => ({
+    tag: {
+      connectOrCreate: {
+        where: {
+          userId_name: {
+            userId,
+            name,
+          },
+        },
+        create: {
+          userId,
+          name,
+        },
+      },
+    },
+  }))
+}
 
 function isUniqueConstraintError(err: unknown) {
   return typeof err === "object" && err !== null && "code" in err && err.code === "P2002"
@@ -22,7 +56,7 @@ async function ownDeck(prisma: Db, userId: string, deckId: string) {
 async function ownCard(prisma: Db, userId: string, cardId: string) {
   const card = await prisma.card.findFirst({
     where: { id: cardId, deck: { userId } },
-    include: { subject: true, deck: true },
+    include: cardInclude,
   })
   if (!card) throw new TRPCError({ code: "NOT_FOUND" })
   return card
@@ -31,31 +65,39 @@ async function ownCard(prisma: Db, userId: string, cardId: string) {
 export const cardsRouter = router({
   listByDeck: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     await ownDeck(ctx.prisma, ctx.user.id, input.id)
-    return ctx.prisma.card.findMany({
+    const cards = await ctx.prisma.card.findMany({
       where: { deckId: input.id },
       orderBy: { createdAt: "desc" },
-      include: { subject: { select: { subject: true } } },
+      include: cardInclude,
     })
+    return cards.map(serializeCard)
   }),
 
   get: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
-    return ownCard(ctx.prisma, ctx.user.id, input.id)
+    return serializeCard(await ownCard(ctx.prisma, ctx.user.id, input.id))
   }),
 
   create: protectedProcedure.input(createCardInput).mutation(async ({ ctx, input }) => {
     await ownDeck(ctx.prisma, ctx.user.id, input.deckId)
     const subject = await upsertSubjectByText(ctx.prisma, ctx.user.id, input.subjectText)
     const frontHash = hashFront(input.front)
+    const tagLinks = buildTagLinks(ctx.user.id, input.tags)
     try {
-      return await ctx.prisma.card.create({
+      const card = await ctx.prisma.card.create({
         data: {
           deckId: input.deckId,
           subjectId: subject.id,
           front: input.front,
           frontHash,
           back: input.back,
+          genTemplate: input.genTemplate ?? null,
+          cardTags: {
+            create: tagLinks,
+          },
         },
+        include: cardInclude,
       })
+      return serializeCard(card)
     } catch (err) {
       if (isUniqueConstraintError(err)) {
         throw new TRPCError({
@@ -79,11 +121,19 @@ export const cardsRouter = router({
       const subject = await upsertSubjectByText(ctx.prisma, ctx.user.id, input.subjectText)
       data.subject = { connect: { id: subject.id } }
     }
+    if (input.tags !== undefined) {
+      data.cardTags = {
+        deleteMany: {},
+        create: buildTagLinks(ctx.user.id, input.tags),
+      }
+    }
     try {
-      return await ctx.prisma.card.update({
+      const updated = await ctx.prisma.card.update({
         where: { id: card.id },
         data,
+        include: cardInclude,
       })
+      return serializeCard(updated)
     } catch (err) {
       if (isUniqueConstraintError(err)) {
         throw new TRPCError({

@@ -3,7 +3,7 @@ import { cardTemplateGeneratePreviewInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { createOpenAIStructuredResponse } from "../../infra/openai.js"
 import { rateLimit } from "../../infra/rate-limit.js"
-import { cardTemplatePreviewOutput } from "./card-template.service.js"
+import { cardTemplatePreviewOutput, tagsForCardTemplateVariant } from "./card-template.service.js"
 import fs from "node:fs"
 
 const _germanExtraPrompt =
@@ -50,18 +50,19 @@ export const cardTemplateRouter = router({
       let systemPrompt =
         "Generate vocabulary flashcard previews. Return JSON only. " +
         "Each card must have front and back markdown strings. Bold the requested word or " +
-        "expression and its translation with double asterisks. Keep phrases natural, complete, and distinct."
+        "expression and its translation with double asterisks. Keep phrases natural, complete, and distinct. " +
+        'Each card must include a variant field with one of: "basic", "bigger", or "meaning".'
 
-      const bigStatement = `Statement number ${input.count - 1} must be bigger and have around 170 characters. `
+      const bigStatement = `Statement number ${input.count - 1} must be bigger and have around 170 characters. Set variant=bigger for that card.`
 
       let task =
-        `Write ${input.count} small statements in ${backPromptLanguage} using the requested word or expression. ` +
+        `Write ${input.count} small statements in ${backPromptLanguage} using the requested word or expression. By default, set variant=basic.` +
         (input.count >= 3 ? bigStatement : "") +
         `Then translate each phrase to ${frontPromptLanguage}. The front field ` +
         `is the ${frontPromptLanguage} translation.  The back field is the ${backPromptLanguage} phrase. ` +
         `Do not include annotations. ` +
         (input.count > 1
-          ? `If the requested word is a noun or verb, the last card should describe the meaning of the word. Example: "<word> means ..."`
+          ? `The last card should describe the meaning of the input. Example: "<word> means ..." Set variant=meaning for that card.`
           : "")
       expressionPrompt
 
@@ -83,10 +84,11 @@ export const cardTemplateRouter = router({
               items: {
                 type: "object",
                 additionalProperties: false,
-                required: ["front", "back"],
+                required: ["front", "back", "variant"],
                 properties: {
                   front: { type: "string" },
                   back: { type: "string" },
+                  variant: { type: "string", enum: ["basic", "bigger", "meaning"] },
                 },
               },
             },
@@ -116,7 +118,11 @@ export const cardTemplateRouter = router({
         subjectText: input.wordOrExpression,
         frontLanguage,
         backLanguage,
-        cards: parsed.cards,
+        cards: parsed.cards.map((card) => ({
+          front: card.front,
+          back: card.back,
+          tags: tagsForCardTemplateVariant(card.variant),
+        })),
       }
     }),
 })

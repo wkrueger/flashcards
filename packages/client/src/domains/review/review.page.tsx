@@ -23,6 +23,7 @@ import { Button, buttonVariants } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
 import { MarkdownView } from "../../components/MarkdownView"
 import { cn } from "../../lib/utils"
+import { displayFrontWithGeneratedTagPrefix } from "../cards/card-front-prefix"
 
 export function ReviewPage({ mode }: { mode: ReviewMode }) {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
@@ -129,7 +130,7 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
       <div key={card.id} className="contents [&>*]:animate-card-in">
         <Card>
           <CardContent className="min-h-[8rem] p-4">
-            <MarkdownView source={card.front} />
+            <MarkdownView source={displayFrontWithGeneratedTagPrefix(card.front, card.tags)} />
           </CardContent>
         </Card>
       </div>

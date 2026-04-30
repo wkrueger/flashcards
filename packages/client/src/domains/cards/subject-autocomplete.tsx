@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { trpc } from "../../infra/trpc"
 import { Input } from "../../ui/input"
 import { Popover, PopoverAnchor, PopoverContent } from "../../ui/popover"
@@ -11,9 +11,22 @@ export function SubjectAutocomplete({
   onChange: (next: string) => void
 }) {
   const [focused, setFocused] = useState(false)
+  const [debouncedQuery, setDebouncedQuery] = useState("")
+  const query = value.trim()
+
+  useEffect(() => {
+    if (!focused || !query) {
+      setDebouncedQuery("")
+      return
+    }
+
+    const id = window.setTimeout(() => setDebouncedQuery(query), 250)
+    return () => window.clearTimeout(id)
+  }, [focused, query])
+
   const suggestions = trpc.subjects.autocomplete.useQuery(
-    { query: value.trim() },
-    { enabled: focused && value.trim().length > 0 }
+    { query: debouncedQuery },
+    { enabled: focused && debouncedQuery.length > 0 }
   )
 
   const open =

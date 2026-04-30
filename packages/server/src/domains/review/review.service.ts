@@ -17,6 +17,7 @@ export interface PickResult {
   card:
     | (Awaited<ReturnType<PrismaClient["card"]["findFirst"]>> & {
         subject: { id: string; subject: string; fixationLevel: string }
+        tags: string[]
       })
     | null
   dueCount: number
@@ -121,6 +122,9 @@ export async function pickNextCard({
       subject: {
         select: { id: true, subject: true, fixationLevel: true },
       },
+      cardTags: {
+        include: { tag: true },
+      },
     },
   })
 
@@ -130,7 +134,9 @@ export async function pickNextCard({
     return { card: null, dueCount }
   }
 
-  return { card: card as PickResult["card"], dueCount }
+  const { cardTags, ...rest } = card
+  const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
+  return { card: { ...rest, tags } as PickResult["card"], dueCount }
 }
 
 export async function completeReview(

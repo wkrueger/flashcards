@@ -1,22 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState } from "react"
 import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
-import { ArrowLeft, RefreshCw, RotateCw, Sparkles, Trash2 } from "lucide-react"
+import { ArrowLeft, RotateCw, Sparkles } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { cn } from "../../lib/utils"
-import { MarkdownView } from "../../components/MarkdownView"
 import { Button, buttonVariants } from "../../ui/button"
-import { Card, CardContent } from "../../ui/card"
 import { Label } from "../../ui/label"
 import { NativeSelect } from "../../ui/native-select"
 import { PageHeader } from "../../components/AppShell"
 import { SubjectAutocomplete } from "./subject-autocomplete"
+import { CardTemplatePreviewList, type PreviewCard } from "./card-template-preview"
 
 const TEMPLATE = "createPhrasesForWords"
-
-interface PreviewCard {
-  front: string
-  back: string
-}
 
 function languageLabel(language: { emoji: string; name: string }) {
   return `${language.emoji} ${language.name}`
@@ -133,6 +127,10 @@ export function CardTemplateGeneratePage() {
     setPreviewCards((prev) => (prev ? prev.filter((_, i) => i !== index) : prev))
   }
 
+  const updateCard = (index: number, card: PreviewCard) => {
+    setPreviewCards((prev) => (prev ? prev.map((c, i) => (i === index ? card : c)) : prev))
+  }
+
   const confirm = async () => {
     if (!previewCards) return
     setSaveError(null)
@@ -143,6 +141,8 @@ export function CardTemplateGeneratePage() {
           subjectText,
           front: card.front,
           back: card.back,
+          genTemplate: TEMPLATE,
+          tags: card.tags,
         })
       }
       utils.cards.listByDeck.invalidate({ id: deckId })
@@ -159,54 +159,13 @@ export function CardTemplateGeneratePage() {
       <div className="flex flex-1 flex-col gap-4">
         <PageHeader title="Preview cards" onBack={() => setPreviewCards(null)} />
 
-        <ul className="space-y-3">
-          {previewCards.map((card, index) => (
-            <li key={`${card.front}-${index}`}>
-              <Card className={regeneratingIndex === index ? "opacity-50" : ""}>
-                <CardContent className="space-y-3 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1 space-y-3">
-                      <div>
-                        <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
-                          Front
-                        </p>
-                        <MarkdownView source={card.front} />
-                      </div>
-                      <div className="border-t pt-3">
-                        <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
-                          Back
-                        </p>
-                        <MarkdownView source={card.back} />
-                      </div>
-                    </div>
-                    <div className="flex shrink-0 flex-col gap-1 pt-0.5">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Regenerate card"
-                        disabled={regeneratingIndex !== null}
-                        onClick={() => regenerateCard(index)}
-                      >
-                        <RefreshCw
-                          className={cn("h-4 w-4", regeneratingIndex === index && "animate-spin")}
-                        />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Remove card"
-                        disabled={previewCards.length <= 1}
-                        onClick={() => removeCard(index)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        <CardTemplatePreviewList
+          cards={previewCards}
+          regeneratingIndex={regeneratingIndex}
+          onRegenerate={regenerateCard}
+          onRemove={removeCard}
+          onUpdate={updateCard}
+        />
 
         {(saveError || create.error) && (
           <p className="text-sm text-destructive">{saveError ?? create.error?.message}</p>

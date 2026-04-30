@@ -24,6 +24,7 @@ model User {
 
   decks    Deck[]
   subjects Subject[]
+  tags     Tag[]
 }
 
 model Session {
@@ -118,11 +119,34 @@ model Card {
   front      String
   frontHash  String
   back       String
+  genTemplate String?
   lastSeenAt DateTime?
   timesSeen  Int       @default(0)
   createdAt  DateTime  @default(now())
+  cardTags   CardTag[]
 
   @@unique([subjectId, frontHash])
   @@index([subjectId, lastSeenAt])
   @@index([deckId])
+}
+
+model Tag {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name     String
+  cardTags CardTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model CardTag {
+  cardId String
+  tagId  String
+  card   Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, tagId])
+  @@index([tagId])
 }

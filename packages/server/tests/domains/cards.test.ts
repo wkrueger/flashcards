@@ -42,6 +42,80 @@ describe("cards domain", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" })
   })
 
+  it("normalizes tags and reuses them across cards", async () => {
+    const userId = await makeUser("alice")
+    const trpc = callerFor(userId)
+    const deck = await trpc.decks.create({ name: "German" })
+
+    const first = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "front 1",
+      back: "back 1",
+      tags: ["Noun", "home", "noun", "HOME"],
+    })
+
+    const second = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Baum",
+      front: "front 2",
+      back: "back 2",
+      tags: ["home"],
+    })
+
+    expect(first.tags).toEqual(["home", "noun"])
+    expect(second.tags).toEqual(["home"])
+
+    const tags = await prisma.tag.findMany({
+      where: { userId },
+      orderBy: { name: "asc" },
+    })
+    expect(tags.map((tag) => tag.name)).toEqual(["home", "noun"])
+  })
+
+  it("stores generation template metadata when provided", async () => {
+    const userId = await makeUser("alice")
+    const trpc = callerFor(userId)
+    const deck = await trpc.decks.create({ name: "German" })
+
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "front 1",
+      back: "back 1",
+      genTemplate: "createPhrasesForWords",
+    })
+
+    expect(card.genTemplate).toBe("createPhrasesForWords")
+  })
+
+  it("replaces card tags on update", async () => {
+    const userId = await makeUser("alice")
+    const trpc = callerFor(userId)
+    const deck = await trpc.decks.create({ name: "German" })
+
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "front 1",
+      back: "back 1",
+      tags: ["noun", "home"],
+    })
+
+    const updated = await trpc.cards.update({
+      id: card.id,
+      tags: ["building"],
+    })
+
+    expect(updated.tags).toEqual(["building"])
+
+    const cardTags = await prisma.cardTag.findMany({
+      where: { cardId: card.id },
+      include: { tag: true },
+    })
+    expect(cardTags.map((cardTag) => cardTag.tag.name)).toEqual(["building"])
+  })
+
   it("trims subjects and treats different casing as the same subject", async () => {
     const userId = await makeUser("alice")
     const trpc = callerFor(userId)

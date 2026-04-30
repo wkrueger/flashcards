@@ -5,6 +5,8 @@ export const reviewModeSchema = z.enum(["normal", "free"])
 export type ReviewMode = z.infer<typeof reviewModeSchema>
 
 const id = z.string().min(1).max(64)
+const cardTagSchema = z.string().trim().min(1).max(50).regex(/^\S+$/, "Tags cannot contain spaces")
+const cardGenTemplateSchema = z.literal("createPhrasesForWords")
 
 const languageId = z.number().int().positive()
 
@@ -32,6 +34,8 @@ export const createCardInput = z.object({
   subjectText: z.string().trim().min(1).max(200),
   front: z.string().min(1),
   back: z.string().min(1),
+  genTemplate: cardGenTemplateSchema.nullish(),
+  tags: z.array(cardTagSchema).max(20).default([]),
 })
 
 export const updateCardInput = z.object({
@@ -39,6 +43,7 @@ export const updateCardInput = z.object({
   subjectText: z.string().trim().min(1).max(200).optional(),
   front: z.string().min(1).optional(),
   back: z.string().min(1).optional(),
+  tags: z.array(cardTagSchema).max(20).optional(),
 })
 
 export const cardTemplateGeneratePreviewInput = z

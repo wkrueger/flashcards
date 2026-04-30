@@ -37,32 +37,42 @@ describe("card template domain", () => {
   it("generates phrase previews with OpenAI structured output", async () => {
     const { english, deutsch } = await seedLanguages()
     const userId = await makeUser("alice")
+    let requestBody: {
+      model: string
+      text: { format: { type: string; name: string } }
+      input: unknown
+    }
     const fetch = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body))
-      expect(body.model).toBe("test-model")
-      expect(body.text.format.type).toBe("json_schema")
-      expect(body.text.format.name).toBe("card_template_previews")
-      expect(body.input[1].content).toContain("Haus")
-      expect(body.input[1].content).toContain('"backLanguage":"German"')
-      expect(body.input[1].content).toContain("phrases in German")
-      expect(body.input[1].content).not.toContain('"backLanguage":"Deutsch"')
+      requestBody = body
+      const outputText = JSON.stringify({
+        cards: [
+          {
+            front: "The **house** is old.",
+            back: "Das **Haus** ist alt.",
+            variant: "bigger",
+          },
+          {
+            front: "I see the **house**.",
+            back: "Ich sehe das **Haus**.",
+            variant: "meaning",
+          },
+        ],
+      })
 
       return new Response(
         JSON.stringify({
           id: "resp_test_123",
           object: "response",
-          output_text: JSON.stringify({
-            cards: [
-              {
-                front: "The **house** is old.",
-                back: "Das **Haus** ist alt.",
-              },
-              {
-                front: "I see the **house**.",
-                back: "Ich sehe das **Haus**.",
-              },
-            ],
-          }),
+          output: [
+            {
+              id: "msg_test_123",
+              type: "message",
+              status: "completed",
+              role: "assistant",
+              content: [{ type: "output_text", text: outputText, annotations: [] }],
+            },
+          ],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } }
       )
@@ -80,14 +90,28 @@ describe("card template domain", () => {
     expect(previews.subjectText).toBe("Haus")
     expect(previews.frontLanguage.name).toBe("English")
     expect(previews.backLanguage.name).toBe("Deutsch")
+    expect(requestBody!.model).toBe("test-model")
+    expect(requestBody!.text.format.type).toBe("json_schema")
+    expect(requestBody!.text.format.name).toBe("card_template_previews")
+    const requestInput = JSON.stringify(requestBody!.input)
+    expect(requestInput).toContain("Haus")
+    expect(requestInput).toContain("backLanguage")
+    expect(requestInput).toContain("German")
+    expect(requestInput).toContain("small statements in German")
+    expect(requestInput).toContain("variant field")
+    expect(requestInput).toContain("bigger")
+    expect(requestInput).toContain("meaning")
+    expect(requestInput).not.toContain("Deutsch")
     expect(previews.cards).toEqual([
       {
         front: "The **house** is old.",
         back: "Das **Haus** ist alt.",
+        tags: ["gen:bigger"],
       },
       {
         front: "I see the **house**.",
         back: "Ich sehe das **Haus**.",
+        tags: ["gen:meaning"],
       },
     ])
     expect(fetch).toHaveBeenCalledOnce()
