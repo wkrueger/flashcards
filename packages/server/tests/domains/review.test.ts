@@ -8,7 +8,7 @@ import { COOLDOWN_MS } from "@cards/shared"
 async function seedSubjects(
   userId: string,
   deckId: string,
-  specs: { text: string; cooldownAt: Date }[]
+  specs: { text: string; cooldownAt: Date; lastSeenAt?: Date }[]
 ) {
   for (const s of specs) {
     const subj = await prisma.subject.create({
@@ -17,6 +17,7 @@ async function seedSubjects(
         subject: s.text,
         subjectKey: subjectKeyFor(s.text),
         cooldownAt: s.cooldownAt,
+        lastSeenAt: s.lastSeenAt,
       },
     })
     await prisma.card.create({
@@ -47,28 +48,37 @@ describe("review domain", () => {
     expect(r.dueCount).toBe(0)
   })
 
-  it("normal mode picks only from oldest 30% of due subjects", async () => {
+  it("normal mode mixes recent subjects with random subjects outside the recents list", async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({ name: "d" })
     const past = (mins: number) => new Date(Date.now() - mins * 60_000)
-    // 10 subjects all due, with strictly increasing cooldownAt.
+    // 10 subjects all due, with s0..s3 as the four most recently seen subjects.
     const specs = Array.from({ length: 10 }, (_, i) => ({
       text: `s${i}`,
       cooldownAt: past(100 - i), // s0 oldest, s9 newest
+      lastSeenAt: past(i),
     }))
     await seedSubjects(u, deck.id, specs)
 
-    const seen = new Set<string>()
-    for (let i = 0; i < 200; i++) {
-      const r = await pickNextCard({
-        prisma,
-        userId: u,
-        includeOnCooldown: false,
-      })
-      if (r.card) seen.add(r.card.subject.subject)
-    }
-    // Math.ceil(10 * 0.3) = 3 → expect only s0, s1, s2
-    expect([...seen].sort()).toEqual(["s0", "s1", "s2"])
+    const recent = await pickNextCard({
+      prisma,
+      userId: u,
+      includeOnCooldown: false,
+      rng: () => 0,
+    })
+    expect(recent.card?.subject.subject).toBe("s0")
+    expect(recent.dueCount).toBe(10)
+
+    const randomOutsideRecents = await pickNextCard({
+      prisma,
+      userId: u,
+      includeOnCooldown: false,
+      rng: () => 0.99,
+    })
+    expect(["s4", "s5", "s6", "s7", "s8", "s9"]).toContain(
+      randomOutsideRecents.card?.subject.subject
+    )
+    expect(randomOutsideRecents.dueCount).toBe(10)
   })
 
   it("free mode picks even when all subjects are on cooldown", async () => {
