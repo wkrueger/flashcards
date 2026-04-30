@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server"
 import OpenAI from "openai"
 
 export interface OpenAIStructuredResponseOptions {
-  instructions: string
+  systemPrompt: string
   input: string
   schemaName: string
   schema: Record<string, unknown>
@@ -47,7 +47,7 @@ function extractOutputText(response: unknown): string | null {
 }
 
 export async function createOpenAIStructuredResponse({
-  instructions,
+  systemPrompt,
   input,
   schemaName,
   schema,
@@ -74,7 +74,7 @@ export async function createOpenAIStructuredResponse({
     const response = await client.responses.create({
       model,
       input: [
-        { role: "system", content: instructions },
+        { role: "system", content: systemPrompt },
         { role: "user", content: input },
       ],
       text: {

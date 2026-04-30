@@ -48,7 +48,7 @@ export const cardTemplateRouter = router({
       const frontPromptLanguage = frontLanguage.englishName ?? frontLanguage.name
       const backPromptLanguage = backLanguage.englishName ?? backLanguage.name
 
-      let instructions =
+      let systemPrompt =
         "Generate vocabulary flashcard previews. Return JSON only. " +
         "Each card must have front and back markdown strings. Bold the requested word or " +
         "expression and its translation with double asterisks. Keep phrases natural, complete, and distinct."
@@ -61,7 +61,7 @@ export const cardTemplateRouter = router({
       expressionPrompt
 
       if (backPromptLanguage === "German") {
-        instructions += getGermanPrompt()
+        systemPrompt += getGermanPrompt()
       }
 
       const output = await createOpenAIStructuredResponse({
@@ -87,9 +87,9 @@ export const cardTemplateRouter = router({
             },
           },
         },
-        instructions,
+        systemPrompt: systemPrompt,
         input: JSON.stringify({
-          template: "Create phrases for words",
+          template: "Create phrases for the input words or expressions",
           wordOrExpression: input.wordOrExpression,
           count: input.count,
           frontLanguage: frontPromptLanguage,

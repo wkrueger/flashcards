@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 import { prisma } from "../../src/infra/db.js"
 import { pickNextCard } from "../../src/domains/review/review.service.js"
-import { subjectKeyFor } from "../../src/domains/subjects/subjects.service.js"
+import {
+  SUBJECT_RANDOM_KEY_RANGE,
+  subjectKeyFor,
+} from "../../src/domains/subjects/subjects.service.js"
 import { COOLDOWN_MS } from "@cards/shared"
 
 async function seedSubjects(
@@ -10,12 +13,13 @@ async function seedSubjects(
   deckId: string,
   specs: { text: string; cooldownAt: Date; lastSeenAt?: Date }[]
 ) {
-  for (const s of specs) {
+  for (const [index, s] of specs.entries()) {
     const subj = await prisma.subject.create({
       data: {
         userId,
         subject: s.text,
         subjectKey: subjectKeyFor(s.text),
+        randomKey: Math.floor((index / specs.length) * SUBJECT_RANDOM_KEY_RANGE),
         cooldownAt: s.cooldownAt,
         lastSeenAt: s.lastSeenAt,
       },

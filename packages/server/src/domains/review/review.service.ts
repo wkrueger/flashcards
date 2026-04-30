@@ -1,6 +1,7 @@
 import type { PrismaClient } from "../../generated/prisma/client.js"
 import { Prisma } from "../../generated/prisma/client.js"
 import { fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
+import { randomSubjectKeyFromRng } from "../subjects/subjects.service.js"
 
 export interface PickArgs {
   prisma: PrismaClient
@@ -48,26 +49,47 @@ export async function pickNextCard({
   const candidates1 = await prisma.subject.findMany({
     where: subjectWhere,
     orderBy: includeOnCooldown ? { cooldownAt: "asc" } : { lastSeenAt: "desc" },
-    select: { id: true, cooldownAt: true },
+    select: { id: true, cooldownAt: true, randomKey: true },
     take: 4,
   })
 
   // Include some candidates from outside the recents list.
-  const c2Where: Prisma.Sql[] = [Prisma.sql`userId = ${userId}`]
-  if (!includeOnCooldown) c2Where.push(Prisma.sql`cooldownAt <= ${now}`)
-  if (deckId)
-    c2Where.push(
-      Prisma.sql`EXISTS (SELECT 1 FROM Card WHERE Card.subjectId = Subject.id AND Card.deckId = ${deckId})`
-    )
-  if (excludedSubjectId) c2Where.push(Prisma.sql`id != ${excludedSubjectId}`)
-  if (candidates1.length > 0)
-    c2Where.push(Prisma.sql`id NOT IN (${Prisma.join(candidates1.map((c) => c.id))})`)
-  const candidates2 = await prisma.$queryRaw<{ id: string; cooldownAt: Date }[]>`
-    SELECT id, cooldownAt FROM Subject
-    WHERE ${Prisma.join(c2Where, " AND ")}
-    ORDER BY RANDOM()
-    LIMIT 1
-  `
+  const candidate2Where: Prisma.SubjectWhereInput = {
+    userId,
+    ...(includeOnCooldown ? {} : { cooldownAt: { lte: now } }),
+    ...(deckId ? { cards: { some: { deckId } } } : {}),
+    ...(excludedSubjectId ? { id: { not: excludedSubjectId } } : {}),
+    ...(candidates1.length > 0
+      ? { id: { notIn: candidates1.map((candidate) => candidate.id) } }
+      : {}),
+  }
+
+  const candidate2Target = randomSubjectKeyFromRng(rng)
+  const candidate2OrderBy: Prisma.SubjectOrderByWithRelationInput[] = [
+    { randomKey: "asc" },
+    { id: "asc" },
+  ]
+  let candidates2 = await prisma.subject.findMany({
+    where: {
+      ...candidate2Where,
+      randomKey: { gte: candidate2Target },
+    },
+    orderBy: candidate2OrderBy,
+    select: { id: true, cooldownAt: true, randomKey: true },
+    take: 1,
+  })
+
+  if (candidates2.length === 0) {
+    candidates2 = await prisma.subject.findMany({
+      where: {
+        ...candidate2Where,
+        randomKey: { lt: candidate2Target },
+      },
+      orderBy: candidate2OrderBy,
+      select: { id: true, cooldownAt: true, randomKey: true },
+      take: 1,
+    })
+  }
 
   const candidates = [...candidates1, ...candidates2]
 

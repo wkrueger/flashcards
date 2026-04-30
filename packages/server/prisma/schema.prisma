@@ -95,6 +95,7 @@ model Subject {
   id            String    @id @default(cuid())
   subject       String
   subjectKey    String
+  randomKey     Int       @default(0)
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   lastSeenAt    DateTime?
@@ -104,7 +105,8 @@ model Subject {
   cards         Card[]
 
   @@unique([userId, subjectKey])
-  @@index([userId, cooldownAt])
+  @@index([userId, randomKey])
+  @@index([userId, cooldownAt, randomKey])
 }
 
 model Card {

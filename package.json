@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently -n server,client -c blue,magenta \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
     "dev:preview": "concurrently -n server,client -c blue,magenta \"pnpm --filter server dev\" \"pnpm --filter client preview\"",
-    "build": "pnpm --filter server exec prisma migrate deploy && pnpm --filter server exec prisma generate && pnpm --filter server build && pnpm --filter client build",
+    "build": "pnpm --filter server exec prisma migrate deploy && pnpm --filter server exec prisma generate && pnpm --filter client build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm --filter client lint",
     "test": "pnpm --filter server test",
