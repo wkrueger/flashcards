@@ -6,10 +6,10 @@ import { cn } from "../../lib/utils"
 import { MarkdownView } from "../../components/MarkdownView"
 import { Button, buttonVariants } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
-import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
 import { NativeSelect } from "../../ui/native-select"
 import { PageHeader } from "../../components/AppShell"
+import { SubjectAutocomplete } from "./subject-autocomplete"
 
 const TEMPLATE = "createPhrasesForWords"
 
@@ -320,12 +320,7 @@ export function CardTemplateGeneratePage() {
               </span>
             )}
           </Label>
-          <Input
-            id="wordOrExpression"
-            value={wordOrExpression}
-            onChange={(event) => setWordOrExpression(event.target.value)}
-            required
-          />
+          <SubjectAutocomplete value={wordOrExpression} onChange={setWordOrExpression} />
         </div>
 
         <div className="space-y-1">
