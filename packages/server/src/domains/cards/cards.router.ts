@@ -7,6 +7,10 @@ import { hashFront } from "./cards.service.js"
 
 type Db = import("../../generated/prisma/client.js").PrismaClient
 
+function isUniqueConstraintError(err: unknown) {
+  return typeof err === "object" && err !== null && "code" in err && err.code === "P2002"
+}
+
 async function ownDeck(prisma: Db, userId: string, deckId: string) {
   const deck = await prisma.deck.findFirst({
     where: { id: deckId, userId },
@@ -53,7 +57,7 @@ export const cardsRouter = router({
         },
       })
     } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      if (isUniqueConstraintError(err)) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "A card with this subject and front already exists.",
@@ -81,7 +85,7 @@ export const cardsRouter = router({
         data,
       })
     } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      if (isUniqueConstraintError(err)) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "A card with this subject and front already exists.",

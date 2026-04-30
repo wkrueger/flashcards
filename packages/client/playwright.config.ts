@@ -1,9 +1,12 @@
 import { defineConfig, devices } from "@playwright/test"
+import { closeSync, existsSync, openSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const E2E_DB = path.resolve(__dirname, "../server/prisma/e2e.db")
+
+if (!existsSync(E2E_DB)) closeSync(openSync(E2E_DB, "w"))
 
 export default defineConfig({
   testDir: "./e2e",
@@ -19,7 +22,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: `pnpm exec prisma migrate deploy && pnpm dev`,
+      command: `pnpm exec prisma migrate deploy && pnpm exec tsx src/main.ts`,
       cwd: path.resolve(__dirname, "../server"),
       url: "http://localhost:3001/health",
       reuseExistingServer: false,
