@@ -16,6 +16,7 @@ async function seedSubjects(
     cooldownAt: Date
     lastSeenAt?: Date
     fixationLevel?: string
+    inverseReviewed?: boolean
     tags?: string[]
   }[]
 ) {
@@ -29,6 +30,7 @@ async function seedSubjects(
         cooldownAt: s.cooldownAt,
         lastSeenAt: s.lastSeenAt,
         fixationLevel: s.fixationLevel,
+        inverseReviewed: s.inverseReviewed,
       },
     })
     await prisma.card.create({
@@ -212,6 +214,31 @@ describe("review domain", () => {
     expect(r.inverse).toBe(true)
   })
 
+  it("does not return inverse review when the chosen subject was already inverse reviewed", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    await seedSubjects(u, deck.id, [
+      {
+        text: "Haus",
+        cooldownAt: new Date(Date.now() - 1000),
+        fixationLevel: "1",
+        inverseReviewed: true,
+        tags: ["gen:bigger"],
+      },
+    ])
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0,
+    })
+    expect(r.inverse).toBe(false)
+  })
+
   it("inverse complete only updates lastSeenAt", async () => {
     const u = await makeUser("u")
     const trpc = callerFor(u)
@@ -231,6 +258,7 @@ describe("review domain", () => {
     })
     expect(subjAfter.timesSeen).toBe(subjBefore.timesSeen)
     expect(subjAfter.fixationLevel).toBe(subjBefore.fixationLevel)
+    expect(subjAfter.inverseReviewed).toBe(true)
     expect(subjAfter.cooldownAt.getTime()).toBe(subjBefore.cooldownAt.getTime())
     expect(subjAfter.lastSeenAt).not.toBeNull()
     const cardAfter = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
@@ -260,6 +288,7 @@ describe("review domain", () => {
     expect(subj.cooldownAt.getTime()).toBeGreaterThanOrEqual(expectedMin)
     expect(subj.cooldownAt.getTime()).toBeLessThanOrEqual(expectedMax)
     expect(subj.fixationLevel).toBe("3")
+    expect(subj.inverseReviewed).toBe(false)
     expect(subj.timesSeen).toBe(1)
 
     const reloaded = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })

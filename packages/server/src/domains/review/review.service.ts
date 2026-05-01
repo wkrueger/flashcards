@@ -17,7 +17,12 @@ export interface PickArgs {
 export interface PickResult {
   card:
     | (Awaited<ReturnType<PrismaClient["card"]["findFirst"]>> & {
-        subject: { id: string; subject: string; fixationLevel: string }
+        subject: {
+          id: string
+          subject: string
+          fixationLevel: string
+          inverseReviewed: boolean
+        }
         tags: string[]
       })
     | null
@@ -144,7 +149,7 @@ export async function pickNextCard({
     orderBy: [{ lastSeenAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
     include: {
       subject: {
-        select: { id: true, subject: true, fixationLevel: true },
+        select: { id: true, subject: true, fixationLevel: true, inverseReviewed: true },
       },
       cardTags: {
         include: { tag: true },
@@ -161,7 +166,9 @@ export async function pickNextCard({
   const { cardTags, ...rest } = card
   const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
   const fixationLevel = fixationLevelSchema.parse(card.subject.fixationLevel)
-  const inverseProbability = inverseReviewProbabilityForCard(fixationLevel, tags)
+  const inverseProbability = card.subject.inverseReviewed
+    ? 0
+    : inverseReviewProbabilityForCard(fixationLevel, tags)
   const inverseRoll = inverseRng()
   console.log({ inverseEnabled, inverseRoll, inverseProbability })
   const inverse = inverseEnabled && inverseRoll < inverseProbability
@@ -184,7 +191,10 @@ export async function completeReview(
   if (options.inverse) {
     await prisma.$transaction([
       prisma.card.update({ where: { id: card.id }, data: { lastSeenAt: now } }),
-      prisma.subject.update({ where: { id: card.subjectId }, data: { lastSeenAt: now } }),
+      prisma.subject.update({
+        where: { id: card.subjectId },
+        data: { lastSeenAt: now, inverseReviewed: true },
+      }),
     ])
     return { ok: true, cooldownAt: card.subject.cooldownAt }
   }
@@ -206,6 +216,7 @@ export async function completeReview(
         lastSeenAt: now,
         timesSeen: { increment: 1 },
         fixationLevel: chosenLevel,
+        inverseReviewed: false,
         cooldownAt: cooldown,
       },
     }),

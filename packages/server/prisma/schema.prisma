@@ -103,6 +103,7 @@ model Subject {
   lastSeenAt    DateTime?
   timesSeen     Int       @default(0)
   fixationLevel String    @default("1")
+  inverseReviewed Boolean @default(false)
   cooldownAt    DateTime  @default(now())
   cards         Card[]
 
