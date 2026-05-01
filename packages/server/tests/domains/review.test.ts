@@ -252,6 +252,96 @@ describe("review domain", () => {
     expect(r.inverse).toBe(false)
   })
 
+  it('rerolls another card from the same subject for "gen:meaning" after inverse review', async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    const subject = await prisma.subject.create({
+      data: {
+        userId: u,
+        subject: "Haus",
+        subjectKey: subjectKeyFor("Haus"),
+        randomKey: 0,
+        cooldownAt: new Date(Date.now() - 1000),
+        fixationLevel: "5",
+        inverseReviewed: true,
+      },
+    })
+    const ownership = tagOwnershipFor(u, "gen:meaning")
+    await prisma.card.create({
+      data: {
+        deckId: deck.id,
+        subjectId: subject.id,
+        front: "front-meaning",
+        frontHash: "meaning",
+        back: "back-meaning",
+        cardTags: {
+          create: [
+            {
+              tag: {
+                connectOrCreate: {
+                  where: {
+                    ownerKey_name: {
+                      ownerKey: ownership.ownerKey,
+                      name: "gen:meaning",
+                    },
+                  },
+                  create: { ...ownership, name: "gen:meaning" },
+                },
+              },
+            },
+          ],
+        },
+      },
+    })
+    await prisma.card.create({
+      data: {
+        deckId: deck.id,
+        subjectId: subject.id,
+        front: "front-basic",
+        frontHash: "basic",
+        back: "back-basic",
+      },
+    })
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0.99,
+    })
+    expect(r.inverse).toBe(true)
+    expect(r.card?.front).toBe("front-basic")
+  })
+
+  it('keeps the original "gen:meaning" card in normal mode when no sibling card exists', async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    await seedSubjects(u, deck.id, [
+      {
+        text: "Haus",
+        cooldownAt: new Date(Date.now() - 1000),
+        fixationLevel: "5",
+        inverseReviewed: true,
+        tags: ["gen:meaning"],
+      },
+    ])
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0,
+    })
+    expect(r.inverse).toBe(false)
+    expect(r.card?.tags).toEqual(["gen:meaning"])
+  })
+
   it("inverse complete only updates lastSeenAt", async () => {
     const u = await makeUser("u")
     const trpc = callerFor(u)

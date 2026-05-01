@@ -34,12 +34,53 @@ export const INVERSE_REVIEW_PROBABILITY = 0.2
 const LONG_TEXT_TAG = "gen:bigger"
 const MEANING_TAG = "gen:meaning"
 
+type ReviewCard = Prisma.CardGetPayload<{
+  include: {
+    subject: {
+      select: { id: true; subject: true; fixationLevel: true; inverseReviewed: true }
+    }
+    cardTags: { include: { tag: true } }
+  }
+}>
+
 function inverseReviewProbabilityForCard(fixationLevel: FixationLevel, tags: readonly string[]) {
   if (tags.includes(LONG_TEXT_TAG)) return 0.7
   if (tags.includes(MEANING_TAG)) return 1
   if (fixationLevel === "1") return 0.7
   if (fixationLevel === "2") return 0.4
   return INVERSE_REVIEW_PROBABILITY
+}
+
+async function resolveInverseEdgeCase(
+  prisma: PrismaClient,
+  card: ReviewCard,
+  deckId: string | undefined
+): Promise<{ selectedCard: ReviewCard; inverse: boolean } | null> {
+  const tags = card.cardTags.map((cardTag) => cardTag.tag.name).sort()
+  if (!card.subject.inverseReviewed || !tags.includes(MEANING_TAG)) return null
+
+  const rerolledCard = await prisma.card.findFirst({
+    where: {
+      subjectId: card.subjectId,
+      id: { not: card.id },
+      ...(deckId ? { deckId } : {}),
+    },
+    orderBy: [{ lastSeenAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
+    include: {
+      subject: {
+        select: { id: true, subject: true, fixationLevel: true, inverseReviewed: true },
+      },
+      cardTags: {
+        include: { tag: true },
+      },
+    },
+  })
+
+  if (rerolledCard) {
+    return { selectedCard: rerolledCard, inverse: true }
+  }
+
+  return { selectedCard: card, inverse: false }
 }
 
 export async function pickNextCard({
@@ -165,17 +206,27 @@ export async function pickNextCard({
     return { card: null, dueCount, inverse: false }
   }
 
-  const { cardTags, ...rest } = card
-  const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
+  let selectedCard = card
   const fixationLevel = fixationLevelSchema.parse(card.subject.fixationLevel)
   let inverse = false
   if (inverseEnabled) {
-    const inverseProbability = card.subject.inverseReviewed
-      ? 0
-      : inverseReviewProbabilityForCard(fixationLevel, tags)
+    const tags = card.cardTags.map((cardTag) => cardTag.tag.name).sort()
+    const inverseProbability =
+      card.subject.inverseReviewed && !tags.includes(MEANING_TAG)
+        ? 0
+        : inverseReviewProbabilityForCard(fixationLevel, tags)
     const inverseRoll = inverseRng()
     inverse = inverseRoll < inverseProbability
+
+    const edgeCase = await resolveInverseEdgeCase(prisma, card, deckId)
+    if (edgeCase) {
+      selectedCard = edgeCase.selectedCard
+      inverse = edgeCase.inverse
+    }
   }
+
+  const { cardTags, ...rest } = selectedCard
+  const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
   return { card: { ...rest, tags } as PickResult["card"], dueCount, inverse }
 }
 
