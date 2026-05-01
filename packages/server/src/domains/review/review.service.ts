@@ -104,14 +104,15 @@ export async function pickNextCard({
   })
 
   // Include some candidates from outside the recents list.
+  const excludeIds = [
+    ...(excludedSubjectId ? [excludedSubjectId] : []),
+    ...candidates1.map((c) => c.id),
+  ]
   const candidate2Where: Prisma.SubjectWhereInput = {
     userId,
     ...(deckId ? { deckId } : {}),
     ...(includeOnCooldown ? {} : { cooldownAt: { lte: now } }),
-    ...(excludedSubjectId ? { id: { not: excludedSubjectId } } : {}),
-    ...(candidates1.length > 0
-      ? { id: { notIn: candidates1.map((candidate) => candidate.id) } }
-      : {}),
+    ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
   }
 
   const candidate2Target = randomSubjectKeyFromRng(rng)
@@ -226,8 +227,6 @@ async function getIsInverse(prisma: PrismaClient, card: ReviewCard, inverseRng: 
       if (!cardFallback) {
         inverseProbability = 0
       } else {
-        const fallbackFixationLevel = fixationLevelSchema.parse(cardFallback.subject.fixationLevel)
-        const fallbackTags = cardFallback.cardTags.map((cardTag) => cardTag.tag.name).sort()
         inverseProbability = inverseReviewProbabilityForCard(cardFallback)
       }
     } else {
