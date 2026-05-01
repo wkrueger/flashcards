@@ -50,11 +50,28 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
         setRevealed(false)
       }
     },
-    onSuccess: () => {
+    onSuccess: async (_result, variables) => {
       setRevealed(false)
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.decks.get.invalidate({ id: deckId })
-      utils.review.next.invalidate({ deckId, mode })
+
+      const prefetched = utils.review.next.getData({
+        deckId,
+        mode,
+        excludeCardId: variables.cardId,
+      })
+
+      if (prefetched) {
+        utils.review.next.setData({ deckId, mode }, prefetched)
+        return
+      }
+
+      const freshNext = await utils.review.next.fetch({
+        deckId,
+        mode,
+        excludeCardId: variables.cardId,
+      })
+      utils.review.next.setData({ deckId, mode }, freshNext)
     },
   })
 
