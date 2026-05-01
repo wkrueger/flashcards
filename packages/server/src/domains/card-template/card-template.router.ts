@@ -35,6 +35,16 @@ export const cardTemplateRouter = router({
         windowMs: 60_000 * 2,
         max: 6,
       })
+      const userRecord = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { plan: true },
+      })
+      if (userRecord?.plan === "free") {
+        rateLimit("cardTemplate.generatePreviews:plan:free", {
+          windowMs: 60_000 * 10,
+          max: 20,
+        })
+      }
       const languages = await ctx.prisma.language.findMany({
         where: { id: { in: [input.frontLanguageId, input.backLanguageId] } },
       })
