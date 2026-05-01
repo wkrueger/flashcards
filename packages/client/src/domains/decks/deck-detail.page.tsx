@@ -298,7 +298,7 @@ export function DeckDetailPage() {
               <div className="min-w-0 space-y-1">
                 <div className="text-sm font-medium">Allow inverse mode</div>
                 <p className="text-sm text-muted-foreground">
-                  Occasionally review these cards back-to-front with a simple next button.
+                  Occasionally review these cards back-to-front.
                 </p>
                 {updateInverseReview.isPending && (
                   <p className="text-xs text-muted-foreground">Saving…</p>
