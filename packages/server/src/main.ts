@@ -22,21 +22,18 @@ const isProd = process.env.NODE_ENV === "production"
 
 export async function buildServer() {
   const app = Fastify({
-    logger: isProd
-      ? { level: "info" }
-      : {
-          level: "info",
-          transport: {
-            target: "pino-pretty",
-            options: {
-              colorize: true,
-              translateTime: "HH:MM:ss",
-              ignore: "pid,hostname",
-              messageFormat: "{req.method} {req.url} {res.statusCode} — {msg}",
-              singleLine: true,
-            },
-          },
+    logger: {
+      level: "info",
+      transport: {
+        target: "pino-pretty",
+        options: {
+          colorize: !isProd,
+          translateTime: "yyyy-mm-dd HH:MM:ss",
+          ignore: "pid,hostname,reqId,req.remoteAddress,req.remotePort",
+          singleLine: true,
         },
+      },
+    },
   })
 
   await app.register(cors, {
