@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { Check, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { Check, LoaderCircle, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { handleTRPCError, trpc } from "../../infra/trpc"
 import { Button, buttonVariants } from "../../ui/button"
 import { cn } from "../../lib/utils"
@@ -109,15 +109,6 @@ export function DeckDetailPage() {
         actions={
           <>
             <Link
-              to="/decks/$deckId/cards/new"
-              params={{ deckId }}
-              aria-label="New card"
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 px-3")}
-            >
-              <Plus className="h-4 w-4" />
-              Card
-            </Link>
-            <Link
               to="/decks/$deckId/cards/generate"
               params={{ deckId }}
               aria-label="New word from template"
@@ -130,6 +121,12 @@ export function DeckDetailPage() {
         }
         menuItems={
           <>
+            <MenuItem
+              icon={<Plus className="h-[18px] w-[18px]" />}
+              onSelect={() => navigate({ to: "/decks/$deckId/cards/new", params: { deckId } })}
+            >
+              Add card
+            </MenuItem>
             <MenuItem
               icon={<Pencil className="h-[18px] w-[18px]" />}
               onSelect={() => setEditOpen(true)}
@@ -291,18 +288,20 @@ export function DeckDetailPage() {
               />
               <span
                 aria-hidden="true"
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-primary transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
               >
-                <Check className="h-3 w-3" />
+                <Check className="h-4 w-4" />
               </span>
               <div className="min-w-0 space-y-1">
-                <div className="text-sm font-medium">Allow inverse mode</div>
+                <div className="flex items-center gap-1 text-sm font-medium">
+                  <span>Allow inverse mode</span>
+                  {updateInverseReview.isPending && (
+                    <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Occasionally review these cards back-to-front.
                 </p>
-                {updateInverseReview.isPending && (
-                  <p className="text-xs text-muted-foreground">Saving…</p>
-                )}
               </div>
             </label>
           </div>
