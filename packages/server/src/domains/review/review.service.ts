@@ -32,9 +32,11 @@ export interface PickResult {
 
 export const INVERSE_REVIEW_PROBABILITY = 0.2
 const LONG_TEXT_TAG = "gen:bigger"
+const MEANING_TAG = "gen:meaning"
 
 function inverseReviewProbabilityForCard(fixationLevel: FixationLevel, tags: readonly string[]) {
   if (tags.includes(LONG_TEXT_TAG)) return 0.7
+  if (tags.includes(MEANING_TAG)) return 1
   if (fixationLevel === "1") return 0.7
   if (fixationLevel === "2") return 0.4
   return INVERSE_REVIEW_PROBABILITY
@@ -166,12 +168,14 @@ export async function pickNextCard({
   const { cardTags, ...rest } = card
   const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
   const fixationLevel = fixationLevelSchema.parse(card.subject.fixationLevel)
-  const inverseProbability = card.subject.inverseReviewed
-    ? 0
-    : inverseReviewProbabilityForCard(fixationLevel, tags)
-  const inverseRoll = inverseRng()
-  console.log({ inverseEnabled, inverseRoll, inverseProbability })
-  const inverse = inverseEnabled && inverseRoll < inverseProbability
+  let inverse = false
+  if (inverseEnabled) {
+    const inverseProbability = card.subject.inverseReviewed
+      ? 0
+      : inverseReviewProbabilityForCard(fixationLevel, tags)
+    const inverseRoll = inverseRng()
+    inverse = inverseRoll < inverseProbability
+  }
   return { card: { ...rest, tags } as PickResult["card"], dueCount, inverse }
 }
 
