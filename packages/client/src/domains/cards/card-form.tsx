@@ -11,12 +11,14 @@ export interface CardFormValues {
 }
 
 export function CardForm({
+  deckId,
   initial,
   submitLabel,
   onSubmit,
   pending,
   error,
 }: {
+  deckId: string
   initial: CardFormValues
   submitLabel: string
   pending: boolean
@@ -41,7 +43,7 @@ export function CardForm({
     >
       <div className="space-y-1">
         <Label>Subject</Label>
-        <SubjectAutocomplete value={subjectText} onChange={setSubjectText} />
+        <SubjectAutocomplete deckId={deckId} value={subjectText} onChange={setSubjectText} />
       </div>
       <div className="space-y-1">
         <Label htmlFor="front">Front (markdown)</Label>

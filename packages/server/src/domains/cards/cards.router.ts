@@ -83,7 +83,12 @@ export const cardsRouter = router({
 
   create: protectedProcedure.input(createCardInput).mutation(async ({ ctx, input }) => {
     await ownDeck(ctx.prisma, ctx.user.id, input.deckId)
-    const subject = await upsertSubjectByText(ctx.prisma, ctx.user.id, input.subjectText)
+    const subject = await upsertSubjectByText(
+      ctx.prisma,
+      ctx.user.id,
+      input.deckId,
+      input.subjectText
+    )
     const frontHash = hashFront(input.front)
     const tagLinks = buildTagLinks(ctx.user.id, input.tags)
     try {
@@ -122,7 +127,12 @@ export const cardsRouter = router({
     }
     if (input.back !== undefined) data.back = input.back
     if (input.subjectText !== undefined) {
-      const subject = await upsertSubjectByText(ctx.prisma, ctx.user.id, input.subjectText)
+      const subject = await upsertSubjectByText(
+        ctx.prisma,
+        ctx.user.id,
+        card.deckId,
+        input.subjectText
+      )
       data.subject = { connect: { id: subject.id } }
     }
     if (input.tags !== undefined) {

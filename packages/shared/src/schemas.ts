@@ -28,6 +28,7 @@ export const updateDeckInput = z.object({
 export const idInput = z.object({ id })
 
 export const subjectAutocompleteInput = z.object({
+  deckId: id,
   query: z.string().trim().max(100),
 })
 

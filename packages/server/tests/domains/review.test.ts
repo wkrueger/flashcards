@@ -24,6 +24,7 @@ async function seedSubjects(
   for (const [index, s] of specs.entries()) {
     const subj = await prisma.subject.create({
       data: {
+        deckId,
         userId,
         subject: s.text,
         subjectKey: subjectKeyFor(s.text),
@@ -261,6 +262,7 @@ describe("review domain", () => {
     const subject = await prisma.subject.create({
       data: {
         userId: u,
+        deckId: deck.id,
         subject: "Haus",
         subjectKey: subjectKeyFor("Haus"),
         randomKey: 0,

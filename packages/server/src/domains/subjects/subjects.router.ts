@@ -27,6 +27,7 @@ export const subjectsRouter = router({
     return ctx.prisma.subject.findMany({
       where: {
         userId: ctx.user.id,
+        deckId: input.deckId,
         subjectKey: { startsWith: subjectKeyFor(input.query) },
       },
       orderBy: { subject: "asc" },
@@ -56,7 +57,7 @@ export const subjectsRouter = router({
   rename: protectedProcedure.input(renameSubjectInput).mutation(async ({ ctx, input }) => {
     const subject = await ctx.prisma.subject.findFirst({
       where: { id: input.id, userId: ctx.user.id },
-      select: { id: true, subjectKey: true },
+      select: { id: true, deckId: true, subjectKey: true },
     })
     if (!subject) throw new TRPCError({ code: "NOT_FOUND" })
     const nextSubject = normalizeSubjectText(input.subject)
@@ -64,7 +65,7 @@ export const subjectsRouter = router({
     if (nextKey !== subject.subjectKey) {
       const conflict = await ctx.prisma.subject.findFirst({
         where: {
-          userId: ctx.user.id,
+          deckId: subject.deckId,
           subjectKey: nextKey,
           NOT: { id: subject.id },
         },

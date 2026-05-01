@@ -68,6 +68,7 @@ export function CardEditPage() {
         }
       />
       <CardForm
+        deckId={deckId}
         initial={{
           subjectText: card.data.subject.subject,
           front: card.data.front,

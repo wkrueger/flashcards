@@ -135,26 +135,7 @@ export const decksRouter = router({
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
 
-    // Collect subjects that only have cards in this deck before we delete.
-    const orphanedSubjects = await ctx.prisma.subject.findMany({
-      where: {
-        userId: ctx.user.id,
-        cards: {
-          every: { deckId: deck.id },
-          some: {},
-        },
-      },
-      select: { id: true },
-    })
-    const orphanedIds = orphanedSubjects.map((s) => s.id)
-
-    await ctx.prisma.$transaction([
-      // Cascade deletes cards automatically; subjects need explicit cleanup.
-      ctx.prisma.deck.delete({ where: { id: deck.id } }),
-      ...(orphanedIds.length
-        ? [ctx.prisma.subject.deleteMany({ where: { id: { in: orphanedIds } } })]
-        : []),
-    ])
+    await ctx.prisma.deck.delete({ where: { id: deck.id } })
 
     return { ok: true }
   }),

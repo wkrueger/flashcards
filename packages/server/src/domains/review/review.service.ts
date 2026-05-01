@@ -43,44 +43,21 @@ type ReviewCard = Prisma.CardGetPayload<{
   }
 }>
 
-function inverseReviewProbabilityForCard(fixationLevel: FixationLevel, tags: readonly string[]) {
+class RerollError extends Error {}
+
+function inverseReviewProbabilityForCard(card: ReviewCard) {
+  const inverseReviewed = card.subject.inverseReviewed
+  const tags = card.cardTags.map((x) => x.tag.name)
+  const fixationLevel = card.subject.fixationLevel
+  if (inverseReviewed) {
+    if (tags.includes(MEANING_TAG)) throw new RerollError()
+    return 0
+  }
   if (tags.includes(LONG_TEXT_TAG)) return 0.7
   if (tags.includes(MEANING_TAG)) return 1
   if (fixationLevel === "1") return 0.7
   if (fixationLevel === "2") return 0.4
   return INVERSE_REVIEW_PROBABILITY
-}
-
-async function resolveInverseEdgeCase(
-  prisma: PrismaClient,
-  card: ReviewCard,
-  deckId: string | undefined
-): Promise<{ selectedCard: ReviewCard; inverse: boolean } | null> {
-  const tags = card.cardTags.map((cardTag) => cardTag.tag.name).sort()
-  if (!card.subject.inverseReviewed || !tags.includes(MEANING_TAG)) return null
-
-  const rerolledCard = await prisma.card.findFirst({
-    where: {
-      subjectId: card.subjectId,
-      id: { not: card.id },
-      ...(deckId ? { deckId } : {}),
-    },
-    orderBy: [{ lastSeenAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
-    include: {
-      subject: {
-        select: { id: true, subject: true, fixationLevel: true, inverseReviewed: true },
-      },
-      cardTags: {
-        include: { tag: true },
-      },
-    },
-  })
-
-  if (rerolledCard) {
-    return { selectedCard: rerolledCard, inverse: true }
-  }
-
-  return { selectedCard: card, inverse: false }
 }
 
 export async function pickNextCard({
@@ -106,7 +83,7 @@ export async function pickNextCard({
 
   const subjectWhere: Prisma.SubjectWhereInput = { userId }
   if (!includeOnCooldown) subjectWhere.cooldownAt = { lte: now }
-  if (deckId) subjectWhere.cards = { some: { deckId } }
+  if (deckId) subjectWhere.deckId = deckId
   let excludedSubjectId: string | undefined
   if (excludeCardId) {
     const excluded = await prisma.card.findFirst({
@@ -129,8 +106,8 @@ export async function pickNextCard({
   // Include some candidates from outside the recents list.
   const candidate2Where: Prisma.SubjectWhereInput = {
     userId,
+    ...(deckId ? { deckId } : {}),
     ...(includeOnCooldown ? {} : { cooldownAt: { lte: now } }),
-    ...(deckId ? { cards: { some: { deckId } } } : {}),
     ...(excludedSubjectId ? { id: { not: excludedSubjectId } } : {}),
     ...(candidates1.length > 0
       ? { id: { notIn: candidates1.map((candidate) => candidate.id) } }
@@ -174,8 +151,8 @@ export async function pickNextCard({
     ? await prisma.subject.count({
         where: {
           userId,
+          ...(deckId ? { deckId } : {}),
           cooldownAt: { lte: now },
-          ...(deckId ? { cards: { some: { deckId } } } : {}),
         },
       })
     : count
@@ -184,7 +161,7 @@ export async function pickNextCard({
 
   const chosen = candidates[Math.floor(rng() * candidates.length)]!
 
-  const card = await prisma.card.findFirst({
+  let selectedCard = await prisma.card.findFirst({
     where: {
       subjectId: chosen.id,
       ...(deckId ? { deckId } : {}),
@@ -200,34 +177,65 @@ export async function pickNextCard({
     },
   })
 
-  if (!card) {
+  if (!selectedCard) {
     // Subject exists but no card in scope; recurse without this subject by re-querying
     // (rare race / data shape). Just return null + dueCount.
     return { card: null, dueCount, inverse: false }
   }
 
-  let selectedCard = card
-  const fixationLevel = fixationLevelSchema.parse(card.subject.fixationLevel)
-  let inverse = false
+  let isInverse = false
   if (inverseEnabled) {
-    const tags = card.cardTags.map((cardTag) => cardTag.tag.name).sort()
-    const inverseProbability =
-      card.subject.inverseReviewed && !tags.includes(MEANING_TAG)
-        ? 0
-        : inverseReviewProbabilityForCard(fixationLevel, tags)
-    const inverseRoll = inverseRng()
-    inverse = inverseRoll < inverseProbability
-
-    const edgeCase = await resolveInverseEdgeCase(prisma, card, deckId)
-    if (edgeCase) {
-      selectedCard = edgeCase.selectedCard
-      inverse = edgeCase.inverse
+    const { isInverse: isInverseResp, cardFallback } = await getIsInverse(
+      prisma,
+      selectedCard,
+      inverseRng
+    )
+    isInverse = isInverseResp
+    if (cardFallback) {
+      selectedCard = cardFallback
     }
   }
-
   const { cardTags, ...rest } = selectedCard
   const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
-  return { card: { ...rest, tags } as PickResult["card"], dueCount, inverse }
+  return { card: { ...rest, tags } as PickResult["card"], dueCount, inverse: isInverse }
+}
+
+async function getIsInverse(prisma: PrismaClient, card: ReviewCard, inverseRng: () => number) {
+  let cardFallback: ReviewCard | null = null
+  let inverseProbability: number
+  try {
+    inverseProbability = inverseReviewProbabilityForCard(card)
+  } catch (err) {
+    if (err instanceof RerollError) {
+      cardFallback = await prisma.card.findFirst({
+        where: {
+          subjectId: card.subject.id,
+          cardTags: {
+            none: { tag: { name: "gen:meaning" } },
+          },
+        },
+        include: {
+          subject: {
+            select: { id: true, subject: true, fixationLevel: true, inverseReviewed: true },
+          },
+          cardTags: {
+            include: { tag: true },
+          },
+        },
+      })
+      if (!cardFallback) {
+        inverseProbability = 0
+      } else {
+        const fallbackFixationLevel = fixationLevelSchema.parse(cardFallback.subject.fixationLevel)
+        const fallbackTags = cardFallback.cardTags.map((cardTag) => cardTag.tag.name).sort()
+        inverseProbability = inverseReviewProbabilityForCard(cardFallback)
+      }
+    } else {
+      throw err
+    }
+  }
+  const inverseRoll = inverseRng()
+  return { isInverse: inverseRoll < inverseProbability, cardFallback }
 }
 
 export async function completeReview(

@@ -27,6 +27,7 @@ export function CardNewPage() {
     <div className="flex flex-1 flex-col gap-3">
       <PageHeader title="New card" onBack={goBack} />
       <CardForm
+        deckId={deckId}
         initial={{ subjectText: "", front: "", back: "" }}
         submitLabel="Create"
         pending={create.isPending}

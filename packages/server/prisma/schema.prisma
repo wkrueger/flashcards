@@ -92,6 +92,7 @@ model Deck {
   defaultBackLanguageId  Int?
   defaultBackLanguage   Language? @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
   inverseReviewEnabled  Boolean   @default(false)
+  subjects              Subject[]
   cards                 Card[]
   createdAt             DateTime  @default(now())
 
@@ -100,6 +101,8 @@ model Deck {
 
 model Subject {
   id            String    @id @default(cuid())
+  deckId        String
+  deck          Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
   subject       String
   subjectKey    String
   randomKey     Int       @default(0)
@@ -112,9 +115,10 @@ model Subject {
   cooldownAt    DateTime  @default(now())
   cards         Card[]
 
-  @@unique([userId, subjectKey])
-  @@index([userId, randomKey])
-  @@index([userId, cooldownAt, randomKey])
+  @@unique([deckId, subjectKey])
+  @@index([deckId, randomKey])
+  @@index([deckId, cooldownAt, randomKey])
+  @@index([userId, deckId])
 }
 
 model Card {

@@ -19,13 +19,18 @@ export function randomSubjectKeyFromRng(rng: () => number) {
   return Math.floor(rng() * SUBJECT_RANDOM_KEY_RANGE)
 }
 
-export async function upsertSubjectByText(prisma: PrismaClient, userId: string, text: string) {
+export async function upsertSubjectByText(
+  prisma: PrismaClient,
+  userId: string,
+  deckId: string,
+  text: string
+) {
   const subject = normalizeSubjectText(text)
   const subjectKey = subjectKeyFor(subject)
 
   return prisma.subject.upsert({
-    where: { userId_subjectKey: { userId, subjectKey } },
+    where: { deckId_subjectKey: { deckId, subjectKey } },
     update: {},
-    create: { userId, subject, subjectKey, randomKey: randomSubjectKey() },
+    create: { userId, deckId, subject, subjectKey, randomKey: randomSubjectKey() },
   })
 }

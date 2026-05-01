@@ -185,6 +185,35 @@ describe("cards domain", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" })
   })
 
+  it("allows the same subject text in different decks", async () => {
+    const userId = await makeUser("alice")
+    const trpc = callerFor(userId)
+    const deckA = await trpc.decks.create({ name: "German A" })
+    const deckB = await trpc.decks.create({ name: "German B" })
+
+    await trpc.cards.create({
+      deckId: deckA.id,
+      subjectText: "Haus",
+      front: "front a",
+      back: "back a",
+    })
+
+    await trpc.cards.create({
+      deckId: deckB.id,
+      subjectText: "Haus",
+      front: "front b",
+      back: "back b",
+    })
+
+    const subjects = await prisma.subject.findMany({
+      where: { userId },
+      orderBy: { deckId: "asc" },
+    })
+    expect(subjects).toHaveLength(2)
+    expect(subjects.map((subject) => subject.subject)).toEqual(["Haus", "Haus"])
+    expect(new Set(subjects.map((subject) => subject.deckId)).size).toBe(2)
+  })
+
   it("scopes deck access per user", async () => {
     const a = await makeUser("a")
     const b = await makeUser("b")

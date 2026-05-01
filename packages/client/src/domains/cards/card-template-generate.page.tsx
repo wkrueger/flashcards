@@ -279,7 +279,11 @@ export function CardTemplateGeneratePage() {
               </span>
             )}
           </Label>
-          <SubjectAutocomplete value={wordOrExpression} onChange={setWordOrExpression} />
+          <SubjectAutocomplete
+            deckId={deckId}
+            value={wordOrExpression}
+            onChange={setWordOrExpression}
+          />
         </div>
 
         <div className="space-y-1">

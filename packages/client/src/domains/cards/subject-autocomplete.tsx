@@ -4,9 +4,11 @@ import { Input } from "../../ui/input"
 import { Popover, PopoverAnchor, PopoverContent } from "../../ui/popover"
 
 export function SubjectAutocomplete({
+  deckId,
   value,
   onChange,
 }: {
+  deckId: string
   value: string
   onChange: (next: string) => void
 }) {
@@ -25,7 +27,7 @@ export function SubjectAutocomplete({
   }, [focused, query])
 
   const suggestions = trpc.subjects.autocomplete.useQuery(
-    { query: debouncedQuery },
+    { deckId, query: debouncedQuery },
     { enabled: focused && debouncedQuery.length > 0 }
   )
 
