@@ -54,6 +54,7 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
       setRevealed(false)
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.decks.get.invalidate({ id: deckId })
+      utils.review.next.invalidate({ deckId, mode })
     },
   })
 
