@@ -7,6 +7,7 @@ import {
   subjectKeyFor,
 } from "../../src/domains/subjects/subjects.service.js"
 import { COOLDOWN_MS } from "@cards/shared"
+import { tagOwnershipFor } from "../../src/domains/cards/cards.service.js"
 
 async function seedSubjects(
   userId: string,
@@ -42,14 +43,26 @@ async function seedSubjects(
         back: `back-${s.text}`,
         cardTags: s.tags
           ? {
-              create: s.tags.map((name) => ({
-                tag: {
-                  connectOrCreate: {
-                    where: { userId_name: { userId, name } },
-                    create: { userId, name },
+              create: s.tags.map((name) => {
+                const ownership = tagOwnershipFor(userId, name)
+
+                return {
+                  tag: {
+                    connectOrCreate: {
+                      where: {
+                        ownerKey_name: {
+                          ownerKey: ownership.ownerKey,
+                          name,
+                        },
+                      },
+                      create: {
+                        ...ownership,
+                        name,
+                      },
+                    },
                   },
-                },
-              })),
+                }
+              }),
             }
           : undefined,
       },

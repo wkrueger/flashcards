@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { TRPCError } from "@trpc/server"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 import { prisma } from "../../src/infra/db.js"
+import { SYSTEM_TAG_OWNER_KEY } from "../../src/domains/cards/cards.service.js"
 
 describe("cards domain", () => {
   beforeEach(async () => {
@@ -42,7 +43,7 @@ describe("cards domain", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" })
   })
 
-  it("normalizes tags and reuses them across cards", async () => {
+  it("normalizes user tags and reuses them across cards", async () => {
     const userId = await makeUser("alice")
     const trpc = callerFor(userId)
     const deck = await trpc.decks.create({ name: "German" })
@@ -67,10 +68,44 @@ describe("cards domain", () => {
     expect(second.tags).toEqual(["home"])
 
     const tags = await prisma.tag.findMany({
-      where: { userId },
+      where: { userId, ownerKey: userId },
       orderBy: { name: "asc" },
     })
     expect(tags.map((tag) => tag.name)).toEqual(["home", "noun"])
+  })
+
+  it("reuses system-owned generated tags across users", async () => {
+    const aliceId = await makeUser("alice")
+    const bobId = await makeUser("bob")
+    const aliceDeck = await callerFor(aliceId).decks.create({ name: "German" })
+    const bobDeck = await callerFor(bobId).decks.create({ name: "German" })
+
+    await callerFor(aliceId).cards.create({
+      deckId: aliceDeck.id,
+      subjectText: "Haus",
+      front: "front 1",
+      back: "back 1",
+      tags: ["gen:bigger"],
+    })
+
+    await callerFor(bobId).cards.create({
+      deckId: bobDeck.id,
+      subjectText: "Baum",
+      front: "front 2",
+      back: "back 2",
+      tags: ["gen:bigger"],
+    })
+
+    const tags = await prisma.tag.findMany({
+      where: { name: "gen:bigger" },
+      orderBy: { ownerKey: "asc" },
+    })
+
+    expect(tags).toHaveLength(1)
+    expect(tags[0]).toMatchObject({
+      ownerKey: SYSTEM_TAG_OWNER_KEY,
+      userId: null,
+    })
   })
 
   it("stores generation template metadata when provided", async () => {

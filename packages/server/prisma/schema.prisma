@@ -27,6 +27,11 @@ model User {
   tags     Tag[]
 }
 
+enum TagOwnerType {
+  SYSTEM
+  USER
+}
+
 model Session {
   id        String   @id
   userId    String
@@ -133,13 +138,16 @@ model Card {
 }
 
 model Tag {
-  id       String    @id @default(cuid())
-  userId   String
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name     String
-  cardTags CardTag[]
+  id        String       @id @default(cuid())
+  ownerType TagOwnerType
+  ownerKey  String
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  cardTags  CardTag[]
 
-  @@unique([userId, name])
+  @@unique([ownerKey, name])
+  @@index([ownerKey])
   @@index([userId])
 }
 

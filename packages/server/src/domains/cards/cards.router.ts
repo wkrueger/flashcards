@@ -3,7 +3,7 @@ import { Prisma } from "../../generated/prisma/client.js"
 import { createCardInput, idInput, updateCardInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { upsertSubjectByText } from "../subjects/subjects.service.js"
-import { hashFront, normalizeCardTags } from "./cards.service.js"
+import { hashFront, normalizeCardTags, tagOwnershipFor } from "./cards.service.js"
 
 type Db = import("../../generated/prisma/client.js").PrismaClient
 
@@ -23,22 +23,26 @@ function serializeCard(card: Prisma.CardGetPayload<{ include: typeof cardInclude
 }
 
 function buildTagLinks(userId: string, tags: string[]) {
-  return normalizeCardTags(tags).map((name) => ({
-    tag: {
-      connectOrCreate: {
-        where: {
-          userId_name: {
-            userId,
+  return normalizeCardTags(tags).map((name) => {
+    const ownership = tagOwnershipFor(userId, name)
+
+    return {
+      tag: {
+        connectOrCreate: {
+          where: {
+            ownerKey_name: {
+              ownerKey: ownership.ownerKey,
+              name,
+            },
+          },
+          create: {
+            ...ownership,
             name,
           },
         },
-        create: {
-          userId,
-          name,
-        },
       },
-    },
-  }))
+    }
+  })
 }
 
 function isUniqueConstraintError(err: unknown) {
