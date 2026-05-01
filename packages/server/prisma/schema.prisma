@@ -86,6 +86,7 @@ model Deck {
   defaultFrontLanguage  Language? @relation("DeckDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
   defaultBackLanguageId  Int?
   defaultBackLanguage   Language? @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
+  inverseReviewEnabled  Boolean   @default(false)
   cards                 Card[]
   createdAt             DateTime  @default(now())
 

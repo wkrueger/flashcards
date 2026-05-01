@@ -16,7 +16,10 @@ export const reviewRouter = router({
 
   complete: protectedProcedure.input(reviewCompleteInput).mutation(async ({ ctx, input }) => {
     try {
-      return await completeReview(ctx.prisma, ctx.user.id, input.cardId, input.chosenLevel)
+      return await completeReview(ctx.prisma, ctx.user.id, input.cardId, {
+        chosenLevel: input.chosenLevel,
+        inverse: input.inverse,
+      })
     } catch (err) {
       if (
         err instanceof Error &&

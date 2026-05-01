@@ -48,10 +48,8 @@ export const cardTemplateRouter = router({
       const backPromptLanguage = backLanguage.englishName ?? backLanguage.name
 
       let systemPrompt =
-        "Generate vocabulary flashcard previews. Return JSON only. " +
-        "Each card must have front and back markdown strings. Bold the requested word or " +
-        "expression and its translation with double asterisks. Keep phrases natural, complete, and distinct. " +
-        'Each card must include a variant field with one of: "basic", "bigger", or "meaning".'
+        "You will be asked to generate texts from an input. Bold the requested word or " +
+        "expression and its translation with double asterisks. Keep phrases complete and distinct. "
 
       const bigStatement = `Statement number ${input.count - 1} must be bigger and have around 170 characters. Set variant=bigger for that card.`
 
@@ -60,9 +58,9 @@ export const cardTemplateRouter = router({
         (input.count >= 3 ? bigStatement : "") +
         `Then translate each phrase to ${frontPromptLanguage}. The front field ` +
         `is the ${frontPromptLanguage} translation.  The back field is the ${backPromptLanguage} phrase. ` +
-        `Don't include any extra annotations, keep just the raw phrases.` +
         (input.count > 1
-          ? `The last card should describe the meaning of the input. Example: "<word> means ..." Set variant=meaning for that card.`
+          ? `In the last card, in the "back" field, describe the meaning of the input using only ${backPromptLanguage}. Example: "<word> means ...". ` +
+            `In the "front" field, translate the text from the "back" field as usual. Set variant=meaning for that card.`
           : "")
       expressionPrompt
 

@@ -65,6 +65,7 @@ export const decksRouter = router({
       createdAt: deck.createdAt,
       defaultFrontLanguageId: deck.defaultFrontLanguageId,
       defaultBackLanguageId: deck.defaultBackLanguageId,
+      inverseReviewEnabled: deck.inverseReviewEnabled,
       cardCount,
       wordCount,
       cooldownCount,
@@ -90,6 +91,7 @@ export const decksRouter = router({
         userId: ctx.user.id,
         defaultFrontLanguageId: input.defaultFrontLanguageId ?? null,
         defaultBackLanguageId: input.defaultBackLanguageId ?? null,
+        inverseReviewEnabled: input.inverseReviewEnabled ?? false,
       },
     })
   }),
@@ -99,7 +101,7 @@ export const decksRouter = router({
       where: { id: input.id, userId: ctx.user.id },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
-    if (input.name !== deck.name) {
+    if (input.name !== undefined && input.name !== deck.name) {
       const conflict = await ctx.prisma.deck.findFirst({
         where: { userId: ctx.user.id, name: input.name, NOT: { id: deck.id } },
       })
@@ -113,13 +115,17 @@ export const decksRouter = router({
       (v): v is number => typeof v === "number"
     )
     await assertLanguagesExist(ctx.prisma, langIds)
+    const data: Record<string, unknown> = {}
+    if (input.name !== undefined) data.name = input.name
+    if (input.defaultFrontLanguageId !== undefined)
+      data.defaultFrontLanguageId = input.defaultFrontLanguageId ?? null
+    if (input.defaultBackLanguageId !== undefined)
+      data.defaultBackLanguageId = input.defaultBackLanguageId ?? null
+    if (input.inverseReviewEnabled !== undefined)
+      data.inverseReviewEnabled = input.inverseReviewEnabled
     return ctx.prisma.deck.update({
       where: { id: deck.id },
-      data: {
-        name: input.name,
-        defaultFrontLanguageId: input.defaultFrontLanguageId ?? null,
-        defaultBackLanguageId: input.defaultBackLanguageId ?? null,
-      },
+      data,
     })
   }),
 

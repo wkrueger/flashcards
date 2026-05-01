@@ -14,13 +14,15 @@ export const createDeckInput = z.object({
   name: z.string().trim().min(1).max(100),
   defaultFrontLanguageId: languageId.nullish(),
   defaultBackLanguageId: languageId.nullish(),
+  inverseReviewEnabled: z.boolean().optional(),
 })
 
 export const updateDeckInput = z.object({
   id,
-  name: z.string().trim().min(1).max(100),
+  name: z.string().trim().min(1).max(100).optional(),
   defaultFrontLanguageId: languageId.nullish(),
   defaultBackLanguageId: languageId.nullish(),
+  inverseReviewEnabled: z.boolean().optional(),
 })
 
 export const idInput = z.object({ id })
@@ -70,7 +72,13 @@ export const reviewNextInput = z.object({
   excludeCardId: id.optional(),
 })
 
-export const reviewCompleteInput = z.object({
-  cardId: id,
-  chosenLevel: fixationLevelSchema,
-})
+export const reviewCompleteInput = z
+  .object({
+    cardId: id,
+    chosenLevel: fixationLevelSchema.optional(),
+    inverse: z.boolean().optional(),
+  })
+  .refine((input) => input.inverse === true || input.chosenLevel !== undefined, {
+    message: "chosenLevel is required when not in inverse mode.",
+    path: ["chosenLevel"],
+  })

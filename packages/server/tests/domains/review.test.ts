@@ -11,7 +11,13 @@ import { COOLDOWN_MS } from "@cards/shared"
 async function seedSubjects(
   userId: string,
   deckId: string,
-  specs: { text: string; cooldownAt: Date; lastSeenAt?: Date }[]
+  specs: {
+    text: string
+    cooldownAt: Date
+    lastSeenAt?: Date
+    fixationLevel?: string
+    tags?: string[]
+  }[]
 ) {
   for (const [index, s] of specs.entries()) {
     const subj = await prisma.subject.create({
@@ -22,6 +28,7 @@ async function seedSubjects(
         randomKey: Math.floor((index / specs.length) * SUBJECT_RANDOM_KEY_RANGE),
         cooldownAt: s.cooldownAt,
         lastSeenAt: s.lastSeenAt,
+        fixationLevel: s.fixationLevel,
       },
     })
     await prisma.card.create({
@@ -31,6 +38,18 @@ async function seedSubjects(
         front: `front-${s.text}`,
         frontHash: s.text,
         back: `back-${s.text}`,
+        cardTags: s.tags
+          ? {
+              create: s.tags.map((name) => ({
+                tag: {
+                  connectOrCreate: {
+                    where: { userId_name: { userId, name } },
+                    create: { userId, name },
+                  },
+                },
+              })),
+            }
+          : undefined,
       },
     })
   }
@@ -98,6 +117,125 @@ describe("review domain", () => {
     const r = await callerFor(u).review.next({ mode: "free" })
     expect(r.card).not.toBeNull()
     expect(r.dueCount).toBe(0)
+  })
+
+  it("returns inverse=true when deck has inverseReviewEnabled and roll succeeds", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    await seedSubjects(u, deck.id, [{ text: "Haus", cooldownAt: new Date(Date.now() - 1000) }])
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0,
+    })
+    expect(r.inverse).toBe(true)
+  })
+
+  it("returns inverse=false when deck flag is off even on a winning roll", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d" })
+    await seedSubjects(u, deck.id, [{ text: "Haus", cooldownAt: new Date(Date.now() - 1000) }])
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0,
+    })
+    expect(r.inverse).toBe(false)
+  })
+
+  it('doubles inverse chance when the chosen subject fixation is "1"', async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    await seedSubjects(u, deck.id, [
+      { text: "Haus", cooldownAt: new Date(Date.now() - 1000), fixationLevel: "1" },
+    ])
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0.39,
+    })
+    expect(r.inverse).toBe(true)
+  })
+
+  it('multiplies inverse chance by 1.5 when the chosen subject fixation is "2"', async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    await seedSubjects(u, deck.id, [
+      { text: "Haus", cooldownAt: new Date(Date.now() - 1000), fixationLevel: "2" },
+    ])
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0.29,
+    })
+    expect(r.inverse).toBe(true)
+  })
+
+  it('uses 0.7 inverse chance when the chosen card has the "gen:bigger" tag', async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    await seedSubjects(u, deck.id, [
+      {
+        text: "Haus",
+        cooldownAt: new Date(Date.now() - 1000),
+        fixationLevel: "5",
+        tags: ["gen:bigger"],
+      },
+    ])
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0.69,
+    })
+    expect(r.inverse).toBe(true)
+  })
+
+  it("inverse complete only updates lastSeenAt", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d", inverseReviewEnabled: true })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "f",
+      back: "b",
+    })
+    const subjBefore = await prisma.subject.findFirstOrThrow({
+      where: { userId: u, subject: "Haus" },
+    })
+    await trpc.review.complete({ cardId: card.id, inverse: true })
+    const subjAfter = await prisma.subject.findFirstOrThrow({
+      where: { id: subjBefore.id },
+    })
+    expect(subjAfter.timesSeen).toBe(subjBefore.timesSeen)
+    expect(subjAfter.fixationLevel).toBe(subjBefore.fixationLevel)
+    expect(subjAfter.cooldownAt.getTime()).toBe(subjBefore.cooldownAt.getTime())
+    expect(subjAfter.lastSeenAt).not.toBeNull()
+    const cardAfter = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
+    expect(cardAfter.timesSeen).toBe(0)
+    expect(cardAfter.lastSeenAt).not.toBeNull()
   })
 
   it("complete advances cooldown by the chosen level", async () => {

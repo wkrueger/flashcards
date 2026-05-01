@@ -11,6 +11,7 @@ export interface PickArgs {
   excludeCardId?: string
   now?: Date
   rng?: () => number
+  inverseRng?: () => number
 }
 
 export interface PickResult {
@@ -21,6 +22,17 @@ export interface PickResult {
       })
     | null
   dueCount: number
+  inverse: boolean
+}
+
+export const INVERSE_REVIEW_PROBABILITY = 0.2
+const LONG_TEXT_TAG = "gen:bigger"
+
+function inverseReviewProbabilityForCard(fixationLevel: FixationLevel, tags: readonly string[]) {
+  if (tags.includes(LONG_TEXT_TAG)) return 0.7
+  if (fixationLevel === "1") return 0.7
+  if (fixationLevel === "2") return 0.4
+  return INVERSE_REVIEW_PROBABILITY
 }
 
 export async function pickNextCard({
@@ -31,7 +43,19 @@ export async function pickNextCard({
   excludeCardId,
   now = new Date(),
   rng = Math.random,
+  inverseRng = Math.random,
 }: PickArgs): Promise<PickResult> {
+  const inverseEnabled = deckId
+    ? Boolean(
+        (
+          await prisma.deck.findFirst({
+            where: { id: deckId, userId },
+            select: { inverseReviewEnabled: true },
+          })
+        )?.inverseReviewEnabled
+      )
+    : false
+
   const subjectWhere: Prisma.SubjectWhereInput = { userId }
   if (!includeOnCooldown) subjectWhere.cooldownAt = { lte: now }
   if (deckId) subjectWhere.cards = { some: { deckId } }
@@ -108,7 +132,7 @@ export async function pickNextCard({
       })
     : count
 
-  if (candidates.length === 0) return { card: null, dueCount }
+  if (candidates.length === 0) return { card: null, dueCount, inverse: false }
 
   const chosen = candidates[Math.floor(rng() * candidates.length)]!
 
@@ -131,29 +155,44 @@ export async function pickNextCard({
   if (!card) {
     // Subject exists but no card in scope; recurse without this subject by re-querying
     // (rare race / data shape). Just return null + dueCount.
-    return { card: null, dueCount }
+    return { card: null, dueCount, inverse: false }
   }
 
   const { cardTags, ...rest } = card
   const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
-  return { card: { ...rest, tags } as PickResult["card"], dueCount }
+  const fixationLevel = fixationLevelSchema.parse(card.subject.fixationLevel)
+  const inverseProbability = inverseReviewProbabilityForCard(fixationLevel, tags)
+  const inverseRoll = inverseRng()
+  console.log({ inverseEnabled, inverseRoll, inverseProbability })
+  const inverse = inverseEnabled && inverseRoll < inverseProbability
+  return { card: { ...rest, tags } as PickResult["card"], dueCount, inverse }
 }
 
 export async function completeReview(
   prisma: PrismaClient,
   userId: string,
   cardId: string,
-  chosenLevel: FixationLevel,
+  options: { chosenLevel?: FixationLevel; inverse?: boolean },
   now: Date = new Date()
 ) {
-  fixationLevelSchema.parse(chosenLevel)
-
   const card = await prisma.card.findFirst({
     where: { id: cardId, deck: { userId } },
     include: { subject: true },
   })
   if (!card) throw Object.assign(new Error("Card not found"), { code: "CARD_NOT_FOUND" })
 
+  if (options.inverse) {
+    await prisma.$transaction([
+      prisma.card.update({ where: { id: card.id }, data: { lastSeenAt: now } }),
+      prisma.subject.update({ where: { id: card.subjectId }, data: { lastSeenAt: now } }),
+    ])
+    return { ok: true, cooldownAt: card.subject.cooldownAt }
+  }
+
+  if (!options.chosenLevel) {
+    throw Object.assign(new Error("chosenLevel required"), { code: "BAD_INPUT" })
+  }
+  const chosenLevel = fixationLevelSchema.parse(options.chosenLevel)
   const cooldown = nextCooldownAt(chosenLevel, now)
 
   await prisma.$transaction([

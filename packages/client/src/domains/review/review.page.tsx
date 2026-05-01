@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { Pencil } from "lucide-react"
+import { ArrowRight, Pencil } from "lucide-react"
 import {
   buttonsForPrevious,
   COOLDOWN_LABEL,
@@ -23,7 +23,10 @@ import { Button, buttonVariants } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
 import { MarkdownView } from "../../components/MarkdownView"
 import { cn } from "../../lib/utils"
-import { displayFrontWithGeneratedTagPrefix } from "../cards/card-front-prefix"
+import {
+  displayFrontWithGeneratedTagPrefix,
+  displayWithGeneratedTagPrefix,
+} from "../cards/card-front-prefix"
 
 export function ReviewPage({ mode }: { mode: ReviewMode }) {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
@@ -102,13 +105,25 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
   }
 
   const card = next.data.card
+  const inverse = next.data.inverse
   const prev = fixationLevelSchema.parse(card.subject.fixationLevel)
   const options = buttonsForPrevious(prev)
+  const promptSource = inverse
+    ? displayWithGeneratedTagPrefix(card.back, card.tags)
+    : displayFrontWithGeneratedTagPrefix(card.front, card.tags)
+  const revealedSource = inverse ? card.front : card.back
+  const subtitle = inverse
+    ? mode === "free"
+      ? "Free inverse review"
+      : "Inverse review"
+    : mode === "free"
+      ? "Free review"
+      : undefined
 
   return (
     <div className="flex flex-1 flex-col gap-3">
       <PageHeader
-        subtitle={mode === "free" ? "Free review" : undefined}
+        subtitle={subtitle}
         onBack={() => navigate({ to: "/decks/$deckId", params: { deckId } })}
         actions={
           <Button
@@ -130,7 +145,7 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
       <div key={card.id} className="contents [&>*]:animate-card-in">
         <Card>
           <CardContent className="min-h-[8rem] p-4">
-            <MarkdownView source={displayFrontWithGeneratedTagPrefix(card.front, card.tags)} />
+            <MarkdownView source={promptSource} />
           </CardContent>
         </Card>
       </div>
@@ -139,27 +154,38 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
         <>
           <Card className="animate-reveal">
             <CardContent className="min-h-[8rem] p-4">
-              <MarkdownView source={card.back} />
+              <MarkdownView source={revealedSource} />
             </CardContent>
           </Card>
-          <div className="mt-auto grid grid-cols-4 gap-2 animate-reveal">
-            {options.map((lvl: FixationLevel) => (
-              <button
-                key={lvl}
-                type="button"
-                disabled={complete.isPending}
-                onClick={() => complete.mutate({ cardId: card.id, chosenLevel: lvl })}
-                aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
-                className={cn(
-                  "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
-                  LEVEL_COLOR[lvl]
-                )}
-              >
-                <span className="text-3xl leading-none">{FIXATION_EMOJI[lvl]}</span>
-                <span className="text-sm opacity-90">{COOLDOWN_LABEL[lvl]}</span>
-              </button>
-            ))}
-          </div>
+          {inverse ? (
+            <Button
+              className="mt-auto w-full animate-reveal gap-1.5"
+              disabled={complete.isPending}
+              onClick={() => complete.mutate({ cardId: card.id, inverse: true })}
+            >
+              <span>Next</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <div className="mt-auto grid grid-cols-4 gap-2 animate-reveal">
+              {options.map((lvl: FixationLevel) => (
+                <button
+                  key={lvl}
+                  type="button"
+                  disabled={complete.isPending}
+                  onClick={() => complete.mutate({ cardId: card.id, chosenLevel: lvl })}
+                  aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
+                  className={cn(
+                    "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
+                    LEVEL_COLOR[lvl]
+                  )}
+                >
+                  <span className="text-3xl leading-none">{FIXATION_EMOJI[lvl]}</span>
+                  <span className="text-sm opacity-90">{COOLDOWN_LABEL[lvl]}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </>
       ) : (
         <Button className="mt-auto w-full" onClick={() => setRevealed(true)}>

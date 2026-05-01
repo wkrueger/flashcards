@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
-import { trpc } from "../../infra/trpc"
+import { Check, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { handleTRPCError, trpc } from "../../infra/trpc"
 import { Button, buttonVariants } from "../../ui/button"
 import { cn } from "../../lib/utils"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog"
@@ -38,6 +38,7 @@ export function DeckDetailPage() {
   const [editName, setEditName] = useState("")
   const [editFrontLang, setEditFrontLang] = useState("")
   const [editBackLang, setEditBackLang] = useState("")
+  const [inverseReviewEnabled, setInverseReviewEnabled] = useState(false)
 
   useEffect(() => {
     if (editOpen && deck.data) {
@@ -50,6 +51,53 @@ export function DeckDetailPage() {
       )
     }
   }, [editOpen, deck.data])
+
+  useEffect(() => {
+    if (deck.data) {
+      setInverseReviewEnabled(deck.data.inverseReviewEnabled)
+    }
+  }, [deck.data])
+
+  const updateInverseReview = trpc.decks.update.useMutation({
+    onMutate: async (input) => {
+      await utils.decks.get.cancel({ id: deckId })
+      const previousDeck = utils.decks.get.getData({ id: deckId })
+      utils.decks.get.setData({ id: deckId }, (current) =>
+        current
+          ? {
+              ...current,
+              inverseReviewEnabled: input.inverseReviewEnabled ?? current.inverseReviewEnabled,
+            }
+          : current
+      )
+      return { previousDeck }
+    },
+    onError: (error, _input, context) => {
+      if (context?.previousDeck) {
+        utils.decks.get.setData({ id: deckId }, context.previousDeck)
+        setInverseReviewEnabled(context.previousDeck.inverseReviewEnabled)
+      }
+      handleTRPCError(error)
+    },
+    onSuccess: () => {
+      utils.decks.list.invalidate()
+      utils.review.next.invalidate()
+    },
+    onSettled: () => {
+      utils.decks.get.invalidate({ id: deckId })
+    },
+  })
+
+  useEffect(() => {
+    if (!deck.data) return
+    if (inverseReviewEnabled === deck.data.inverseReviewEnabled) return
+
+    const timeoutId = window.setTimeout(() => {
+      updateInverseReview.mutate({ id: deckId, inverseReviewEnabled })
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [deck.data, deckId, inverseReviewEnabled, updateInverseReview])
 
   const editSameLanguage = !!editFrontLang && !!editBackLang && editFrontLang === editBackLang
 
@@ -231,6 +279,32 @@ export function DeckDetailPage() {
                 Free review (no cards due)
               </Link>
             )}
+          </div>
+
+          <div className="mt-auto pt-4">
+            <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
+              <input
+                type="checkbox"
+                checked={inverseReviewEnabled}
+                onChange={(e) => setInverseReviewEnabled(e.target.checked)}
+                className="peer sr-only"
+              />
+              <span
+                aria-hidden="true"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-primary transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+              >
+                <Check className="h-3 w-3" />
+              </span>
+              <div className="min-w-0 space-y-1">
+                <div className="text-sm font-medium">Allow inverse mode</div>
+                <p className="text-sm text-muted-foreground">
+                  Occasionally review these cards back-to-front with a simple next button.
+                </p>
+                {updateInverseReview.isPending && (
+                  <p className="text-xs text-muted-foreground">Saving…</p>
+                )}
+              </div>
+            </label>
           </div>
         </>
       )}
