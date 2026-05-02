@@ -2,9 +2,11 @@ import { TRPCError } from "@trpc/server"
 import { createDeckInput, idInput, updateDeckInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { randomSubjectKey } from "../subjects/subjects.service.js"
+import { startOfUtcDay } from "../review/review.service.js"
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const SAMPLE_SUBJECT_LIMIT = 8
+const REVIEW_STATS_WINDOW_DAYS = 7
 
 async function assertLanguagesExist(
   prisma: { language: { count: (args: { where: { id: { in: number[] } } }) => Promise<number> } },
@@ -178,6 +180,26 @@ export const decksRouter = router({
       select: { id: true, subject: true },
     })
     return [...first, ...second]
+  }),
+
+  reviewStats: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
+    const deck = await ctx.prisma.deck.findFirst({
+      where: { id: input.id, userId: ctx.user.id },
+      select: { id: true },
+    })
+    if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    const today = startOfUtcDay(new Date())
+    const earliest = new Date(today.getTime() - (REVIEW_STATS_WINDOW_DAYS - 1) * DAY_MS)
+    const rows = await ctx.prisma.reviewStat.findMany({
+      where: { deckId: input.id, date: { gte: earliest } },
+      orderBy: { date: "asc" },
+      select: { date: true, cardMinutes: true },
+    })
+    const byTime = new Map(rows.map((r) => [r.date.getTime(), r.cardMinutes]))
+    return Array.from({ length: REVIEW_STATS_WINDOW_DAYS }, (_, i) => {
+      const date = new Date(earliest.getTime() + i * DAY_MS)
+      return { date, cardMinutes: byTime.get(date.getTime()) ?? 0 }
+    })
   }),
 
   delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {

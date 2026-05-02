@@ -1,7 +1,13 @@
 import type { PrismaClient } from "../../generated/prisma/client.js"
 import { Prisma } from "../../generated/prisma/client.js"
-import { fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
+import { COOLDOWN_MS, fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
 import { randomSubjectKeyFromRng } from "../subjects/subjects.service.js"
+
+const REVIEW_STATS_RETENTION_DAYS = 15
+
+export function startOfUtcDay(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+}
 
 export interface PickArgs {
   prisma: PrismaClient
@@ -271,6 +277,11 @@ export async function completeReview(
   }
   const chosenLevel = fixationLevelSchema.parse(options.chosenLevel)
   const cooldown = nextCooldownAt(chosenLevel, now)
+  const cardMinutes = Math.round(COOLDOWN_MS[chosenLevel] / 60_000)
+  const today = startOfUtcDay(now)
+  const retentionCutoff = new Date(
+    today.getTime() - REVIEW_STATS_RETENTION_DAYS * 24 * 60 * 60 * 1000
+  )
 
   await prisma.$transaction([
     prisma.card.update({
@@ -286,6 +297,14 @@ export async function completeReview(
         inverseReviewed: false,
         cooldownAt: cooldown,
       },
+    }),
+    prisma.reviewStat.upsert({
+      where: { deckId_date: { deckId: card.deckId, date: today } },
+      create: { deckId: card.deckId, date: today, cardMinutes },
+      update: { cardMinutes: { increment: cardMinutes } },
+    }),
+    prisma.reviewStat.deleteMany({
+      where: { deckId: card.deckId, date: { lt: retentionCutoff } },
     }),
   ])
 

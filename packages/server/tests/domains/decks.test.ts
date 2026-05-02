@@ -95,4 +95,29 @@ describe("decks domain", () => {
     const aSample = await trpc.decks.randomSubjects({ id: a.id })
     expect(aSample.map((s) => s.subject)).toEqual(["x"])
   })
+
+  it("reviewStats returns 7 sequential days, filling missing days with zero", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    const today = new Date()
+    const utcDay = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    )
+    const threeDaysAgo = new Date(utcDay.getTime() - 3 * DAY_MS)
+    await prisma.reviewStat.create({
+      data: { deckId: deck.id, date: utcDay, cardMinutes: 100 },
+    })
+    await prisma.reviewStat.create({
+      data: { deckId: deck.id, date: threeDaysAgo, cardMinutes: 50 },
+    })
+
+    const stats = await trpc.decks.reviewStats({ id: deck.id })
+    expect(stats).toHaveLength(7)
+    expect(stats[stats.length - 1]!.date.getTime()).toBe(utcDay.getTime())
+    expect(stats[stats.length - 1]!.cardMinutes).toBe(100)
+    expect(stats[stats.length - 4]!.date.getTime()).toBe(threeDaysAgo.getTime())
+    expect(stats[stats.length - 4]!.cardMinutes).toBe(50)
+    expect(stats[0]!.cardMinutes).toBe(0)
+  })
 })

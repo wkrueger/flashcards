@@ -95,6 +95,7 @@ model Deck {
   inverseReviewEnabled  Boolean   @default(false)
   subjects              Subject[]
   cards                 Card[]
+  reviewStats           ReviewStat[]
   createdAt             DateTime  @default(now())
 
   @@unique([userId, name])
@@ -164,4 +165,15 @@ model CardTag {
 
   @@id([cardId, tagId])
   @@index([tagId])
+}
+
+model ReviewStat {
+  id          String   @id @default(cuid())
+  deckId      String
+  deck        Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  date        DateTime
+  cardMinutes Int      @default(0)
+
+  @@unique([deckId, date])
+  @@index([deckId, date])
 }

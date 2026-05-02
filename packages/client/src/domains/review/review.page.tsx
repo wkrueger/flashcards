@@ -59,6 +59,7 @@ export function ReviewPage({ mode, subjectId }: { mode: ReviewMode; subjectId?: 
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.decks.get.invalidate({ id: deckId })
       utils.decks.upcomingDueCounts.invalidate({ id: deckId })
+      utils.decks.reviewStats.invalidate({ id: deckId })
 
       const prefetched = utils.review.next.getData({
         deckId,

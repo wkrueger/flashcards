@@ -18,6 +18,7 @@ export function DeckDetailPage() {
   const next = trpc.review.next.useQuery({ deckId, mode: "normal" })
   const upcoming = trpc.decks.upcomingDueCounts.useQuery({ id: deckId })
   const randomSubjects = trpc.decks.randomSubjects.useQuery({ id: deckId })
+  const reviewStats = trpc.decks.reviewStats.useQuery({ id: deckId })
   const dueCount = next.data?.dueCount ?? 0
 
   const deleteDeck = trpc.decks.delete.useMutation({
@@ -286,6 +287,8 @@ export function DeckDetailPage() {
             <UpcomingStat label="in 1 week" value={upcoming.data?.in1w} />
           </div>
 
+          {reviewStats.data && <ReviewStatsChart data={reviewStats.data} />}
+
           {randomSubjects.data && randomSubjects.data.length > 0 && (
             <div className="grid grid-cols-2 gap-2">
               {randomSubjects.data.map((s) => (
@@ -339,6 +342,47 @@ function UpcomingStat({ label, value }: { label: string; value: number | undefin
     <div className="flex flex-col items-center justify-center rounded-md border bg-card p-2">
       <p className="text-xl font-semibold">{value ?? "–"}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+function formatCardMinutes(minutes: number) {
+  if (minutes <= 0) return "0"
+  if (minutes < 60) return `${minutes}m`
+  const hours = minutes / 60
+  if (hours < 24) return `${hours.toFixed(hours >= 10 ? 0 : 1)}h`
+  return `${(hours / 24).toFixed(1)}d`
+}
+
+function ReviewStatsChart({ data }: { data: { date: string | Date; cardMinutes: number }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.cardMinutes))
+  return (
+    <div className="space-y-2 rounded-md border bg-card p-3">
+      <p className="text-xs font-semibold uppercase text-muted-foreground">Review (last 7 days)</p>
+      <div className="flex h-32 items-end gap-2">
+        {data.map((d) => {
+          const date = new Date(d.date)
+          const heightPct = (d.cardMinutes / max) * 100
+          return (
+            <div key={date.toISOString()} className="flex flex-1 flex-col items-center gap-1">
+              <span className="text-[10px] font-medium text-muted-foreground">
+                {d.cardMinutes > 0 ? formatCardMinutes(d.cardMinutes) : ""}
+              </span>
+              <div className="flex h-full w-full items-end">
+                <div
+                  className="w-full rounded-t bg-primary/70 transition-[height]"
+                  style={{ height: `${heightPct}%`, minHeight: d.cardMinutes > 0 ? "2px" : "0" }}
+                />
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {DAY_LABELS[date.getUTCDay()]}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
