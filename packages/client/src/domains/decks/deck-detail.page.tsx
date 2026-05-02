@@ -118,7 +118,7 @@ export function DeckDetailPage() {
               className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 px-3")}
             >
               <Sparkles className="h-4 w-4" />
-              Word
+              Add word
             </Link>
           </>
         }
