@@ -29,11 +29,19 @@ import {
   displayWithGeneratedTagPrefix,
 } from "../cards/card-front-prefix"
 
-export function ReviewPage({ mode, subjectId }: { mode: ReviewMode; subjectId?: string }) {
+export function ReviewPage({
+  mode,
+  initialSubjectId,
+}: {
+  mode: ReviewMode
+  initialSubjectId?: string
+}) {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
   const navigate = useNavigate()
   const utils = trpc.useUtils()
   const [revealed, setRevealed] = useState(false)
+  const [initialConsumed, setInitialConsumed] = useState(false)
+  const subjectId = initialConsumed ? undefined : initialSubjectId
 
   const next = trpc.review.next.useQuery(
     { deckId, mode, subjectId },
@@ -44,6 +52,7 @@ export function ReviewPage({ mode, subjectId }: { mode: ReviewMode; subjectId?: 
   const complete = trpc.review.complete.useMutation({
     onMutate: () => {
       if (!currentCardId) return
+      if (initialSubjectId && !initialConsumed) return
       const prefetched = utils.review.next.getData({
         deckId,
         mode,
@@ -61,6 +70,11 @@ export function ReviewPage({ mode, subjectId }: { mode: ReviewMode; subjectId?: 
       utils.decks.get.invalidate({ id: deckId })
       utils.decks.upcomingDueCounts.invalidate({ id: deckId })
       utils.decks.reviewStats.invalidate({ id: deckId })
+
+      if (initialSubjectId && !initialConsumed) {
+        setInitialConsumed(true)
+        return
+      }
 
       const prefetched = utils.review.next.getData({
         deckId,
@@ -87,8 +101,18 @@ export function ReviewPage({ mode, subjectId }: { mode: ReviewMode; subjectId?: 
   useEffect(() => {
     if (!currentCardId) return
     if (complete.isPending) return
+    if (initialSubjectId && !initialConsumed) return
     utils.review.next.prefetch({ deckId, mode, subjectId, excludeCardId: currentCardId })
-  }, [currentCardId, deckId, mode, subjectId, utils, complete.isPending])
+  }, [
+    currentCardId,
+    deckId,
+    mode,
+    subjectId,
+    utils,
+    complete.isPending,
+    initialSubjectId,
+    initialConsumed,
+  ])
 
   if (next.isLoading) return <p>Loading…</p>
 

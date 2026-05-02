@@ -360,7 +360,7 @@ function ReviewStatsChart({ data }: { data: { date: string | Date; cardMinutes: 
   const max = Math.max(1, ...data.map((d) => d.cardMinutes))
   return (
     <div className="space-y-2 rounded-md border bg-card p-3">
-      <p className="text-xs font-semibold uppercase text-muted-foreground">Review (last 7 days)</p>
+      <p className="text-xs font-semibold uppercase text-muted-foreground">Last 7 days</p>
       <div className="flex h-32 items-end gap-2">
         {data.map((d) => {
           const date = new Date(d.date)
