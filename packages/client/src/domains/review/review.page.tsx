@@ -16,6 +16,7 @@ const LEVEL_COLOR: Record<FixationLevel, string> = {
   "3": "bg-yellow-400 hover:bg-yellow-500 text-black",
   "4": "bg-lime-500 hover:bg-lime-600 text-white",
   "5": "bg-green-600 hover:bg-green-700 text-white",
+  "6": "bg-emerald-700 hover:bg-emerald-800 text-white",
 }
 import { trpc } from "../../infra/trpc"
 import { PageHeader } from "../../components/AppShell"
