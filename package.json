@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "db:migrate": "pnpm --filter server prisma:migrate",
     "db:seed": "pnpm --filter server prisma:seed",
-    "gen-secret": "node scripts/gen-secret.mjs"
+    "gen-secret": "node scripts/gen-secret.mjs",
+    "extract:anki-phrases": "pnpm --filter server exec tsx scripts/extract-anki-phrases.ts"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",

@@ -8,5 +8,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src", "prisma", "tests", "vitest.config.ts", "prisma.config.ts"]
+  "include": ["src", "prisma", "scripts", "tests", "vitest.config.ts", "prisma.config.ts"]
 }

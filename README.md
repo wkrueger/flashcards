@@ -193,3 +193,18 @@ After revealing the back, the user sees four buttons. If the previous fixation w
 ### Card template generation
 
 The new-card screen includes "Generate card from template". The current template creates 1-5 phrase cards for a word or expression using the selected front/back languages. Preview generation uses OpenAI; saving confirmed previews uses the normal card creation API.
+
+## Anki phrase extraction
+
+Use the root CLI to extract only text phrase pairs from an Anki `.apkg` into a JSON array of
+`{ front, back, base_e, base_d, full_d, artikel_d, plural_d }` objects. The extractor reads
+`collection.anki2`, maps note fields from the note model, pulls sentence pairs from `s1..s9` /
+`s1e..s9e`, carries through the German base metadata fields plus the base translation, and ignores
+media payloads such as audio references and images. The implementation lives in
+`packages/server/scripts/`.
+
+```bash
+pnpm extract:anki-phrases \
+  --input ~/Downloads/B1_Wortliste_DTZ_Goethe_vocabsentensesaudiotranslation.apkg \
+  --output ./tmp/b1-phrases.json
+```
