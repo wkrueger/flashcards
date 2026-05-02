@@ -67,6 +67,12 @@ function inverseReviewProbabilityForCard(card: ReviewCard) {
   return INVERSE_REVIEW_PROBABILITY
 }
 
+function applyInverseStreakPenalty(probability: number, inverseReviewStreak: number) {
+  if (probability <= 0) return 0
+  if (inverseReviewStreak <= 0) return probability
+  return probability / (inverseReviewStreak + 1)
+}
+
 export async function pickNextCard({
   prisma,
   userId,
@@ -78,16 +84,14 @@ export async function pickNextCard({
   rng = Math.random,
   inverseRng = Math.random,
 }: PickArgs): Promise<PickResult> {
-  const inverseEnabled = deckId
-    ? Boolean(
-        (
-          await prisma.deck.findFirst({
-            where: { id: deckId, userId },
-            select: { inverseReviewEnabled: true },
-          })
-        )?.inverseReviewEnabled
-      )
-    : false
+  const deck = deckId
+    ? await prisma.deck.findFirst({
+        where: { id: deckId, userId },
+        select: { inverseReviewEnabled: true, inverseReviewStreak: true },
+      })
+    : null
+  const inverseEnabled = Boolean(deck?.inverseReviewEnabled)
+  const inverseReviewStreak = deck?.inverseReviewStreak ?? 0
 
   const pinnedToSubject = Boolean(subjectId)
   const subjectWhere: Prisma.SubjectWhereInput = { userId }
@@ -200,6 +204,7 @@ export async function pickNextCard({
     const { isInverse: isInverseResp, cardFallback } = await getIsInverse(
       prisma,
       selectedCard,
+      inverseReviewStreak,
       inverseRng
     )
     isInverse = isInverseResp
@@ -212,7 +217,12 @@ export async function pickNextCard({
   return { card: { ...rest, tags } as PickResult["card"], dueCount, inverse: isInverse }
 }
 
-async function getIsInverse(prisma: PrismaClient, card: ReviewCard, inverseRng: () => number) {
+async function getIsInverse(
+  prisma: PrismaClient,
+  card: ReviewCard,
+  inverseReviewStreak: number,
+  inverseRng: () => number
+) {
   let cardFallback: ReviewCard | null = null
   let inverseProbability: number
   try {
@@ -238,12 +248,13 @@ async function getIsInverse(prisma: PrismaClient, card: ReviewCard, inverseRng: 
       if (!cardFallback) {
         inverseProbability = 0
       } else {
-        inverseProbability = inverseReviewProbabilityForCard(cardFallback)
+        inverseProbability = 1
       }
     } else {
       throw err
     }
   }
+  inverseProbability = applyInverseStreakPenalty(inverseProbability, inverseReviewStreak)
   const inverseRoll = inverseRng()
   return { isInverse: inverseRoll < inverseProbability, cardFallback }
 }
@@ -267,6 +278,10 @@ export async function completeReview(
       prisma.subject.update({
         where: { id: card.subjectId },
         data: { lastSeenAt: now, inverseReviewed: true },
+      }),
+      prisma.deck.update({
+        where: { id: card.deckId },
+        data: { inverseReviewStreak: { increment: 1 } },
       }),
     ])
     return { ok: true, cooldownAt: card.subject.cooldownAt }
@@ -297,6 +312,10 @@ export async function completeReview(
         inverseReviewed: false,
         cooldownAt: cooldown,
       },
+    }),
+    prisma.deck.update({
+      where: { id: card.deckId },
+      data: { inverseReviewStreak: 0 },
     }),
     prisma.reviewStat.upsert({
       where: { deckId_date: { deckId: card.deckId, date: today } },

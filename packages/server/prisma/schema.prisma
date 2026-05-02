@@ -93,6 +93,7 @@ model Deck {
   defaultBackLanguageId  Int?
   defaultBackLanguage   Language? @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
   inverseReviewEnabled  Boolean   @default(false)
+  inverseReviewStreak   Int       @default(0)
   subjects              Subject[]
   cards                 Card[]
   reviewStats           ReviewStat[]

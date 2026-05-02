@@ -253,6 +253,32 @@ describe("review domain", () => {
     expect(r.inverse).toBe(false)
   })
 
+  it("reduces inverse chance after a prior inverse review in the same deck", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "f",
+      back: "b",
+    })
+
+    await trpc.review.complete({ cardId: card.id, inverse: true })
+
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0.15,
+    })
+    expect(r.inverse).toBe(false)
+  })
+
   it('rerolls another card from the same subject for "gen:meaning" after inverse review', async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({
@@ -366,6 +392,8 @@ describe("review domain", () => {
     expect(subjAfter.inverseReviewed).toBe(true)
     expect(subjAfter.cooldownAt.getTime()).toBe(subjBefore.cooldownAt.getTime())
     expect(subjAfter.lastSeenAt).not.toBeNull()
+    const deckAfter = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(deckAfter.inverseReviewStreak).toBe(1)
     const cardAfter = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
     expect(cardAfter.timesSeen).toBe(0)
     expect(cardAfter.lastSeenAt).not.toBeNull()
@@ -395,6 +423,8 @@ describe("review domain", () => {
     expect(subj.fixationLevel).toBe("3")
     expect(subj.inverseReviewed).toBe(false)
     expect(subj.timesSeen).toBe(1)
+    const deckAfter = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(deckAfter.inverseReviewStreak).toBe(0)
 
     const reloaded = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
     expect(reloaded.timesSeen).toBe(1)
