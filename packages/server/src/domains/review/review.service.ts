@@ -1,7 +1,13 @@
 import type { PrismaClient } from "../../generated/prisma/client.js"
 import { Prisma } from "../../generated/prisma/client.js"
-import { fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
+import { COOLDOWN_MS, fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
 import { randomSubjectKeyFromRng } from "../subjects/subjects.service.js"
+
+const REVIEW_STATS_RETENTION_DAYS = 15
+
+export function startOfUtcDay(date: Date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+}
 
 export interface PickArgs {
   prisma: PrismaClient
@@ -9,6 +15,7 @@ export interface PickArgs {
   deckId?: string
   includeOnCooldown: boolean
   excludeCardId?: string
+  subjectId?: string
   now?: Date
   rng?: () => number
   inverseRng?: () => number
@@ -66,6 +73,7 @@ export async function pickNextCard({
   deckId,
   includeOnCooldown,
   excludeCardId,
+  subjectId,
   now = new Date(),
   rng = Math.random,
   inverseRng = Math.random,
@@ -81,11 +89,13 @@ export async function pickNextCard({
       )
     : false
 
+  const pinnedToSubject = Boolean(subjectId)
   const subjectWhere: Prisma.SubjectWhereInput = { userId }
-  if (!includeOnCooldown) subjectWhere.cooldownAt = { lte: now }
+  if (!includeOnCooldown && !pinnedToSubject) subjectWhere.cooldownAt = { lte: now }
   if (deckId) subjectWhere.deckId = deckId
+  if (subjectId) subjectWhere.id = subjectId
   let excludedSubjectId: string | undefined
-  if (excludeCardId) {
+  if (excludeCardId && !pinnedToSubject) {
     const excluded = await prisma.card.findFirst({
       where: { id: excludeCardId, deck: { userId } },
       select: { subjectId: true },
@@ -166,6 +176,7 @@ export async function pickNextCard({
     where: {
       subjectId: chosen.id,
       ...(deckId ? { deckId } : {}),
+      ...(pinnedToSubject && excludeCardId ? { id: { not: excludeCardId } } : {}),
     },
     orderBy: [{ lastSeenAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
     include: {
@@ -266,6 +277,11 @@ export async function completeReview(
   }
   const chosenLevel = fixationLevelSchema.parse(options.chosenLevel)
   const cooldown = nextCooldownAt(chosenLevel, now)
+  const cardMinutes = Math.round(COOLDOWN_MS[chosenLevel] / 60_000)
+  const today = startOfUtcDay(now)
+  const retentionCutoff = new Date(
+    today.getTime() - REVIEW_STATS_RETENTION_DAYS * 24 * 60 * 60 * 1000
+  )
 
   await prisma.$transaction([
     prisma.card.update({
@@ -281,6 +297,14 @@ export async function completeReview(
         inverseReviewed: false,
         cooldownAt: cooldown,
       },
+    }),
+    prisma.reviewStat.upsert({
+      where: { deckId_date: { deckId: card.deckId, date: today } },
+      create: { deckId: card.deckId, date: today, cardMinutes },
+      update: { cardMinutes: { increment: cardMinutes } },
+    }),
+    prisma.reviewStat.deleteMany({
+      where: { deckId: card.deckId, date: { lt: retentionCutoff } },
     }),
   ])
 

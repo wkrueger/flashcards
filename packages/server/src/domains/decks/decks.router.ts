@@ -1,6 +1,12 @@
 import { TRPCError } from "@trpc/server"
 import { createDeckInput, idInput, updateDeckInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
+import { randomSubjectKey } from "../subjects/subjects.service.js"
+import { startOfUtcDay } from "../review/review.service.js"
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const SAMPLE_SUBJECT_LIMIT = 8
+const REVIEW_STATS_WINDOW_DAYS = 7
 
 async function assertLanguagesExist(
   prisma: { language: { count: (args: { where: { id: { in: number[] } } }) => Promise<number> } },
@@ -126,6 +132,73 @@ export const decksRouter = router({
     return ctx.prisma.deck.update({
       where: { id: deck.id },
       data,
+    })
+  }),
+
+  upcomingDueCounts: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
+    const deck = await ctx.prisma.deck.findFirst({
+      where: { id: input.id, userId: ctx.user.id },
+      select: { id: true },
+    })
+    if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    const now = new Date()
+    const at = (days: number) => new Date(now.getTime() + days * DAY_MS)
+    const baseWhere = {
+      userId: ctx.user.id,
+      cards: { some: { deckId: input.id } },
+    } as const
+    const [in24h, in2d, in1w] = await Promise.all([
+      ctx.prisma.subject.count({ where: { ...baseWhere, cooldownAt: { lte: at(1) } } }),
+      ctx.prisma.subject.count({ where: { ...baseWhere, cooldownAt: { lte: at(2) } } }),
+      ctx.prisma.subject.count({ where: { ...baseWhere, cooldownAt: { lte: at(7) } } }),
+    ])
+    return { in24h, in2d, in1w }
+  }),
+
+  randomSubjects: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
+    const deck = await ctx.prisma.deck.findFirst({
+      where: { id: input.id, userId: ctx.user.id },
+      select: { id: true },
+    })
+    if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    const where = {
+      userId: ctx.user.id,
+      cards: { some: { deckId: input.id } },
+    } as const
+    const pivot = randomSubjectKey()
+    const first = await ctx.prisma.subject.findMany({
+      where: { ...where, randomKey: { gte: pivot } },
+      orderBy: { randomKey: "asc" },
+      take: SAMPLE_SUBJECT_LIMIT,
+      select: { id: true, subject: true },
+    })
+    if (first.length >= SAMPLE_SUBJECT_LIMIT) return first
+    const second = await ctx.prisma.subject.findMany({
+      where: { ...where, randomKey: { lt: pivot } },
+      orderBy: { randomKey: "asc" },
+      take: SAMPLE_SUBJECT_LIMIT - first.length,
+      select: { id: true, subject: true },
+    })
+    return [...first, ...second]
+  }),
+
+  reviewStats: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
+    const deck = await ctx.prisma.deck.findFirst({
+      where: { id: input.id, userId: ctx.user.id },
+      select: { id: true },
+    })
+    if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    const today = startOfUtcDay(new Date())
+    const earliest = new Date(today.getTime() - (REVIEW_STATS_WINDOW_DAYS - 1) * DAY_MS)
+    const rows = await ctx.prisma.reviewStat.findMany({
+      where: { deckId: input.id, date: { gte: earliest } },
+      orderBy: { date: "asc" },
+      select: { date: true, cardMinutes: true },
+    })
+    const byTime = new Map(rows.map((r) => [r.date.getTime(), r.cardMinutes]))
+    return Array.from({ length: REVIEW_STATS_WINDOW_DAYS }, (_, i) => {
+      const date = new Date(earliest.getTime() + i * DAY_MS)
+      return { date, cardMinutes: byTime.get(date.getTime()) ?? 0 }
     })
   }),
 
