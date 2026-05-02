@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 import { prisma } from "../../src/infra/db.js"
+import { __resetRateLimitForTests } from "../../src/infra/rate-limit.js"
 
 const originalApiKey = process.env.OPENAI_API_KEY
 const originalModel = process.env.OPENAI_MODEL
@@ -22,6 +23,7 @@ async function seedLanguages() {
 describe("card template domain", () => {
   beforeEach(async () => {
     await resetDomain()
+    __resetRateLimitForTests()
     process.env.OPENAI_API_KEY = "test-key"
     process.env.OPENAI_MODEL = "test-model"
   })
@@ -146,5 +148,110 @@ describe("card template domain", () => {
         count: 1,
       })
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" })
+  })
+
+  it("enforces a shared 20 / 10min cap across free users", async () => {
+    const { english, deutsch } = await seedLanguages()
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            output: [
+              {
+                content: [
+                  {
+                    type: "output_text",
+                    text: JSON.stringify({
+                      cards: [{ front: "F", back: "B", variant: "basic" }],
+                    }),
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+    )
+    vi.stubGlobal("fetch", fetch)
+
+    const userIds: string[] = []
+    for (let i = 0; i < 4; i++) userIds.push(await makeUser(`free-${i}`))
+
+    for (const userId of userIds) {
+      for (let i = 0; i < 5; i++) {
+        await callerFor(userId).cardTemplate.generatePreviews({
+          template: "createPhrasesForWords",
+          frontLanguageId: english.id,
+          backLanguageId: deutsch.id,
+          wordOrExpression: "Haus",
+          count: 1,
+        })
+      }
+    }
+    expect(fetch).toHaveBeenCalledTimes(20)
+
+    const extraUserId = await makeUser("free-extra")
+    await expect(
+      callerFor(extraUserId).cardTemplate.generatePreviews({
+        template: "createPhrasesForWords",
+        frontLanguageId: english.id,
+        backLanguageId: deutsch.id,
+        wordOrExpression: "Haus",
+        count: 1,
+      })
+    ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" })
+    expect(fetch).toHaveBeenCalledTimes(20)
+  })
+
+  it("exempts non-free plans from the shared cap", async () => {
+    const { english, deutsch } = await seedLanguages()
+    const fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            output: [
+              {
+                content: [
+                  {
+                    type: "output_text",
+                    text: JSON.stringify({
+                      cards: [{ front: "F", back: "B", variant: "basic" }],
+                    }),
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+    )
+    vi.stubGlobal("fetch", fetch)
+
+    const userIds: string[] = []
+    for (let i = 0; i < 4; i++) userIds.push(await makeUser(`free-${i}`))
+    for (const userId of userIds) {
+      for (let i = 0; i < 5; i++) {
+        await callerFor(userId).cardTemplate.generatePreviews({
+          template: "createPhrasesForWords",
+          frontLanguageId: english.id,
+          backLanguageId: deutsch.id,
+          wordOrExpression: "Haus",
+          count: 1,
+        })
+      }
+    }
+    expect(fetch).toHaveBeenCalledTimes(20)
+
+    const proUserId = await makeUser("pro")
+    await prisma.user.update({ where: { id: proUserId }, data: { plan: "pro" } })
+
+    await callerFor(proUserId).cardTemplate.generatePreviews({
+      template: "createPhrasesForWords",
+      frontLanguageId: english.id,
+      backLanguageId: deutsch.id,
+      wordOrExpression: "Haus",
+      count: 1,
+    })
+    expect(fetch).toHaveBeenCalledTimes(21)
   })
 })

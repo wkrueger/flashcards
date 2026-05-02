@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { Check, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { Check, Flame, LoaderCircle, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
 import { handleTRPCError, trpc } from "../../infra/trpc"
 import { Button, buttonVariants } from "../../ui/button"
+import { Card, CardContent } from "../../ui/card"
 import { cn } from "../../lib/utils"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog"
 import { Input } from "../../ui/input"
@@ -16,6 +17,9 @@ export function DeckDetailPage() {
   const utils = trpc.useUtils()
   const deck = trpc.decks.get.useQuery({ id: deckId })
   const next = trpc.review.next.useQuery({ deckId, mode: "normal" })
+  const upcoming = trpc.decks.upcomingDueCounts.useQuery({ id: deckId })
+  const randomSubjects = trpc.decks.randomSubjects.useQuery({ id: deckId })
+  const reviewStats = trpc.decks.reviewStats.useQuery({ id: deckId })
   const dueCount = next.data?.dueCount ?? 0
 
   const deleteDeck = trpc.decks.delete.useMutation({
@@ -109,27 +113,24 @@ export function DeckDetailPage() {
         actions={
           <>
             <Link
-              to="/decks/$deckId/cards/new"
-              params={{ deckId }}
-              aria-label="New card"
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 px-3")}
-            >
-              <Plus className="h-4 w-4" />
-              Card
-            </Link>
-            <Link
               to="/decks/$deckId/cards/generate"
               params={{ deckId }}
               aria-label="New word from template"
               className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 px-3")}
             >
               <Sparkles className="h-4 w-4" />
-              Word
+              Add word
             </Link>
           </>
         }
         menuItems={
           <>
+            <MenuItem
+              icon={<Plus className="h-[18px] w-[18px]" />}
+              onSelect={() => navigate({ to: "/decks/$deckId/cards/new", params: { deckId } })}
+            >
+              Add card
+            </MenuItem>
             <MenuItem
               icon={<Pencil className="h-[18px] w-[18px]" />}
               onSelect={() => setEditOpen(true)}
@@ -246,19 +247,13 @@ export function DeckDetailPage() {
 
       {deck.data && (
         <>
-          <div className="flex gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-semibold">{deck.data.cardCount}</p>
-              <p className="text-xs text-muted-foreground">cards</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-semibold">{deck.data.wordCount}</p>
-              <p className="text-xs text-muted-foreground">words</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-semibold">{deck.data.cooldownCount}</p>
-              <p className="text-xs text-muted-foreground">on cooldown</p>
-            </div>
+          <div className="flex items-start gap-4">
+            <TopStat label="cards" value={deck.data.cardCount} />
+            <TopStat label="words" value={deck.data.wordCount} />
+            <div className="flex-1" />
+            <TopStat label={["due in", "24h"]} value={upcoming.data?.in24h} />
+            <TopStat label={["due in", "2 days"]} value={upcoming.data?.in2d} />
+            <TopStat label={["due in", "1 week"]} value={upcoming.data?.in1w} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -281,6 +276,30 @@ export function DeckDetailPage() {
             )}
           </div>
 
+          {reviewStats.data && (
+            <ReviewStatsChart data={reviewStats.data} totalSubjectCount={deck.data.wordCount} />
+          )}
+
+          {randomSubjects.data && randomSubjects.data.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+                Sample words
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {randomSubjects.data.map((s) => (
+                  <Link
+                    key={s.id}
+                    to="/decks/$deckId/review/subjects/$subjectId"
+                    params={{ deckId, subjectId: s.id }}
+                    className="flex min-h-[3rem] items-center justify-center rounded-md border bg-card px-3 py-2 text-center text-sm font-medium transition-colors hover:bg-accent/40"
+                  >
+                    <span className="line-clamp-2 break-words">{s.subject}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="mt-auto pt-4">
             <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
               <input
@@ -291,23 +310,150 @@ export function DeckDetailPage() {
               />
               <span
                 aria-hidden="true"
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-primary transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
               >
-                <Check className="h-3 w-3" />
+                <Check className="h-4 w-4" />
               </span>
               <div className="min-w-0 space-y-1">
-                <div className="text-sm font-medium">Allow inverse mode</div>
+                <div className="flex items-center gap-1 text-sm font-medium">
+                  <span>Allow inverse mode</span>
+                  {updateInverseReview.isPending && (
+                    <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Occasionally review these cards back-to-front.
                 </p>
-                {updateInverseReview.isPending && (
-                  <p className="text-xs text-muted-foreground">Saving…</p>
-                )}
               </div>
             </label>
           </div>
         </>
       )}
     </div>
+  )
+}
+
+function TopStat({
+  label,
+  value,
+}: {
+  label: string | [string, string]
+  value: number | undefined
+}) {
+  return (
+    <div className="max-w-12 text-center">
+      <p className="text-xl font-semibold">{value ?? "–"}</p>
+      <p className="text-xs text-muted-foreground">
+        {Array.isArray(label) ? (
+          <>
+            {label[0]}
+            <br />
+            {label[1]}
+          </>
+        ) : (
+          label
+        )}
+      </p>
+    </div>
+  )
+}
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+
+function formatCardMinutes(minutes: number) {
+  if (minutes <= 0) return "0"
+  if (minutes < 60) return `${minutes}m`
+  const hours = minutes / 60
+  if (hours < 24) return `${hours.toFixed(hours >= 10 ? 0 : 1)}h`
+  return `${(hours / 24).toFixed(1)}d`
+}
+
+function formatBarPercent(cardMinutes: number, totalSubjectCount: number) {
+  if (cardMinutes <= 0 || totalSubjectCount <= 0) return ""
+  const percent = (cardMinutes / (totalSubjectCount * 24 * 60)) * 100
+  const rounded = percent >= 10 ? Math.round(percent) : Number(percent.toFixed(1))
+  return `${rounded}%`
+}
+
+function ReviewStatsChart({
+  data,
+  totalSubjectCount,
+}: {
+  data: { date: string | Date; cardMinutes: number }[]
+  totalSubjectCount: number
+}) {
+  const max = Math.max(1, ...data.map((d) => d.cardMinutes))
+  return (
+    <Card
+      className="relative overflow-hidden"
+      style={{
+        backgroundImage:
+          "linear-gradient(168deg, hsl(28 92% 56% / 0.18) 0%, hsl(28 92% 56% / 0.18) 8%, transparent 22%)",
+      }}
+    >
+      <Flame
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-10 -top-4 h-40 w-40 rotate-[18deg] opacity-25 dark:opacity-30"
+        style={{ color: "hsl(28 92% 56%)" }}
+      />
+      <CardContent className="relative space-y-2 p-3">
+        <h2
+          className="text-sm"
+          style={{
+            fontFamily: '"Quicksand", system-ui, sans-serif',
+            fontWeight: 700,
+            letterSpacing: "-0.01em",
+            color: "hsl(28 92% 56%)",
+          }}
+        >
+          Card x time
+        </h2>
+        <div className="flex h-24 items-stretch gap-2">
+          {data.map((d) => {
+            const date = new Date(d.date)
+            const heightPct = (d.cardMinutes / max) * 100
+            const percentLabel = formatBarPercent(d.cardMinutes, totalSubjectCount)
+            const hasPercentLabel = percentLabel.length > 0
+            const showPercentInside = hasPercentLabel && heightPct >= 38
+            return (
+              <div
+                key={date.toISOString()}
+                className="grid h-full flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-1"
+              >
+                <div className="space-y-1">
+                  <span className="block text-center text-[10px] font-medium leading-none text-muted-foreground">
+                    {d.cardMinutes > 0 ? formatCardMinutes(d.cardMinutes) : ""}
+                  </span>
+                  {hasPercentLabel && !showPercentInside && (
+                    <span className="block text-center text-[9px] font-medium leading-none text-muted-foreground">
+                      {percentLabel}
+                    </span>
+                  )}
+                </div>
+                <div className="flex min-h-0 w-full items-end">
+                  <div
+                    className="relative w-full rounded-t transition-[height]"
+                    style={{
+                      backgroundColor: "hsl(28 92% 56%)",
+                      height: `${heightPct}%`,
+                      minHeight: d.cardMinutes > 0 ? "2px" : "0",
+                    }}
+                  >
+                    {showPercentInside && (
+                      <span className="absolute inset-x-0 top-1 text-center text-[9px] font-semibold leading-none text-white/90">
+                        {percentLabel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-center text-[10px] leading-none text-muted-foreground">
+                  {DAY_LABELS[date.getUTCDay()]}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

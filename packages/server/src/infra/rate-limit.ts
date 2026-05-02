@@ -21,3 +21,7 @@ export function rateLimit(key: string, { windowMs, max }: Options): void {
   arr.push(now)
   buckets.set(key, arr)
 }
+
+export function __resetRateLimitForTests(): void {
+  buckets.clear()
+}

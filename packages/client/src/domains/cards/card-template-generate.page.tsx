@@ -41,7 +41,8 @@ export function CardTemplateGeneratePage() {
   const [backLanguageId, setBackLanguageId] = useState("")
   const [defaultsApplied, setDefaultsApplied] = useState(false)
   const [wordOrExpression, setWordOrExpression] = useState("")
-  const [count, setCount] = useState("4")
+  // const [count, setCount] = useState("4")
+  const count = 5
   const [previewCards, setPreviewCards] = useState<PreviewCard[] | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -201,14 +202,14 @@ export function CardTemplateGeneratePage() {
   if (!deck.data || !languages.data) {
     return (
       <div className="flex flex-1 flex-col gap-4">
-        <PageHeader title="Generate card" onBack={goBack} />
+        <PageHeader title="Generate cards" onBack={goBack} />
       </div>
     )
   }
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <PageHeader title="Generate card" onBack={goBack} />
+      <PageHeader title="Generate cards" onBack={goBack} />
 
       <form className="flex flex-1 flex-col gap-3" onSubmit={submitGenerate}>
         <div className="space-y-1">
@@ -286,14 +287,14 @@ export function CardTemplateGeneratePage() {
           />
         </div>
 
-        <div className="space-y-1">
+        {/* <div className="space-y-1">
           <Label>Number of cards to generate</Label>
           <NativeSelect
             value={count}
             onChange={setCount}
             options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))}
           />
-        </div>
+        </div> */}
 
         {previewError && <p className="text-sm text-destructive">{previewError}</p>}
 

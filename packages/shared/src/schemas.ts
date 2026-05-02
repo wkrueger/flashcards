@@ -59,7 +59,7 @@ export const cardTemplateGeneratePreviewInput = z
     template: z.literal("createPhrasesForWords"),
     frontLanguageId: z.number().int().positive(),
     backLanguageId: z.number().int().positive(),
-    wordOrExpression: z.string().trim().min(1).max(200),
+    wordOrExpression: z.string().trim().min(1).max(50),
     count: z.number().int().min(1).max(5),
   })
   .refine((input) => input.frontLanguageId !== input.backLanguageId, {
@@ -71,6 +71,7 @@ export const reviewNextInput = z.object({
   deckId: id.optional(),
   mode: reviewModeSchema,
   excludeCardId: id.optional(),
+  subjectId: id.optional(),
 })
 
 export const reviewCompleteInput = z

@@ -10,7 +10,7 @@ const _germanExtraPrompt =
   "\n\n" + fs.readFileSync(new URL("./german-extra-prompt.md", import.meta.url), "utf-8")
 
 function getGermanPrompt() {
-  const reroll = Math.random() > 0.2
+  const reroll = Math.random() > 0.3
   if (!reroll) {
     return _germanExtraPrompt
   } else {
@@ -21,11 +21,6 @@ function getGermanPrompt() {
   }
 }
 
-const expressionPrompt =
-  "\n\nIf the input text contains multiple words, don't attain yourself on keeping " +
-  "the same order of words. If the input text contains '...'` + ` (three dots), consider " +
-  "that the input may surround other words of the generated phrase."
-
 export const cardTemplateRouter = router({
   generatePreviews: protectedProcedure
     .input(cardTemplateGeneratePreviewInput)
@@ -35,6 +30,16 @@ export const cardTemplateRouter = router({
         windowMs: 60_000 * 2,
         max: 6,
       })
+      const userRecord = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { plan: true },
+      })
+      if (userRecord?.plan === "free") {
+        rateLimit("cardTemplate.generatePreviews:plan:free", {
+          windowMs: 60_000 * 10,
+          max: 20,
+        })
+      }
       const languages = await ctx.prisma.language.findMany({
         where: { id: { in: [input.frontLanguageId, input.backLanguageId] } },
       })
@@ -56,18 +61,24 @@ export const cardTemplateRouter = router({
         `The text on this item is allowed to cointain multiple statements, all of them belonging to the same story. Set variant=bigger for that card.\n\n`
 
       let task =
-        `Write ${input.count} small statements in ${backPromptLanguage} using the requested word or expression. By default, set variant=basic.` +
-        (input.count >= 3 ? bigStatement : "") +
-        `Then translate each phrase to ${frontPromptLanguage}. The front field ` +
-        `is the ${frontPromptLanguage} translation.  The back field is the ${backPromptLanguage} phrase. ` +
-        (input.count > 1
-          ? `In the last card, in the "back" field, describe the meaning of the input using only ${backPromptLanguage}. Example: "<word> means ...". ` +
-            `In the "front" field, translate the text from the "back" field as usual. Set variant=meaning for that card.`
-          : "")
-      expressionPrompt
+        // prettier-ignore
+        `Write ${input.count} small statements in ${backPromptLanguage} using the requested word or expression.
+By default, set variant=basic.
+${(input.count >= 3 ? bigStatement : "")}
+Then translate each phrase to ${frontPromptLanguage}. The translated phrase must not have any annotations
+like parenthesis or dashes. The front field is the ${frontPromptLanguage} translation.  The back
+field is the ${backPromptLanguage} phrase.
+${(input.count > 1
+  ? `In the last card, in the "back" field, describe the meaning of the input using only ${backPromptLanguage}. Example: "<word> means ...". ` +
+    `In the "front" field, translate the text from the "back" field as usual. Set variant=meaning for that card.`
+  : "")}
+
+If the input text contains multiple words, don't attain yourself on keeping " +
+"the same order of words. If the input text contains '...'` + ` (three dots), consider " +
+"that the input may surround other words of the generated phrase.`
 
       if (backPromptLanguage === "German") {
-        systemPrompt += getGermanPrompt()
+        task += "\n\n" + getGermanPrompt()
       }
 
       const output = await createOpenAIStructuredResponse({
