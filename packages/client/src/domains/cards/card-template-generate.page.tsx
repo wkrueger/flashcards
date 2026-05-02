@@ -201,14 +201,14 @@ export function CardTemplateGeneratePage() {
   if (!deck.data || !languages.data) {
     return (
       <div className="flex flex-1 flex-col gap-4">
-        <PageHeader title="Generate card" onBack={goBack} />
+        <PageHeader title="Generate cards" onBack={goBack} />
       </div>
     )
   }
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <PageHeader title="Generate card" onBack={goBack} />
+      <PageHeader title="Generate cards" onBack={goBack} />
 
       <form className="flex flex-1 flex-col gap-3" onSubmit={submitGenerate}>
         <div className="space-y-1">
