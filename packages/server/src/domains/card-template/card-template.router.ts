@@ -56,7 +56,9 @@ export const cardTemplateRouter = router({
         "You will be asked to generate texts from an input. Bold the requested word or " +
         "expression and its translation with double asterisks. Keep phrases complete and distinct. "
 
-      const bigStatement = `Statement number ${input.count - 1} must be bigger and have around 170 characters. Set variant=bigger for that card.`
+      const bigStatement =
+        `Item number ${input.count - 1} must be bigger and have between 120 and 170 characters. ` +
+        `The text on this item is allowed to cointain multiple statements, all of them belonging to the same story. Set variant=bigger for that card.\n\n`
 
       let task =
         // prettier-ignore
