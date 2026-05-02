@@ -400,4 +400,66 @@ describe("review domain", () => {
     expect(reloaded.timesSeen).toBe(1)
     expect(reloaded.lastSeenAt).not.toBeNull()
   })
+
+  it("subjectId pin returns a card from that subject even when on cooldown", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d" })
+    const future = (mins: number) => new Date(Date.now() + mins * 60_000)
+    await seedSubjects(u, deck.id, [
+      { text: "alpha", cooldownAt: future(60) },
+      { text: "beta", cooldownAt: future(120) },
+    ])
+    const beta = await prisma.subject.findFirstOrThrow({ where: { userId: u, subject: "beta" } })
+
+    const r = await callerFor(u).review.next({
+      mode: "normal",
+      deckId: deck.id,
+      subjectId: beta.id,
+    })
+
+    expect(r.card?.subject.subject).toBe("beta")
+  })
+
+  it("subjectId pin with excludeCardId picks a different card from the same subject", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d" })
+    const subject = await prisma.subject.create({
+      data: {
+        userId: u,
+        deckId: deck.id,
+        subject: "Haus",
+        subjectKey: subjectKeyFor("Haus"),
+        randomKey: 0,
+        cooldownAt: new Date(Date.now() + 60_000),
+      },
+    })
+    const cardA = await prisma.card.create({
+      data: {
+        deckId: deck.id,
+        subjectId: subject.id,
+        front: "a-front",
+        frontHash: "a",
+        back: "a-back",
+      },
+    })
+    await prisma.card.create({
+      data: {
+        deckId: deck.id,
+        subjectId: subject.id,
+        front: "b-front",
+        frontHash: "b",
+        back: "b-back",
+      },
+    })
+
+    const r = await callerFor(u).review.next({
+      mode: "normal",
+      deckId: deck.id,
+      subjectId: subject.id,
+      excludeCardId: cardA.id,
+    })
+
+    expect(r.card?.id).not.toBe(cardA.id)
+    expect(r.card?.subject.subject).toBe("Haus")
+  })
 })

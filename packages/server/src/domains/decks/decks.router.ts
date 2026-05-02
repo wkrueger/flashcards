@@ -1,6 +1,10 @@
 import { TRPCError } from "@trpc/server"
 import { createDeckInput, idInput, updateDeckInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
+import { randomSubjectKey } from "../subjects/subjects.service.js"
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const SAMPLE_SUBJECT_LIMIT = 8
 
 async function assertLanguagesExist(
   prisma: { language: { count: (args: { where: { id: { in: number[] } } }) => Promise<number> } },
@@ -127,6 +131,53 @@ export const decksRouter = router({
       where: { id: deck.id },
       data,
     })
+  }),
+
+  upcomingDueCounts: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
+    const deck = await ctx.prisma.deck.findFirst({
+      where: { id: input.id, userId: ctx.user.id },
+      select: { id: true },
+    })
+    if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    const now = new Date()
+    const at = (days: number) => new Date(now.getTime() + days * DAY_MS)
+    const baseWhere = {
+      userId: ctx.user.id,
+      cards: { some: { deckId: input.id } },
+    } as const
+    const [in24h, in2d, in1w] = await Promise.all([
+      ctx.prisma.subject.count({ where: { ...baseWhere, cooldownAt: { lte: at(1) } } }),
+      ctx.prisma.subject.count({ where: { ...baseWhere, cooldownAt: { lte: at(2) } } }),
+      ctx.prisma.subject.count({ where: { ...baseWhere, cooldownAt: { lte: at(7) } } }),
+    ])
+    return { in24h, in2d, in1w }
+  }),
+
+  randomSubjects: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
+    const deck = await ctx.prisma.deck.findFirst({
+      where: { id: input.id, userId: ctx.user.id },
+      select: { id: true },
+    })
+    if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    const where = {
+      userId: ctx.user.id,
+      cards: { some: { deckId: input.id } },
+    } as const
+    const pivot = randomSubjectKey()
+    const first = await ctx.prisma.subject.findMany({
+      where: { ...where, randomKey: { gte: pivot } },
+      orderBy: { randomKey: "asc" },
+      take: SAMPLE_SUBJECT_LIMIT,
+      select: { id: true, subject: true },
+    })
+    if (first.length >= SAMPLE_SUBJECT_LIMIT) return first
+    const second = await ctx.prisma.subject.findMany({
+      where: { ...where, randomKey: { lt: pivot } },
+      orderBy: { randomKey: "asc" },
+      take: SAMPLE_SUBJECT_LIMIT - first.length,
+      select: { id: true, subject: true },
+    })
+    return [...first, ...second]
   }),
 
   delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {

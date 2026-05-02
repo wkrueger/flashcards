@@ -28,13 +28,16 @@ import {
   displayWithGeneratedTagPrefix,
 } from "../cards/card-front-prefix"
 
-export function ReviewPage({ mode }: { mode: ReviewMode }) {
+export function ReviewPage({ mode, subjectId }: { mode: ReviewMode; subjectId?: string }) {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
   const navigate = useNavigate()
   const utils = trpc.useUtils()
   const [revealed, setRevealed] = useState(false)
 
-  const next = trpc.review.next.useQuery({ deckId, mode }, { refetchOnWindowFocus: false })
+  const next = trpc.review.next.useQuery(
+    { deckId, mode, subjectId },
+    { refetchOnWindowFocus: false }
+  )
   const currentCardId = next.data?.card?.id
 
   const complete = trpc.review.complete.useMutation({
@@ -43,10 +46,11 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
       const prefetched = utils.review.next.getData({
         deckId,
         mode,
+        subjectId,
         excludeCardId: currentCardId,
       })
       if (prefetched) {
-        utils.review.next.setData({ deckId, mode }, prefetched)
+        utils.review.next.setData({ deckId, mode, subjectId }, prefetched)
         setRevealed(false)
       }
     },
@@ -54,32 +58,35 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
       setRevealed(false)
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.decks.get.invalidate({ id: deckId })
+      utils.decks.upcomingDueCounts.invalidate({ id: deckId })
 
       const prefetched = utils.review.next.getData({
         deckId,
         mode,
+        subjectId,
         excludeCardId: variables.cardId,
       })
 
       if (prefetched) {
-        utils.review.next.setData({ deckId, mode }, prefetched)
+        utils.review.next.setData({ deckId, mode, subjectId }, prefetched)
         return
       }
 
       const freshNext = await utils.review.next.fetch({
         deckId,
         mode,
+        subjectId,
         excludeCardId: variables.cardId,
       })
-      utils.review.next.setData({ deckId, mode }, freshNext)
+      utils.review.next.setData({ deckId, mode, subjectId }, freshNext)
     },
   })
 
   useEffect(() => {
     if (!currentCardId) return
     if (complete.isPending) return
-    utils.review.next.prefetch({ deckId, mode, excludeCardId: currentCardId })
-  }, [currentCardId, deckId, mode, utils, complete.isPending])
+    utils.review.next.prefetch({ deckId, mode, subjectId, excludeCardId: currentCardId })
+  }, [currentCardId, deckId, mode, subjectId, utils, complete.isPending])
 
   if (next.isLoading) return <p>Loading…</p>
 
@@ -130,13 +137,17 @@ export function ReviewPage({ mode }: { mode: ReviewMode }) {
     ? displayWithGeneratedTagPrefix(card.back, card.tags)
     : displayFrontWithGeneratedTagPrefix(card.front, card.tags)
   const revealedSource = inverse ? card.front : card.back
-  const subtitle = inverse
-    ? mode === "free"
-      ? "Free inverse review"
-      : "Inverse review"
-    : mode === "free"
-      ? "Free review"
-      : undefined
+  const subtitle = subjectId
+    ? inverse
+      ? `Inverse review · ${card.subject.subject}`
+      : `Subject review · ${card.subject.subject}`
+    : inverse
+      ? mode === "free"
+        ? "Free inverse review"
+        : "Inverse review"
+      : mode === "free"
+        ? "Free review"
+        : undefined
 
   return (
     <div className="flex flex-1 flex-col gap-3">

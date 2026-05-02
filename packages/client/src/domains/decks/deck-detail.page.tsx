@@ -16,6 +16,8 @@ export function DeckDetailPage() {
   const utils = trpc.useUtils()
   const deck = trpc.decks.get.useQuery({ id: deckId })
   const next = trpc.review.next.useQuery({ deckId, mode: "normal" })
+  const upcoming = trpc.decks.upcomingDueCounts.useQuery({ id: deckId })
+  const randomSubjects = trpc.decks.randomSubjects.useQuery({ id: deckId })
   const dueCount = next.data?.dueCount ?? 0
 
   const deleteDeck = trpc.decks.delete.useMutation({
@@ -278,6 +280,27 @@ export function DeckDetailPage() {
             )}
           </div>
 
+          <div className="grid grid-cols-3 gap-2">
+            <UpcomingStat label="in 24h" value={upcoming.data?.in24h} />
+            <UpcomingStat label="in 2 days" value={upcoming.data?.in2d} />
+            <UpcomingStat label="in 1 week" value={upcoming.data?.in1w} />
+          </div>
+
+          {randomSubjects.data && randomSubjects.data.length > 0 && (
+            <div className="grid grid-cols-2 gap-2">
+              {randomSubjects.data.map((s) => (
+                <Link
+                  key={s.id}
+                  to="/decks/$deckId/review/subjects/$subjectId"
+                  params={{ deckId, subjectId: s.id }}
+                  className="flex min-h-[3rem] items-center justify-center rounded-md border bg-card px-3 py-2 text-center text-sm font-medium transition-colors hover:bg-accent/40"
+                >
+                  <span className="line-clamp-2 break-words">{s.subject}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
           <div className="mt-auto pt-4">
             <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
               <input
@@ -307,6 +330,15 @@ export function DeckDetailPage() {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+function UpcomingStat({ label, value }: { label: string; value: number | undefined }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-md border bg-card p-2">
+      <p className="text-xl font-semibold">{value ?? "–"}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   )
 }

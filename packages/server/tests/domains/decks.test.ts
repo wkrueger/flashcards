@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
+import { prisma } from "../../src/infra/db.js"
+
+const HOUR_MS = 60 * 60 * 1000
+const DAY_MS = 24 * HOUR_MS
 
 describe("decks domain", () => {
   beforeEach(async () => {
@@ -25,5 +29,70 @@ describe("decks domain", () => {
     await expect(callerFor(a).decks.create({ name: "Same" })).rejects.toMatchObject({
       code: "CONFLICT",
     })
+  })
+
+  it("upcomingDueCounts counts subjects whose cooldown elapses within each window", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    const now = Date.now()
+    const inHours = (h: number) => new Date(now + h * HOUR_MS)
+
+    const cooldowns: Record<string, Date> = {
+      due: new Date(now - HOUR_MS),
+      "in-12h": inHours(12),
+      "in-30h": inHours(30),
+      "in-3d": new Date(now + 3 * DAY_MS),
+      "in-10d": new Date(now + 10 * DAY_MS),
+    }
+
+    for (const [text, cooldownAt] of Object.entries(cooldowns)) {
+      const card = await trpc.cards.create({
+        deckId: deck.id,
+        subjectText: text,
+        front: `f-${text}`,
+        back: `b-${text}`,
+      })
+      await prisma.subject.update({
+        where: { id: card.subjectId },
+        data: { cooldownAt },
+      })
+    }
+
+    const stats = await trpc.decks.upcomingDueCounts({ id: deck.id })
+    expect(stats.in24h).toBe(2)
+    expect(stats.in2d).toBe(3)
+    expect(stats.in1w).toBe(4)
+  })
+
+  it("randomSubjects returns up to 8 subjects from the deck", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    for (let i = 0; i < 12; i++) {
+      await trpc.cards.create({
+        deckId: deck.id,
+        subjectText: `subject-${i}`,
+        front: `f-${i}`,
+        back: `b-${i}`,
+      })
+    }
+    const sample = await trpc.decks.randomSubjects({ id: deck.id })
+    expect(sample).toHaveLength(8)
+    const unique = new Set(sample.map((s) => s.id))
+    expect(unique.size).toBe(8)
+    expect(sample[0]!.subject).toMatch(/^subject-/)
+  })
+
+  it("randomSubjects only returns subjects from the requested deck", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const a = await trpc.decks.create({ name: "a" })
+    const b = await trpc.decks.create({ name: "b" })
+    await trpc.cards.create({ deckId: a.id, subjectText: "x", front: "f", back: "b" })
+    await trpc.cards.create({ deckId: b.id, subjectText: "y", front: "f", back: "b" })
+
+    const aSample = await trpc.decks.randomSubjects({ id: a.id })
+    expect(aSample.map((s) => s.subject)).toEqual(["x"])
   })
 })

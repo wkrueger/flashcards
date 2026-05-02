@@ -9,6 +9,7 @@ export interface PickArgs {
   deckId?: string
   includeOnCooldown: boolean
   excludeCardId?: string
+  subjectId?: string
   now?: Date
   rng?: () => number
   inverseRng?: () => number
@@ -66,6 +67,7 @@ export async function pickNextCard({
   deckId,
   includeOnCooldown,
   excludeCardId,
+  subjectId,
   now = new Date(),
   rng = Math.random,
   inverseRng = Math.random,
@@ -81,11 +83,13 @@ export async function pickNextCard({
       )
     : false
 
+  const pinnedToSubject = Boolean(subjectId)
   const subjectWhere: Prisma.SubjectWhereInput = { userId }
-  if (!includeOnCooldown) subjectWhere.cooldownAt = { lte: now }
+  if (!includeOnCooldown && !pinnedToSubject) subjectWhere.cooldownAt = { lte: now }
   if (deckId) subjectWhere.deckId = deckId
+  if (subjectId) subjectWhere.id = subjectId
   let excludedSubjectId: string | undefined
-  if (excludeCardId) {
+  if (excludeCardId && !pinnedToSubject) {
     const excluded = await prisma.card.findFirst({
       where: { id: excludeCardId, deck: { userId } },
       select: { subjectId: true },
@@ -166,6 +170,7 @@ export async function pickNextCard({
     where: {
       subjectId: chosen.id,
       ...(deckId ? { deckId } : {}),
+      ...(pinnedToSubject && excludeCardId ? { id: { not: excludeCardId } } : {}),
     },
     orderBy: [{ lastSeenAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
     include: {

@@ -11,6 +11,7 @@ export const reviewRouter = router({
       deckId: input.deckId,
       includeOnCooldown: input.mode === "free",
       excludeCardId: input.excludeCardId,
+      subjectId: input.subjectId,
     })
   }),
 
