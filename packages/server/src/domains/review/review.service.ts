@@ -44,7 +44,13 @@ const MEANING_TAG = "gen:meaning"
 type ReviewCard = Prisma.CardGetPayload<{
   include: {
     subject: {
-      select: { id: true; subject: true; fixationLevel: true; inverseReviewed: true }
+      select: {
+        id: true
+        subject: true
+        fixationLevel: true
+        inverseReviewed: true
+        lastSeenAt: true
+      }
     }
     cardTags: { include: { tag: true } }
   }
@@ -56,21 +62,22 @@ function inverseReviewProbabilityForCard(card: ReviewCard) {
   const inverseReviewed = card.subject.inverseReviewed
   const tags = card.cardTags.map((x) => x.tag.name)
   const fixationLevel = card.subject.fixationLevel
+  const neverSeen = card.subject.lastSeenAt === null
   if (inverseReviewed) {
     if (tags.includes(MEANING_TAG)) throw new RerollError()
     return 0
   }
   if (tags.includes(LONG_TEXT_TAG)) return 0.7
   if (tags.includes(MEANING_TAG)) return 1
-  if (fixationLevel === "1") return 0.7
-  if (fixationLevel === "2") return 0.4
+  if (!neverSeen && fixationLevel === "1") return 0.7
+  if (!neverSeen && fixationLevel === "2") return 0.4
   return INVERSE_REVIEW_PROBABILITY
 }
 
 function applyInverseStreakPenalty(probability: number, inverseReviewStreak: number) {
   if (probability <= 0) return 0
   if (inverseReviewStreak <= 0) return probability
-  return probability / (inverseReviewStreak + 1)
+  return probability / (inverseReviewStreak + 1) ** 2
 }
 
 export async function pickNextCard({
@@ -188,7 +195,13 @@ export async function pickNextCard({
     orderBy: [{ lastSeenAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
     include: {
       subject: {
-        select: { id: true, subject: true, fixationLevel: true, inverseReviewed: true },
+        select: {
+          id: true,
+          subject: true,
+          fixationLevel: true,
+          inverseReviewed: true,
+          lastSeenAt: true,
+        },
       },
       cardTags: {
         include: { tag: true },
@@ -241,18 +254,20 @@ async function getIsInverse(
         },
         include: {
           subject: {
-            select: { id: true, subject: true, fixationLevel: true, inverseReviewed: true },
+            select: {
+              id: true,
+              subject: true,
+              fixationLevel: true,
+              inverseReviewed: true,
+              lastSeenAt: true,
+            },
           },
           cardTags: {
             include: { tag: true },
           },
         },
       })
-      if (!cardFallback) {
-        inverseProbability = 0
-      } else {
-        inverseProbability = 1
-      }
+      inverseProbability = 0
     } else {
       throw err
     }
