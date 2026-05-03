@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
 import { ArrowLeft, Moon, Sun, LogOut, MoreVertical } from "lucide-react"
 import { useTheme } from "../infra/theme"
 import { Button } from "../ui/button"
@@ -61,11 +62,17 @@ export function PageHeader({
   return (
     <div
       ref={containerRef}
-      className="relative flex flex-wrap items-center gap-x-2 gap-y-1"
+      className="relative mt-2 flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 pr-16"
       style={{ viewTransitionName: "page-header" }}
     >
       {!stacked && onBack && (
-        <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Back"
+          onClick={onBack}
+          className="h-9 w-9 rounded-full"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
       )}
@@ -82,19 +89,32 @@ export function PageHeader({
       ) : !stacked && subtitle ? (
         <span className="flex-1 text-xs uppercase text-muted-foreground">{subtitle}</span>
       ) : (
-        <span className="flex-1" />
+        <span className="h-10 flex-1" />
       )}
-      <div
-        ref={pillRef}
-        className="flex items-center gap-0 rounded-full border border-border bg-popover p-0.5 text-xs shadow-md shadow-black/10 backdrop-blur-xl backdrop-saturate-150 [&_a]:rounded-full [&_a]:px-1.5 [&_a]:text-xs [&_button]:rounded-full [&_button]:px-1.5 [&_button]:text-xs dark:border-white/10 dark:bg-popover/60"
-      >
-        {actions}
-        <GlobalMenu menuItems={menuItems} />
-      </div>
+      {createPortal(
+        <div
+          ref={pillRef}
+          style={{
+            top: "max(env(safe-area-inset-top), 0.75rem)",
+            right: "max(0.75rem, calc(50vw - 14rem + 0.75rem))",
+          }}
+          className="fixed z-40 flex items-center gap-0 rounded-full border border-border bg-popover p-0.5 text-xs shadow-md shadow-black/10 backdrop-blur-xl backdrop-saturate-150 [&_a]:rounded-full [&_a]:px-1.5 [&_a]:text-xs [&_button]:rounded-full [&_button]:px-1.5 [&_button]:text-xs dark:border-white/10 dark:bg-popover/60"
+        >
+          {actions}
+          <GlobalMenu menuItems={menuItems} />
+        </div>,
+        document.body
+      )}
       {stacked && title && (
         <div className="flex w-full items-center gap-2">
           {onBack && (
-            <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Back"
+              onClick={onBack}
+              className="h-9 w-9 rounded-full"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}

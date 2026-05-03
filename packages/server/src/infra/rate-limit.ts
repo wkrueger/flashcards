@@ -7,6 +7,7 @@ interface Options {
   max: number
 }
 
+// fixme: yes this doesnt work if the app has more than 1 process. Ack.
 export function rateLimit(key: string, { windowMs, max }: Options): void {
   const now = Date.now()
   const cutoff = now - windowMs
