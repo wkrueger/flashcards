@@ -1,15 +1,10 @@
 import { initTRPC, TRPCError } from "@trpc/server"
 import type { CreateFastifyContextOptions } from "@trpc/server/adapters/fastify"
-import { auth } from "./auth.js"
+import { getSessionFromRawHeaders } from "./auth.js"
 import { prisma } from "./db.js"
 
 export async function createContext({ req }: CreateFastifyContextOptions) {
-  const headers = new Headers()
-  for (const [key, value] of Object.entries(req.headers)) {
-    if (Array.isArray(value)) headers.set(key, value.join(", "))
-    else if (value != null) headers.set(key, String(value))
-  }
-  const session = await auth.api.getSession({ headers })
+  const session = await getSessionFromRawHeaders(req.headers)
   return {
     prisma,
     user: session?.user ?? null,

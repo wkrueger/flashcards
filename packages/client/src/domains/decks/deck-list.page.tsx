@@ -1,18 +1,19 @@
+import { Link, useNavigate } from "@tanstack/react-router"
+import { FileDown, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Link } from "@tanstack/react-router"
-import { Plus } from "lucide-react"
+import { MenuItem, PageHeader } from "../../components/AppShell"
+import { LightbulbIllustration } from "../../components/LightbulbIllustration"
 import { trpc } from "../../infra/trpc"
 import { Button } from "../../ui/button"
-import { Input } from "../../ui/input"
-import { Label } from "../../ui/label"
 import { Card, CardContent } from "../../ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../ui/dialog"
+import { Input } from "../../ui/input"
+import { Label } from "../../ui/label"
 import { LanguageSelect } from "./language-select"
-import { PageHeader } from "../../components/AppShell"
-import { LightbulbIllustration } from "../../components/LightbulbIllustration"
 
 export function DeckListPage() {
   const utils = trpc.useUtils()
+  const navigate = useNavigate()
   const decks = trpc.decks.list.useQuery()
   const create = trpc.decks.create.useMutation({
     onSuccess: () => {
@@ -42,69 +43,84 @@ export function DeckListPage() {
       <PageHeader
         title="Your decks"
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1 px-3">
-                <Plus className="h-4 w-4" />
-                New deck
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>New deck</DialogTitle>
-              </DialogHeader>
-              <form
-                className="space-y-3"
-                onSubmit={(e) => {
-                  e.preventDefault()
-                  if (!name.trim() || sameLanguage) return
-                  create.mutate({
-                    name: name.trim(),
-                    defaultFrontLanguageId: frontLanguageId ? Number(frontLanguageId) : null,
-                    defaultBackLanguageId: backLanguageId ? Number(backLanguageId) : null,
-                  })
-                }}
-              >
-                <div className="space-y-1">
-                  <Label htmlFor="deck-name">Name</Label>
-                  <Input
-                    id="deck-name"
-                    placeholder="e.g. German A1"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    autoFocus
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Translating from language (optional)</Label>
-                  <LanguageSelect
-                    value={frontLanguageId}
-                    onChange={setFrontLanguageId}
-                    disabledValue={backLanguageId}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Study language (optional)</Label>
-                  <LanguageSelect
-                    value={backLanguageId}
-                    onChange={setBackLanguageId}
-                    disabledValue={frontLanguageId}
-                  />
-                  {sameLanguage && (
-                    <p className="text-sm text-destructive">Languages must be different.</p>
-                  )}
-                </div>
-                {create.error && <p className="text-sm text-destructive">{create.error.message}</p>}
-                <Button
-                  type="submit"
-                  disabled={create.isPending || sameLanguage}
-                  className="w-full"
-                >
-                  {create.isPending ? "Creating…" : "Create"}
+          <>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-1 px-3">
+                  <Plus className="h-4 w-4" />
+                  New deck
                 </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>New deck</DialogTitle>
+                </DialogHeader>
+                <form
+                  className="space-y-3"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    if (!name.trim() || sameLanguage) return
+                    create.mutate({
+                      name: name.trim(),
+                      defaultFrontLanguageId: frontLanguageId ? Number(frontLanguageId) : null,
+                      defaultBackLanguageId: backLanguageId ? Number(backLanguageId) : null,
+                    })
+                  }}
+                >
+                  <div className="space-y-1">
+                    <Label htmlFor="deck-name">Name</Label>
+                    <Input
+                      id="deck-name"
+                      placeholder="e.g. German A1"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Translating from language (optional)</Label>
+                    <LanguageSelect
+                      value={frontLanguageId}
+                      onChange={setFrontLanguageId}
+                      disabledValue={backLanguageId}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Study language (optional)</Label>
+                    <LanguageSelect
+                      value={backLanguageId}
+                      onChange={setBackLanguageId}
+                      disabledValue={frontLanguageId}
+                    />
+                    {sameLanguage && (
+                      <p className="text-sm text-destructive">Languages must be different.</p>
+                    )}
+                  </div>
+                  {create.error && (
+                    <p className="text-sm text-destructive">{create.error.message}</p>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={create.isPending || sameLanguage}
+                    className="w-full"
+                  >
+                    {create.isPending ? "Creating…" : "Create"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </>
+        }
+        menuItems={
+          <>
+            <MenuItem
+              onSelect={() => navigate({ to: "/imports/anki/new" })}
+              icon={<FileDown className="h-[18px] w-[18px]" />}
+              aria-label="Import Anki file"
+            >
+              Import Anki
+            </MenuItem>
+          </>
         }
       />
 

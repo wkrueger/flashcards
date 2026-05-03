@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,magenta \"pnpm --filter server dev\" \"pnpm --filter client dev\"",
+    "dev": "concurrently -n server,worker,client -c blue,green,magenta \"pnpm --filter server dev\" \"pnpm --filter server worker:watch\" \"pnpm --filter client dev\"",
     "dev:preview": "concurrently -n server,client -c blue,magenta \"pnpm --filter server dev\" \"pnpm --filter client preview\"",
     "build": "pnpm --filter server exec prisma migrate deploy && pnpm --filter server exec prisma generate && pnpm --filter client build",
     "typecheck": "pnpm -r typecheck",

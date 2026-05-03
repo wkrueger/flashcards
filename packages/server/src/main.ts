@@ -1,9 +1,15 @@
 import Fastify from "fastify"
 import cors from "@fastify/cors"
+import multipart from "@fastify/multipart"
 import { fastifyTRPCPlugin } from "@trpc/server/adapters/fastify"
 import { auth } from "./infra/auth.js"
 import { createContext } from "./infra/trpc.js"
 import { appRouter } from "./domains/_app.router.js"
+import { prisma } from "./infra/db.js"
+import {
+  ANKI_IMPORT_UPLOAD_MAX_BYTES,
+  handleAnkiImportUpload,
+} from "./domains/anki-import/anki-import.service.js"
 
 const port = Number(process.env.SERVER_PORT ?? 3001)
 const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:5173"
@@ -39,6 +45,13 @@ export async function buildServer() {
   await app.register(cors, {
     origin: clientOrigin,
     credentials: true,
+  })
+
+  await app.register(multipart, {
+    limits: {
+      files: 1,
+      fileSize: ANKI_IMPORT_UPLOAD_MAX_BYTES,
+    },
   })
 
   // Mount better-auth as a catch-all under /api/auth/*
@@ -83,6 +96,20 @@ export async function buildServer() {
     trpcOptions: {
       router: appRouter,
       createContext,
+    },
+  })
+
+  app.route({
+    method: "POST",
+    url: "/api/imports/anki/upload",
+    bodyLimit: ANKI_IMPORT_UPLOAD_MAX_BYTES,
+    async handler(req, reply) {
+      const body = await handleAnkiImportUpload(prisma, {
+        rawHeaders: req.headers,
+        getFile: () => req.file(),
+      })
+
+      reply.status(201).send(body)
     },
   })
 

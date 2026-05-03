@@ -84,3 +84,19 @@ export const auth = betterAuth({
 })
 
 export type Auth = typeof auth
+
+export async function getSessionFromRawHeaders(
+  rawHeaders: Record<string, string | string[] | undefined>
+) {
+  const headers = new Headers()
+
+  for (const [key, value] of Object.entries(rawHeaders)) {
+    if (Array.isArray(value)) {
+      headers.set(key, value.join(", "))
+    } else if (value != null) {
+      headers.set(key, String(value))
+    }
+  }
+
+  return auth.api.getSession({ headers })
+}

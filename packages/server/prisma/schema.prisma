@@ -26,6 +26,7 @@ model User {
   decks    Deck[]
   subjects Subject[]
   tags     Tag[]
+  importProcesses ImportProcess[]
 }
 
 enum TagOwnerType {
@@ -81,6 +82,8 @@ model Language {
 
   decksAsDefaultFront Deck[] @relation("DeckDefaultFrontLanguage")
   decksAsDefaultBack  Deck[] @relation("DeckDefaultBackLanguage")
+  importProcessesAsDefaultFront ImportProcess[] @relation("ImportProcessDefaultFrontLanguage")
+  importProcessesAsDefaultBack  ImportProcess[] @relation("ImportProcessDefaultBackLanguage")
 }
 
 model Deck {
@@ -164,4 +167,104 @@ model CardTag {
 
   @@id([cardId, tagId])
   @@index([tagId])
+}
+
+enum ImportProcessStatus {
+  UPLOADED
+  ANALYZING
+  AWAITING_CONFIGURATION
+  VALIDATING
+  IMPORTING
+  SUCCEEDED
+  FAILED
+}
+
+enum ImportCardTypeKind {
+  BASIC
+  CLOZE
+}
+
+enum WorkerJobType {
+  ANALYZE_ANKI_IMPORT
+  RUN_ANKI_IMPORT
+}
+
+enum WorkerJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model ImportProcess {
+  id                    String              @id @default(cuid())
+  userId                String
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status                ImportProcessStatus @default(UPLOADED)
+  filename              String
+  fileSize              Int
+  storagePath           String
+  detectedCollectionFile String?
+  deckName              String?
+  defaultFrontLanguageId Int?
+  defaultFrontLanguage  Language?           @relation("ImportProcessDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
+  defaultBackLanguageId  Int?
+  defaultBackLanguage   Language?           @relation("ImportProcessDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
+  inverseReviewEnabled  Boolean?
+  createdDeckId         String?
+  rowCount              Int                 @default(0)
+  selectedRowCount      Int                 @default(0)
+  importedCardCount     Int                 @default(0)
+  failedRowCount        Int                 @default(0)
+  errorSummary          String?
+  errorDetailsJson      String?
+  completedAt           DateTime?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  cardTypes ImportCardType[]
+  workerJobs WorkerJob[]
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model ImportCardType {
+  id              String             @id @default(cuid())
+  processId       String
+  process         ImportProcess      @relation(fields: [processId], references: [id], onDelete: Cascade)
+  modelKey        String
+  modelName       String
+  modelKind       ImportCardTypeKind
+  rowCount        Int
+  fieldNamesJson  String
+  sampleRowsJson  String
+  selected         Boolean            @default(false)
+  subjectField     String?
+  cardMappingsJson String?
+  pluginsJson      String?
+  previewCardsJson String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([processId, modelKey])
+  @@index([processId])
+}
+
+model WorkerJob {
+  id         String          @id @default(cuid())
+  processId  String?
+  process    ImportProcess?  @relation(fields: [processId], references: [id], onDelete: Cascade)
+  type       WorkerJobType
+  status     WorkerJobStatus @default(PENDING)
+  attempts   Int             @default(0)
+  error      String?
+  availableAt DateTime       @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([status, availableAt, createdAt])
+  @@index([processId])
 }

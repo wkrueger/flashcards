@@ -1,3 +1,5 @@
+import { rm } from "node:fs/promises"
+import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { prisma } from "../src/infra/db.js"
 import { appRouter } from "../src/domains/_app.router.js"
@@ -26,8 +28,12 @@ export function callerFor(userId: string) {
 }
 
 export async function resetDomain() {
+  await prisma.workerJob.deleteMany()
+  await prisma.importCardType.deleteMany()
+  await prisma.importProcess.deleteMany()
   await prisma.card.deleteMany()
   await prisma.subject.deleteMany()
   await prisma.deck.deleteMany()
   await prisma.user.deleteMany()
+  await rm(path.resolve(process.cwd(), ".uploads"), { recursive: true, force: true })
 }

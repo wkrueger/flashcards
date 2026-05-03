@@ -83,3 +83,120 @@ export const reviewCompleteInput = z
     message: "chosenLevel is required when not in inverse mode.",
     path: ["chosenLevel"],
   })
+
+export const importProcessStatusSchema = z.enum([
+  "UPLOADED",
+  "ANALYZING",
+  "AWAITING_CONFIGURATION",
+  "VALIDATING",
+  "IMPORTING",
+  "SUCCEEDED",
+  "FAILED",
+])
+export type ImportProcessStatus = z.infer<typeof importProcessStatusSchema>
+
+export const ankiImportDeckConfigInput = z.object({
+  name: z.string().trim().min(1).max(100),
+  defaultFrontLanguageId: languageId.nullish(),
+  defaultBackLanguageId: languageId.nullish(),
+  inverseReviewEnabled: z.boolean().optional(),
+})
+
+export const ankiCardMappingSchema = z.object({
+  frontField: z.string().trim().min(1),
+  backField: z.string().trim().min(1),
+})
+export type AnkiCardMapping = z.infer<typeof ankiCardMappingSchema>
+
+export const highlightWordsPluginSchema = z.object({
+  type: z.literal("highlight_words"),
+  frontWordsField: z.string().trim().min(1),
+  backWordsField: z.string().trim().min(1),
+})
+export const importPluginSchema = highlightWordsPluginSchema
+export type ImportPlugin = z.infer<typeof importPluginSchema>
+
+export const ankiImportCardTypeMappingInput = z
+  .object({
+    modelKey: z.string().min(1),
+    selected: z.boolean(),
+    subjectField: z.string().trim().min(1).optional(),
+    cardMappings: z.array(ankiCardMappingSchema).optional(),
+    plugins: z.array(importPluginSchema).optional(),
+  })
+  .superRefine((input, ctx) => {
+    if (!input.selected) return
+    if (!input.subjectField) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Subject field is required for selected card types.",
+        path: ["subjectField"],
+      })
+    }
+    if (!input.cardMappings || input.cardMappings.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one card mapping is required for selected card types.",
+        path: ["cardMappings"],
+      })
+    }
+  })
+
+export const saveAnkiImportConfigurationInput = z.object({
+  id,
+  deck: ankiImportDeckConfigInput,
+  cardTypes: z.array(ankiImportCardTypeMappingInput).min(1),
+})
+
+export const ankiImportPreviewCardSchema = z.object({
+  subjectText: z.string(),
+  front: z.string(),
+  back: z.string(),
+})
+
+export type AnkiImportPreviewCard = z.infer<typeof ankiImportPreviewCardSchema>
+
+export type AnkiImportCardTypeView = {
+  id: string
+  modelKey: string
+  modelName: string
+  modelKind: "BASIC" | "CLOZE"
+  rowCount: number
+  fieldNames: string[]
+  sampleRows: Record<string, string>[]
+  selected: boolean
+  subjectField: string | null
+  cardMappings: AnkiCardMapping[]
+  plugins: ImportPlugin[]
+  previewCards: AnkiImportPreviewCard[]
+}
+
+export type AnkiImportListItemView = {
+  id: string
+  status: ImportProcessStatus
+  filename: string
+  deckName: string | null
+  importedCardCount: number
+  rowCount: number
+  createdAt: string
+}
+
+export type AnkiImportProcessView = {
+  id: string
+  status: ImportProcessStatus
+  filename: string
+  fileSize: number
+  detectedCollectionFile: string | null
+  deckName: string | null
+  defaultFrontLanguageId: number | null
+  defaultBackLanguageId: number | null
+  inverseReviewEnabled: boolean | null
+  rowCount: number
+  selectedRowCount: number
+  importedCardCount: number
+  failedRowCount: number
+  errorSummary: string | null
+  errorDetails: string[]
+  createdDeckId: string | null
+  cardTypes: AnkiImportCardTypeView[]
+}
