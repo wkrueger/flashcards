@@ -575,31 +575,61 @@ type HighlightRange = {
   end: number
 }
 
-function findSequentialWordRanges(content: string, words: string[]): HighlightRange[] | null {
+function findWordMatches(content: string, word: string, fromIndex: number): HighlightRange[] {
+  const regex = new RegExp(`(^|[^\\p{L}\\p{N}])(${escapeRegex(word)})(?=$|[^\\p{L}\\p{N}])`, "giu")
   const ranges: HighlightRange[] = []
-  let searchStart = 0
 
-  for (const word of words) {
-    const regex = new RegExp(`(^|[^\\p{L}\\p{N}])(${escapeRegex(word)})(?=$|[^\\p{L}\\p{N}])`, "iu")
-    const slice = content.slice(searchStart)
-    const match = regex.exec(slice)
-    if (!match || match.index === undefined) {
-      return null
-    }
-
+  for (const match of content.matchAll(regex)) {
     const boundary = match[1] ?? ""
     const matchedWord = match[2]
-    if (!matchedWord) {
-      return null
-    }
+    const matchIndex = match.index
 
-    const start = searchStart + match.index + boundary.length
-    const end = start + matchedWord.length
-    ranges.push({ start, end })
-    searchStart = end
+    if (matchIndex === undefined || !matchedWord) continue
+
+    const start = matchIndex + boundary.length
+    if (start < fromIndex) continue
+
+    ranges.push({
+      start,
+      end: start + matchedWord.length,
+    })
   }
 
   return ranges
+}
+
+function findSequentialWordRanges(content: string, words: string[]): HighlightRange[] | null {
+  function compareRangeSets(a: HighlightRange[], b: HighlightRange[]) {
+    const aSpan = a[a.length - 1]!.end - a[0]!.start
+    const bSpan = b[b.length - 1]!.end - b[0]!.start
+
+    if (aSpan !== bSpan) {
+      return aSpan - bSpan
+    }
+
+    return a[0]!.start - b[0]!.start
+  }
+
+  function search(wordIndex: number, fromIndex: number): HighlightRange[] | null {
+    if (wordIndex >= words.length) return []
+
+    const matches = findWordMatches(content, words[wordIndex]!, fromIndex)
+    let best: HighlightRange[] | null = null
+
+    for (const match of matches) {
+      const tail = search(wordIndex + 1, match.end)
+      if (tail) {
+        const candidate = [match, ...tail]
+        if (!best || compareRangeSets(candidate, best) < 0) {
+          best = candidate
+        }
+      }
+    }
+
+    return best
+  }
+
+  return search(0, 0)
 }
 
 function applyHighlightRanges(content: string, ranges: HighlightRange[]) {
