@@ -141,8 +141,10 @@ export function DeckListPage() {
                 params={{ deckId: d.id }}
                 className="flex min-h-[88px] items-center justify-between rounded-md border bg-card px-4 py-4 text-sm transition duration-150 hover:bg-accent active:bg-[hsl(var(--accent-strong))] active:opacity-80"
               >
-                <span className="font-medium">{d.name}</span>
-                <span className="text-xs text-muted-foreground">{d.dueCount} to do</span>
+                <span className="min-w-0 flex-1 font-medium">{d.name}</span>
+                <span className="ml-3 shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                  {d.dueCount} to do
+                </span>
               </Link>
             </li>
           ))}
