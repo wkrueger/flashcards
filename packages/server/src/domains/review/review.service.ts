@@ -162,7 +162,7 @@ export async function pickNextCard({
   const candidates = [...candidates1, ...candidates1, ...candidates2]
 
   const count = await prisma.subject.count({
-    where: subjectWhere,
+    where: { ...subjectWhere, lastSeenAt: undefined },
   })
 
   const dueCount = includeOnCooldown
