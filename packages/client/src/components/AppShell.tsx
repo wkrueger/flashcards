@@ -62,11 +62,17 @@ export function PageHeader({
   return (
     <div
       ref={containerRef}
-      className="relative mt-2 flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1"
+      className="relative mt-2 flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 pr-16"
       style={{ viewTransitionName: "page-header" }}
     >
       {!stacked && onBack && (
-        <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Back"
+          onClick={onBack}
+          className="h-9 w-9 rounded-full"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
       )}
@@ -102,7 +108,13 @@ export function PageHeader({
       {stacked && title && (
         <div className="flex w-full items-center gap-2">
           {onBack && (
-            <Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Back"
+              onClick={onBack}
+              className="h-9 w-9 rounded-full"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
           )}
