@@ -33,7 +33,6 @@ export interface PickResult {
         tags: string[]
       })
     | null
-  dueCount: number
   inverse: boolean
 }
 
@@ -127,62 +126,51 @@ export async function pickNextCard({
     take: 4,
   })
 
-  // Include some candidates from outside the recents list.
-  const excludeIds = [
-    ...(excludedSubjectId ? [excludedSubjectId] : []),
-    ...candidates1.map((c) => c.id),
-  ]
-  const candidate2Where: Prisma.SubjectWhereInput = {
-    userId,
-    ...(deckId ? { deckId } : {}),
-    ...(includeOnCooldown ? {} : { cooldownAt: { lte: now } }),
-    ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
-  }
+  let candidates2: { id: string; cooldownAt: Date; randomKey: number }[] = []
+  if (!pinnedToSubject) {
+    // Include some candidates from outside the recents list.
+    const excludeIds = [
+      ...(excludedSubjectId ? [excludedSubjectId] : []),
+      ...candidates1.map((c) => c.id),
+    ]
+    const candidate2Where: Prisma.SubjectWhereInput = {
+      userId,
+      ...(deckId ? { deckId } : {}),
+      ...(includeOnCooldown ? {} : { cooldownAt: { lte: now } }),
+      ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
+    }
 
-  const candidate2Target = randomSubjectKeyFromRng(rng)
-  const candidate2OrderBy: Prisma.SubjectOrderByWithRelationInput[] = [
-    { randomKey: "asc" },
-    { id: "asc" },
-  ]
-  let candidates2 = await prisma.subject.findMany({
-    where: {
-      ...candidate2Where,
-      randomKey: { gte: candidate2Target },
-    },
-    orderBy: candidate2OrderBy,
-    select: { id: true, cooldownAt: true, randomKey: true },
-    take: 1,
-  })
-
-  if (candidates2.length === 0) {
+    const candidate2Target = randomSubjectKeyFromRng(rng)
+    const candidate2OrderBy: Prisma.SubjectOrderByWithRelationInput[] = [
+      { randomKey: "asc" },
+      { id: "asc" },
+    ]
     candidates2 = await prisma.subject.findMany({
       where: {
         ...candidate2Where,
-        randomKey: { lt: candidate2Target },
+        randomKey: { gte: candidate2Target },
       },
       orderBy: candidate2OrderBy,
       select: { id: true, cooldownAt: true, randomKey: true },
       take: 1,
     })
+
+    if (candidates2.length === 0) {
+      candidates2 = await prisma.subject.findMany({
+        where: {
+          ...candidate2Where,
+          randomKey: { lt: candidate2Target },
+        },
+        orderBy: candidate2OrderBy,
+        select: { id: true, cooldownAt: true, randomKey: true },
+        take: 1,
+      })
+    }
   }
 
   const candidates = [...candidates1, ...candidates1, ...candidates2]
 
-  const count = await prisma.subject.count({
-    where: subjectWhere,
-  })
-
-  const dueCount = includeOnCooldown
-    ? await prisma.subject.count({
-        where: {
-          userId,
-          ...(deckId ? { deckId } : {}),
-          cooldownAt: { lte: now },
-        },
-      })
-    : count
-
-  if (candidates.length === 0) return { card: null, dueCount, inverse: false }
+  if (candidates.length === 0) return { card: null, inverse: false }
 
   const chosen = candidates[Math.floor(rng() * candidates.length)]!
 
@@ -210,9 +198,7 @@ export async function pickNextCard({
   })
 
   if (!selectedCard) {
-    // Subject exists but no card in scope; recurse without this subject by re-querying
-    // (rare race / data shape). Just return null + dueCount.
-    return { card: null, dueCount, inverse: false }
+    return { card: null, inverse: false }
   }
 
   let isInverse = false
@@ -230,7 +216,7 @@ export async function pickNextCard({
   }
   const { cardTags, ...rest } = selectedCard
   const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
-  return { card: { ...rest, tags } as PickResult["card"], dueCount, inverse: isInverse }
+  return { card: { ...rest, tags } as PickResult["card"], inverse: isInverse }
 }
 
 async function getIsInverse(

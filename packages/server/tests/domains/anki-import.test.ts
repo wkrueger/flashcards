@@ -616,7 +616,7 @@ describe("anki import worker flow", () => {
     })
 
     expect(cards).toHaveLength(1)
-    expect(cards[0]?.front).toBe("(good day)  \nA very goodbye and warm daydream")
+    expect(cards[0]?.front).toBe("A very goodbye and warm daydream\n\n(**good day**)")
   })
 
   it("can skip an early word occurrence when a later sequence is the first full match", async () => {

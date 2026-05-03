@@ -100,9 +100,8 @@ describe("card template domain", () => {
     expect(requestInput).toContain("backLanguage")
     expect(requestInput).toContain("German")
     expect(requestInput).toContain("small statements in German")
-    expect(requestInput).toContain("variant field")
-    expect(requestInput).toContain("bigger")
-    expect(requestInput).toContain("meaning")
+    expect(requestInput).toContain("variant=basic")
+    expect(requestInput).toContain("variant=meaning")
     expect(requestInput).not.toContain("Deutsch")
     expect(previews.cards).toEqual([
       {

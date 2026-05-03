@@ -76,7 +76,7 @@ describe("review domain", () => {
     await resetDomain()
   })
 
-  it("normal mode returns null + dueCount=0 when nothing due", async () => {
+  it("normal mode returns null when nothing due", async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({ name: "d" })
     const future = new Date(Date.now() + 60_000)
@@ -84,7 +84,6 @@ describe("review domain", () => {
 
     const r = await callerFor(u).review.next({ mode: "normal" })
     expect(r.card).toBeNull()
-    expect(r.dueCount).toBe(0)
   })
 
   it("normal mode mixes recent subjects with random subjects outside the recents list", async () => {
@@ -106,7 +105,6 @@ describe("review domain", () => {
       rng: () => 0,
     })
     expect(recent.card?.subject.subject).toBe("s0")
-    expect(recent.dueCount).toBe(10)
 
     const randomOutsideRecents = await pickNextCard({
       prisma,
@@ -117,7 +115,6 @@ describe("review domain", () => {
     expect(["s4", "s5", "s6", "s7", "s8", "s9"]).toContain(
       randomOutsideRecents.card?.subject.subject
     )
-    expect(randomOutsideRecents.dueCount).toBe(10)
   })
 
   it("free mode picks even when all subjects are on cooldown", async () => {
@@ -132,7 +129,6 @@ describe("review domain", () => {
 
     const r = await callerFor(u).review.next({ mode: "free" })
     expect(r.card).not.toBeNull()
-    expect(r.dueCount).toBe(0)
   })
 
   it("returns inverse=true when deck has inverseReviewEnabled and roll succeeds", async () => {
