@@ -109,6 +109,9 @@ export async function pickNextCard({
       subjectWhere.id = { not: excludedSubjectId }
     }
   }
+  if (!subjectId) {
+    subjectWhere.lastSeenAt = { not: null }
+  }
 
   const candidates1 = await prisma.subject.findMany({
     where: subjectWhere,
