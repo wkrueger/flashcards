@@ -157,12 +157,12 @@ function CardTypeSetupView({
   onBack,
   disabled,
 }: CardTypeSetupViewProps) {
-  const [localPreviews, setLocalPreviews] = useState<
-    Array<{ subjectText: string; front: string; back: string }>
-  >([])
-
-  const refreshPreview = () =>
-    setLocalPreviews(computeLocalPreviews(cardType.sampleRows, mapping))
+  // const [localPreviews, setLocalPreviews] = useState<
+  //   Array<{ subjectText: string; front: string; back: string }>
+  // >([])
+  //
+  // const refreshPreview = () =>
+  //   setLocalPreviews(computeLocalPreviews(cardType.sampleRows, mapping))
 
   const updateCm = (cmIndex: number, patch: Partial<CardMappingRow>) => {
     const next = [...mapping.cardMappings]
