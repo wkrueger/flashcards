@@ -570,6 +570,42 @@ function escapeRegex(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
+type HighlightRange = {
+  start: number
+  end: number
+}
+
+function findSequentialWordRanges(content: string, words: string[]): HighlightRange[] | null {
+  const ranges: HighlightRange[] = []
+  let searchStart = 0
+
+  for (const word of words) {
+    const regex = new RegExp(escapeRegex(word), "i")
+    const slice = content.slice(searchStart)
+    const match = regex.exec(slice)
+    if (!match || match.index === undefined) {
+      return null
+    }
+
+    const start = searchStart + match.index
+    const end = start + match[0].length
+    ranges.push({ start, end })
+    searchStart = end
+  }
+
+  return ranges
+}
+
+function applyHighlightRanges(content: string, ranges: HighlightRange[]) {
+  let result = content
+
+  for (const range of [...ranges].reverse()) {
+    result = `${result.slice(0, range.start)}**${result.slice(range.start, range.end)}**${result.slice(range.end)}`
+  }
+
+  return result
+}
+
 function applyHighlightWords(
   content: string,
   wordsField: string,
@@ -587,10 +623,9 @@ function applyHighlightWords(
     const words = item.split(/\s+/).filter(Boolean)
     if (words.length === 0) continue
 
-    const pattern = words.map(escapeRegex).join("[\\s\\S]*?")
-    const match = content.match(new RegExp(pattern, "i"))
-    if (match) {
-      return content.replace(match[0], `**${match[0]}**`)
+    const ranges = findSequentialWordRanges(content, words)
+    if (ranges) {
+      return applyHighlightRanges(content, ranges)
     }
   }
 

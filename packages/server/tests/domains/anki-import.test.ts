@@ -27,6 +27,7 @@ const FIELD_SEPARATOR = "\u001f"
 type ApkgFixtureOptions = {
   includeCollection21?: boolean
   duplicateImportRows?: boolean
+  importRows?: string[][]
 }
 
 let app: FastifyInstance
@@ -75,15 +76,17 @@ async function createApkgFixture(options: ApkgFixtureOptions = {}) {
 
   db.prepare("INSERT INTO col(models) VALUES (?)").run(JSON.stringify(models))
 
-  const importRows = options.duplicateImportRows
-    ? [
-        ["Haus", "House", "[sound:haus.mp3]"],
-        ["Haus", "House", ""],
-      ]
-    : [
-        ["Haus", "House", "[sound:haus.mp3]"],
-        ["Baum<br>alt", 'Tree<img src="tree.jpg">', ""],
-      ]
+  const importRows = options.importRows
+    ? options.importRows
+    : options.duplicateImportRows
+      ? [
+          ["Haus", "House", "[sound:haus.mp3]"],
+          ["Haus", "House", ""],
+        ]
+      : [
+          ["Haus", "House", "[sound:haus.mp3]"],
+          ["Baum<br>alt", 'Tree<img src="tree.jpg">', ""],
+        ]
 
   let noteId = 1
   for (const row of importRows) {
@@ -494,6 +497,66 @@ describe("anki import worker flow", () => {
     expect(deck).not.toBeNull()
     expect(cards).toHaveLength(2)
     await expect(readFile(fixture.archivePath)).rejects.toThrow()
+  })
+
+  it("highlights only the matched words for multi-word highlight plugins", async () => {
+    const userId = await makeUser("highlight-words")
+    const fixture = await createApkgFixture({
+      importRows: [["Guten Tag", "A very good and warm day", "good day"]],
+    })
+    const process = await prisma.importProcess.create({
+      data: {
+        userId,
+        status: "ANALYZING",
+        filename: "fixture.apkg",
+        fileSize: 10,
+        storagePath: fixture.archivePath,
+      },
+    })
+
+    await runAnalyzeAnkiImportJob(prisma, process.id)
+
+    const trpc = callerFor(userId)
+    await trpc.ankiImport.saveConfiguration({
+      id: process.id,
+      deck: {
+        name: "Imported deck",
+        defaultFrontLanguageId: null,
+        defaultBackLanguageId: null,
+      },
+      cardTypes: [
+        {
+          modelKey: "101",
+          selected: true,
+          subjectField: "German",
+          cardMappings: [{ frontField: "English", backField: "German" }],
+          plugins: [
+            {
+              type: "highlight_words",
+              frontWordsField: "Audio",
+              backWordsField: "Audio",
+            },
+          ],
+        },
+        {
+          modelKey: "202",
+          selected: false,
+        },
+      ],
+    })
+
+    await runImportAnkiImportJob(prisma, process.id)
+
+    const deck = await prisma.deck.findFirst({
+      where: { userId, name: "Imported deck" },
+    })
+    const cards = await prisma.card.findMany({
+      where: { deckId: deck?.id },
+      orderBy: { front: "asc" },
+    })
+
+    expect(cards).toHaveLength(1)
+    expect(cards[0]?.front).toBe("A very **good** and warm **day**")
   })
 
   it("fails the import during dry-run validation when mapped cards would duplicate", async () => {
