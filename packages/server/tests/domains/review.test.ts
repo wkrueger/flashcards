@@ -173,7 +173,12 @@ describe("review domain", () => {
       inverseReviewEnabled: true,
     })
     await seedSubjects(u, deck.id, [
-      { text: "Haus", cooldownAt: new Date(Date.now() - 1000), fixationLevel: "1" },
+      {
+        text: "Haus",
+        cooldownAt: new Date(Date.now() - 1000),
+        lastSeenAt: new Date(Date.now() - 60_000),
+        fixationLevel: "1",
+      },
     ])
     const r = await pickNextCard({
       prisma,
@@ -192,7 +197,12 @@ describe("review domain", () => {
       inverseReviewEnabled: true,
     })
     await seedSubjects(u, deck.id, [
-      { text: "Haus", cooldownAt: new Date(Date.now() - 1000), fixationLevel: "2" },
+      {
+        text: "Haus",
+        cooldownAt: new Date(Date.now() - 1000),
+        lastSeenAt: new Date(Date.now() - 60_000),
+        fixationLevel: "2",
+      },
     ])
     const r = await pickNextCard({
       prisma,
@@ -555,7 +565,7 @@ describe("review domain", () => {
     expect(r.card?.subject.subject).toBe("Haus")
   })
 
-  it("never returns inverse review when pinned to a subject", async () => {
+  it("uses base inverse probability when the chosen subject has never been seen", async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({ name: "d", inverseReviewEnabled: true })
     await seedSubjects(u, deck.id, [
@@ -569,7 +579,7 @@ describe("review domain", () => {
       deckId: deck.id,
       includeOnCooldown: false,
       subjectId: subj.id,
-      inverseRng: () => 0,
+      inverseRng: () => 0.5,
     })
 
     expect(r.inverse).toBe(false)
