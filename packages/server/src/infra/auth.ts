@@ -21,7 +21,31 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "sqlite" }),
   secret,
   baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3001",
-  trustedOrigins: [process.env.CLIENT_ORIGIN ?? "http://localhost:5173"],
+  trustedOrigins: [
+    process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
+    ...(isProd
+      ? []
+      : [
+          "http://10.*.*.*:5173",
+          "http://172.16.*.*:5173",
+          "http://172.17.*.*:5173",
+          "http://172.18.*.*:5173",
+          "http://172.19.*.*:5173",
+          "http://172.20.*.*:5173",
+          "http://172.21.*.*:5173",
+          "http://172.22.*.*:5173",
+          "http://172.23.*.*:5173",
+          "http://172.24.*.*:5173",
+          "http://172.25.*.*:5173",
+          "http://172.26.*.*:5173",
+          "http://172.27.*.*:5173",
+          "http://172.28.*.*:5173",
+          "http://172.29.*.*:5173",
+          "http://172.30.*.*:5173",
+          "http://172.31.*.*:5173",
+          "http://192.168.*.*:5173",
+        ]),
+  ],
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,

@@ -12,7 +12,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh w-full">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x">
-        <main className="flex flex-1 flex-col p-3 pb-[max(env(safe-area-inset-bottom),1.25rem)] sm:pt-8">
+        <main className="flex flex-1 flex-col p-3 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
           {children}
         </main>
       </div>
@@ -62,7 +62,7 @@ export function PageHeader({
   return (
     <div
       ref={containerRef}
-      className="relative mt-2 flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 pr-16"
+      className="relative mt-1 flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 pr-16"
       style={{ viewTransitionName: "page-header" }}
     >
       {!stacked && onBack && (
