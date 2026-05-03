@@ -554,4 +554,25 @@ describe("review domain", () => {
     expect(r.card?.id).not.toBe(cardA.id)
     expect(r.card?.subject.subject).toBe("Haus")
   })
+
+  it("never returns inverse review when pinned to a subject", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d", inverseReviewEnabled: true })
+    await seedSubjects(u, deck.id, [
+      { text: "Haus", cooldownAt: new Date(Date.now() - 1000), fixationLevel: "1" },
+    ])
+    const subj = await prisma.subject.findFirstOrThrow({ where: { userId: u, subject: "Haus" } })
+
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      subjectId: subj.id,
+      inverseRng: () => 0,
+    })
+
+    expect(r.inverse).toBe(false)
+    expect(r.card?.subject.subject).toBe("Haus")
+  })
 })

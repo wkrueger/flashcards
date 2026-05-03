@@ -203,7 +203,7 @@ export async function pickNextCard({
   }
 
   let isInverse = false
-  if (inverseEnabled) {
+  if (inverseEnabled && !pinnedToSubject) {
     const { isInverse: isInverseResp, cardFallback } = await getIsInverse(
       prisma,
       selectedCard,
