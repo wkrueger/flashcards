@@ -253,6 +253,32 @@ describe("review domain", () => {
     expect(r.inverse).toBe(false)
   })
 
+  it("reduces inverse chance after a prior inverse review in the same deck", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({
+      name: "d",
+      inverseReviewEnabled: true,
+    })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "f",
+      back: "b",
+    })
+
+    await trpc.review.complete({ cardId: card.id, inverse: true })
+
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      inverseRng: () => 0.15,
+    })
+    expect(r.inverse).toBe(false)
+  })
+
   it('rerolls another card from the same subject for "gen:meaning" after inverse review', async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({
@@ -366,6 +392,8 @@ describe("review domain", () => {
     expect(subjAfter.inverseReviewed).toBe(true)
     expect(subjAfter.cooldownAt.getTime()).toBe(subjBefore.cooldownAt.getTime())
     expect(subjAfter.lastSeenAt).not.toBeNull()
+    const deckAfter = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(deckAfter.inverseReviewStreak).toBe(1)
     const cardAfter = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
     expect(cardAfter.timesSeen).toBe(0)
     expect(cardAfter.lastSeenAt).not.toBeNull()
@@ -395,9 +423,135 @@ describe("review domain", () => {
     expect(subj.fixationLevel).toBe("3")
     expect(subj.inverseReviewed).toBe(false)
     expect(subj.timesSeen).toBe(1)
+    const deckAfter = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(deckAfter.inverseReviewStreak).toBe(0)
 
     const reloaded = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
     expect(reloaded.timesSeen).toBe(1)
     expect(reloaded.lastSeenAt).not.toBeNull()
+  })
+
+  it("non-inverse complete records cardMinutes against today's deck stats", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    const cardA = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "alpha",
+      front: "fa",
+      back: "ba",
+    })
+    const cardB = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "beta",
+      front: "fb",
+      back: "bb",
+    })
+
+    await trpc.review.complete({ cardId: cardA.id, chosenLevel: "3" })
+    await trpc.review.complete({ cardId: cardB.id, chosenLevel: "5" })
+
+    const stats = await prisma.reviewStat.findMany({ where: { deckId: deck.id } })
+    expect(stats).toHaveLength(1)
+    const expected = Math.round(COOLDOWN_MS["3"] / 60_000) + Math.round(COOLDOWN_MS["5"] / 60_000)
+    expect(stats[0]!.cardMinutes).toBe(expected)
+  })
+
+  it("inverse complete does not record stats", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d", inverseReviewEnabled: true })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "f",
+      back: "b",
+    })
+    await trpc.review.complete({ cardId: card.id, inverse: true })
+    const stats = await prisma.reviewStat.findMany({ where: { deckId: deck.id } })
+    expect(stats).toHaveLength(0)
+  })
+
+  it("complete prunes review stats older than 15 days", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "x",
+      front: "f",
+      back: "b",
+    })
+    const stale = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    await prisma.reviewStat.create({
+      data: { deckId: deck.id, date: stale, cardMinutes: 99 },
+    })
+
+    await trpc.review.complete({ cardId: card.id, chosenLevel: "3" })
+
+    const stats = await prisma.reviewStat.findMany({ where: { deckId: deck.id } })
+    expect(stats.find((s) => s.date.getTime() === stale.getTime())).toBeUndefined()
+  })
+
+  it("subjectId pin returns a card from that subject even when on cooldown", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d" })
+    const future = (mins: number) => new Date(Date.now() + mins * 60_000)
+    await seedSubjects(u, deck.id, [
+      { text: "alpha", cooldownAt: future(60) },
+      { text: "beta", cooldownAt: future(120) },
+    ])
+    const beta = await prisma.subject.findFirstOrThrow({ where: { userId: u, subject: "beta" } })
+
+    const r = await callerFor(u).review.next({
+      mode: "normal",
+      deckId: deck.id,
+      subjectId: beta.id,
+    })
+
+    expect(r.card?.subject.subject).toBe("beta")
+  })
+
+  it("subjectId pin with excludeCardId picks a different card from the same subject", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d" })
+    const subject = await prisma.subject.create({
+      data: {
+        userId: u,
+        deckId: deck.id,
+        subject: "Haus",
+        subjectKey: subjectKeyFor("Haus"),
+        randomKey: 0,
+        cooldownAt: new Date(Date.now() + 60_000),
+      },
+    })
+    const cardA = await prisma.card.create({
+      data: {
+        deckId: deck.id,
+        subjectId: subject.id,
+        front: "a-front",
+        frontHash: "a",
+        back: "a-back",
+      },
+    })
+    await prisma.card.create({
+      data: {
+        deckId: deck.id,
+        subjectId: subject.id,
+        front: "b-front",
+        frontHash: "b",
+        back: "b-back",
+      },
+    })
+
+    const r = await callerFor(u).review.next({
+      mode: "normal",
+      deckId: deck.id,
+      subjectId: subject.id,
+      excludeCardId: cardA.id,
+    })
+
+    expect(r.card?.id).not.toBe(cardA.id)
+    expect(r.card?.subject.subject).toBe("Haus")
   })
 })

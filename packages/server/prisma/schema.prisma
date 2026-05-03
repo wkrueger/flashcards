@@ -11,21 +11,21 @@ datasource db {
 // Schemas chosen to match better-auth's default Prisma adapter.
 
 model User {
-  id            String    @id
+  id            String   @id
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String   @unique
+  emailVerified Boolean  @default(false)
   image         String?
-  plan          String    @default("free")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  plan          String   @default("free")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   sessions Session[]
   accounts Account[]
 
-  decks    Deck[]
-  subjects Subject[]
-  tags     Tag[]
+  decks           Deck[]
+  subjects        Subject[]
+  tags            Tag[]
   importProcesses ImportProcess[]
 }
 
@@ -75,49 +75,51 @@ model Verification {
 // ---------- domain ----------
 
 model Language {
-  id          Int    @id @default(autoincrement())
-  name        String @unique
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
   englishName String?
   emoji       String
 
-  decksAsDefaultFront Deck[] @relation("DeckDefaultFrontLanguage")
-  decksAsDefaultBack  Deck[] @relation("DeckDefaultBackLanguage")
+  decksAsDefaultFront           Deck[]          @relation("DeckDefaultFrontLanguage")
+  decksAsDefaultBack            Deck[]          @relation("DeckDefaultBackLanguage")
   importProcessesAsDefaultFront ImportProcess[] @relation("ImportProcessDefaultFrontLanguage")
   importProcessesAsDefaultBack  ImportProcess[] @relation("ImportProcessDefaultBackLanguage")
 }
 
 model Deck {
-  id                    String    @id @default(cuid())
-  name                  String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String       @id @default(cuid())
+  name                   String
+  userId                 String
+  user                   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   defaultFrontLanguageId Int?
-  defaultFrontLanguage  Language? @relation("DeckDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
+  defaultFrontLanguage   Language?    @relation("DeckDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
   defaultBackLanguageId  Int?
-  defaultBackLanguage   Language? @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
-  inverseReviewEnabled  Boolean   @default(false)
-  subjects              Subject[]
-  cards                 Card[]
-  createdAt             DateTime  @default(now())
+  defaultBackLanguage    Language?    @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
+  inverseReviewEnabled   Boolean      @default(false)
+  inverseReviewStreak    Int          @default(0)
+  subjects               Subject[]
+  cards                  Card[]
+  reviewStats            ReviewStat[]
+  createdAt              DateTime     @default(now())
 
   @@unique([userId, name])
 }
 
 model Subject {
-  id            String    @id @default(cuid())
-  deckId        String
-  deck          Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
-  subject       String
-  subjectKey    String
-  randomKey     Int       @default(0)
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lastSeenAt    DateTime?
-  timesSeen     Int       @default(0)
-  fixationLevel String    @default("1")
-  inverseReviewed Boolean @default(false)
-  cooldownAt    DateTime  @default(now())
-  cards         Card[]
+  id              String    @id @default(cuid())
+  deckId          String
+  deck            Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  subject         String
+  subjectKey      String
+  randomKey       Int       @default(0)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastSeenAt      DateTime?
+  timesSeen       Int       @default(0)
+  fixationLevel   String    @default("1")
+  inverseReviewed Boolean   @default(false)
+  cooldownAt      DateTime  @default(now())
+  cards           Card[]
 
   @@unique([deckId, subjectKey])
   @@index([deckId, randomKey])
@@ -126,19 +128,19 @@ model Subject {
 }
 
 model Card {
-  id         String    @id @default(cuid())
-  deckId     String
-  deck       Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
-  subjectId  String
-  subject    Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  front      String
-  frontHash  String
-  back       String
+  id          String    @id @default(cuid())
+  deckId      String
+  deck        Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  subjectId   String
+  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  front       String
+  frontHash   String
+  back        String
   genTemplate String?
-  lastSeenAt DateTime?
-  timesSeen  Int       @default(0)
-  createdAt  DateTime  @default(now())
-  cardTags   CardTag[]
+  lastSeenAt  DateTime?
+  timesSeen   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  cardTags    CardTag[]
 
   @@unique([subjectId, frontHash])
   @@index([subjectId, lastSeenAt])
@@ -162,8 +164,8 @@ model Tag {
 model CardTag {
   cardId String
   tagId  String
-  card   Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
-  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([cardId, tagId])
   @@index([tagId])
@@ -197,32 +199,32 @@ enum WorkerJobStatus {
 }
 
 model ImportProcess {
-  id                    String              @id @default(cuid())
-  userId                String
-  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status                ImportProcessStatus @default(UPLOADED)
-  filename              String
-  fileSize              Int
-  storagePath           String
+  id                     String              @id @default(cuid())
+  userId                 String
+  user                   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status                 ImportProcessStatus @default(UPLOADED)
+  filename               String
+  fileSize               Int
+  storagePath            String
   detectedCollectionFile String?
-  deckName              String?
+  deckName               String?
   defaultFrontLanguageId Int?
-  defaultFrontLanguage  Language?           @relation("ImportProcessDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
+  defaultFrontLanguage   Language?           @relation("ImportProcessDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
   defaultBackLanguageId  Int?
-  defaultBackLanguage   Language?           @relation("ImportProcessDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
-  inverseReviewEnabled  Boolean?
-  createdDeckId         String?
-  rowCount              Int                 @default(0)
-  selectedRowCount      Int                 @default(0)
-  importedCardCount     Int                 @default(0)
-  failedRowCount        Int                 @default(0)
-  errorSummary          String?
-  errorDetailsJson      String?
-  completedAt           DateTime?
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  defaultBackLanguage    Language?           @relation("ImportProcessDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
+  inverseReviewEnabled   Boolean?
+  createdDeckId          String?
+  rowCount               Int                 @default(0)
+  selectedRowCount       Int                 @default(0)
+  importedCardCount      Int                 @default(0)
+  failedRowCount         Int                 @default(0)
+  errorSummary           String?
+  errorDetailsJson       String?
+  completedAt            DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
 
-  cardTypes ImportCardType[]
+  cardTypes  ImportCardType[]
   workerJobs WorkerJob[]
 
   @@index([userId, createdAt])
@@ -230,41 +232,52 @@ model ImportProcess {
 }
 
 model ImportCardType {
-  id              String             @id @default(cuid())
-  processId       String
-  process         ImportProcess      @relation(fields: [processId], references: [id], onDelete: Cascade)
-  modelKey        String
-  modelName       String
-  modelKind       ImportCardTypeKind
-  rowCount        Int
-  fieldNamesJson  String
-  sampleRowsJson  String
+  id               String             @id @default(cuid())
+  processId        String
+  process          ImportProcess      @relation(fields: [processId], references: [id], onDelete: Cascade)
+  modelKey         String
+  modelName        String
+  modelKind        ImportCardTypeKind
+  rowCount         Int
+  fieldNamesJson   String
+  sampleRowsJson   String
   selected         Boolean            @default(false)
   subjectField     String?
   cardMappingsJson String?
   pluginsJson      String?
   previewCardsJson String?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   @@unique([processId, modelKey])
   @@index([processId])
 }
 
 model WorkerJob {
-  id         String          @id @default(cuid())
-  processId  String?
-  process    ImportProcess?  @relation(fields: [processId], references: [id], onDelete: Cascade)
-  type       WorkerJobType
-  status     WorkerJobStatus @default(PENDING)
-  attempts   Int             @default(0)
-  error      String?
-  availableAt DateTime       @default(now())
-  startedAt  DateTime?
-  finishedAt DateTime?
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id          String          @id @default(cuid())
+  processId   String?
+  process     ImportProcess?  @relation(fields: [processId], references: [id], onDelete: Cascade)
+  type        WorkerJobType
+  status      WorkerJobStatus @default(PENDING)
+  attempts    Int             @default(0)
+  error       String?
+  availableAt DateTime        @default(now())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
   @@index([status, availableAt, createdAt])
   @@index([processId])
+}
+
+model ReviewStat {
+  id          String   @id @default(cuid())
+  deckId      String
+  deck        Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  date        DateTime
+  cardMinutes Int      @default(0)
+
+  @@unique([deckId, date])
+  @@index([deckId, date])
 }
