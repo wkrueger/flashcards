@@ -289,7 +289,7 @@ describe("review domain", () => {
     expect(r.inverse).toBe(false)
   })
 
-  it('rerolls another card from the same subject for "gen:meaning" after inverse review', async () => {
+  it('swaps a "gen:meaning" card for a sibling and reviews it normally after inverse review', async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({
       name: "d",
@@ -348,9 +348,9 @@ describe("review domain", () => {
       userId: u,
       deckId: deck.id,
       includeOnCooldown: false,
-      inverseRng: () => 0.99,
+      inverseRng: () => 0,
     })
-    expect(r.inverse).toBe(true)
+    expect(r.inverse).toBe(false)
     expect(r.card?.front).toBe("front-basic")
   })
 

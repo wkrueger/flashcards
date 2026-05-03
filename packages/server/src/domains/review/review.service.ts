@@ -267,11 +267,7 @@ async function getIsInverse(
           },
         },
       })
-      if (!cardFallback) {
-        inverseProbability = 0
-      } else {
-        inverseProbability = 1
-      }
+      inverseProbability = 0
     } else {
       throw err
     }
