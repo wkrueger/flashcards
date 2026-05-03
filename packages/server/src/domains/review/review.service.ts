@@ -77,7 +77,7 @@ function inverseReviewProbabilityForCard(card: ReviewCard) {
 function applyInverseStreakPenalty(probability: number, inverseReviewStreak: number) {
   if (probability <= 0) return 0
   if (inverseReviewStreak <= 0) return probability
-  return probability / (inverseReviewStreak + 1)
+  return probability / (inverseReviewStreak + 1) ** 2
 }
 
 export async function pickNextCard({
