@@ -173,7 +173,12 @@ describe("review domain", () => {
       inverseReviewEnabled: true,
     })
     await seedSubjects(u, deck.id, [
-      { text: "Haus", cooldownAt: new Date(Date.now() - 1000), fixationLevel: "1" },
+      {
+        text: "Haus",
+        cooldownAt: new Date(Date.now() - 1000),
+        lastSeenAt: new Date(Date.now() - 60_000),
+        fixationLevel: "1",
+      },
     ])
     const r = await pickNextCard({
       prisma,
@@ -192,7 +197,12 @@ describe("review domain", () => {
       inverseReviewEnabled: true,
     })
     await seedSubjects(u, deck.id, [
-      { text: "Haus", cooldownAt: new Date(Date.now() - 1000), fixationLevel: "2" },
+      {
+        text: "Haus",
+        cooldownAt: new Date(Date.now() - 1000),
+        lastSeenAt: new Date(Date.now() - 60_000),
+        fixationLevel: "2",
+      },
     ])
     const r = await pickNextCard({
       prisma,
@@ -279,7 +289,7 @@ describe("review domain", () => {
     expect(r.inverse).toBe(false)
   })
 
-  it('rerolls another card from the same subject for "gen:meaning" after inverse review', async () => {
+  it('swaps a "gen:meaning" card for a sibling and reviews it normally after inverse review', async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({
       name: "d",
@@ -338,9 +348,9 @@ describe("review domain", () => {
       userId: u,
       deckId: deck.id,
       includeOnCooldown: false,
-      inverseRng: () => 0.99,
+      inverseRng: () => 0,
     })
-    expect(r.inverse).toBe(true)
+    expect(r.inverse).toBe(false)
     expect(r.card?.front).toBe("front-basic")
   })
 
@@ -552,6 +562,27 @@ describe("review domain", () => {
     })
 
     expect(r.card?.id).not.toBe(cardA.id)
+    expect(r.card?.subject.subject).toBe("Haus")
+  })
+
+  it("uses base inverse probability when the chosen subject has never been seen", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d", inverseReviewEnabled: true })
+    await seedSubjects(u, deck.id, [
+      { text: "Haus", cooldownAt: new Date(Date.now() - 1000), fixationLevel: "1" },
+    ])
+    const subj = await prisma.subject.findFirstOrThrow({ where: { userId: u, subject: "Haus" } })
+
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      subjectId: subj.id,
+      inverseRng: () => 0.5,
+    })
+
+    expect(r.inverse).toBe(false)
     expect(r.card?.subject.subject).toBe("Haus")
   })
 })

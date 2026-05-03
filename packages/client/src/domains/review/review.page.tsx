@@ -65,16 +65,25 @@ export function ReviewPage({
       }
     },
     onSuccess: async (_result, variables) => {
-      setRevealed(false)
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.decks.get.invalidate({ id: deckId })
       utils.decks.upcomingDueCounts.invalidate({ id: deckId })
       utils.decks.reviewStats.invalidate({ id: deckId })
 
       if (initialSubjectId && !initialConsumed) {
+        const freshNext = await utils.review.next.fetch({
+          deckId,
+          mode,
+          subjectId: undefined,
+          excludeCardId: variables.cardId,
+        })
+        utils.review.next.setData({ deckId, mode, subjectId: undefined }, freshNext)
+        setRevealed(false)
         setInitialConsumed(true)
         return
       }
+
+      setRevealed(false)
 
       const prefetched = utils.review.next.getData({
         deckId,
