@@ -16,11 +16,10 @@ export function DeckDetailPage() {
   const navigate = useNavigate()
   const utils = trpc.useUtils()
   const deck = trpc.decks.get.useQuery({ id: deckId })
-  const next = trpc.review.next.useQuery({ deckId, mode: "normal" })
   const upcoming = trpc.decks.upcomingDueCounts.useQuery({ id: deckId })
   const randomSubjects = trpc.decks.randomSubjects.useQuery({ id: deckId })
   const reviewStats = trpc.decks.reviewStats.useQuery({ id: deckId })
-  const dueCount = next.data?.dueCount ?? 0
+  const dueCount = deck.data ? deck.data.wordCount - deck.data.cooldownCount : 0
 
   const deleteDeck = trpc.decks.delete.useMutation({
     onSuccess: () => {

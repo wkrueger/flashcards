@@ -32,7 +32,7 @@ export const decksRouter = router({
         ctx.prisma.subject.count({
           where: {
             userId: ctx.user.id,
-            cards: { some: { deckId: d.id } },
+            deckId: d.id,
             cooldownAt: { lte: now },
           },
         })
@@ -54,12 +54,12 @@ export const decksRouter = router({
       }),
       ctx.prisma.card.count({ where: { deckId: input.id } }),
       ctx.prisma.subject.count({
-        where: { cards: { some: { deckId: input.id } }, userId: ctx.user.id },
+        where: { deckId: input.id, userId: ctx.user.id },
       }),
       ctx.prisma.subject.count({
         where: {
           userId: ctx.user.id,
-          cards: { some: { deckId: input.id } },
+          deckId: input.id,
           cooldownAt: { gt: now },
         },
       }),
@@ -145,7 +145,7 @@ export const decksRouter = router({
     const at = (days: number) => new Date(now.getTime() + days * DAY_MS)
     const baseWhere = {
       userId: ctx.user.id,
-      cards: { some: { deckId: input.id } },
+      deckId: input.id,
     } as const
     const [in24h, in2d, in1w] = await Promise.all([
       ctx.prisma.subject.count({ where: { ...baseWhere, cooldownAt: { lte: at(1) } } }),
@@ -163,7 +163,7 @@ export const decksRouter = router({
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
     const where = {
       userId: ctx.user.id,
-      cards: { some: { deckId: input.id } },
+      deckId: input.id,
     } as const
     const pivot = randomSubjectKey()
     const first = await ctx.prisma.subject.findMany({
