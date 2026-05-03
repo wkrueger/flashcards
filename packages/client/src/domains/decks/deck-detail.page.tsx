@@ -275,9 +275,7 @@ export function DeckDetailPage() {
             )}
           </div>
 
-          {reviewStats.data && (
-            <ReviewStatsChart data={reviewStats.data} totalSubjectCount={deck.data.wordCount} />
-          )}
+          {reviewStats.data && <ReviewStatsChart data={reviewStats.data} />}
 
           {randomSubjects.data && randomSubjects.data.length > 0 && (
             <div className="space-y-2">
@@ -367,19 +365,16 @@ function formatCardMinutes(minutes: number) {
   return `${(hours / 24).toFixed(1)}d`
 }
 
-function formatBarPercent(cardMinutes: number, totalSubjectCount: number) {
-  if (cardMinutes <= 0 || totalSubjectCount <= 0) return ""
-  const percent = (cardMinutes / (totalSubjectCount * 24 * 60)) * 100
-  const rounded = percent >= 10 ? Math.round(percent) : Number(percent.toFixed(1))
-  return `${rounded}%`
+function formatCardsPerDay(cardCount: number, cardMinutes: number) {
+  if (cardCount <= 0 || cardMinutes <= 0) return ""
+  const days = cardMinutes / (24 * 60)
+  return `${(cardCount / days).toFixed(1)}x`
 }
 
 function ReviewStatsChart({
   data,
-  totalSubjectCount,
 }: {
-  data: { date: string | Date; cardMinutes: number }[]
-  totalSubjectCount: number
+  data: { date: string | Date; cardMinutes: number; cardCount: number }[]
 }) {
   const max = Math.max(1, ...data.map((d) => d.cardMinutes))
   return (
@@ -411,9 +406,9 @@ function ReviewStatsChart({
           {data.map((d) => {
             const date = new Date(d.date)
             const heightPct = (d.cardMinutes / max) * 100
-            const percentLabel = formatBarPercent(d.cardMinutes, totalSubjectCount)
-            const hasPercentLabel = percentLabel.length > 0
-            const showPercentInside = hasPercentLabel && heightPct >= 38
+            const ratioLabel = formatCardsPerDay(d.cardCount, d.cardMinutes)
+            const hasRatioLabel = ratioLabel.length > 0
+            const showRatioInside = hasRatioLabel && heightPct >= 38
             return (
               <div
                 key={date.toISOString()}
@@ -423,9 +418,9 @@ function ReviewStatsChart({
                   <span className="block text-center text-[10px] font-medium leading-none text-muted-foreground">
                     {d.cardMinutes > 0 ? formatCardMinutes(d.cardMinutes) : ""}
                   </span>
-                  {hasPercentLabel && !showPercentInside && (
+                  {hasRatioLabel && !showRatioInside && (
                     <span className="block text-center text-[9px] font-medium leading-none text-muted-foreground">
-                      {percentLabel}
+                      {ratioLabel}
                     </span>
                   )}
                 </div>
@@ -438,9 +433,9 @@ function ReviewStatsChart({
                       minHeight: d.cardMinutes > 0 ? "2px" : "0",
                     }}
                   >
-                    {showPercentInside && (
+                    {showRatioInside && (
                       <span className="absolute inset-x-0 top-1 text-center text-[9px] font-semibold leading-none text-white/90">
-                        {percentLabel}
+                        {ratioLabel}
                       </span>
                     )}
                   </div>

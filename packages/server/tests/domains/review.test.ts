@@ -437,7 +437,7 @@ describe("review domain", () => {
     expect(reloaded.lastSeenAt).not.toBeNull()
   })
 
-  it("non-inverse complete records cardMinutes against today's deck stats", async () => {
+  it("non-inverse complete records cardMinutes and cardCount against today's deck stats", async () => {
     const u = await makeUser("u")
     const trpc = callerFor(u)
     const deck = await trpc.decks.create({ name: "d" })
@@ -461,6 +461,7 @@ describe("review domain", () => {
     expect(stats).toHaveLength(1)
     const expected = Math.round(COOLDOWN_MS["3"] / 60_000) + Math.round(COOLDOWN_MS["5"] / 60_000)
     expect(stats[0]!.cardMinutes).toBe(expected)
+    expect(stats[0]!.cardCount).toBe(2)
   })
 
   it("inverse complete does not record stats", async () => {
@@ -476,6 +477,32 @@ describe("review domain", () => {
     await trpc.review.complete({ cardId: card.id, inverse: true })
     const stats = await prisma.reviewStat.findMany({ where: { deckId: deck.id } })
     expect(stats).toHaveLength(0)
+  })
+
+  it("inverse complete in mixed sequence does not increment cardCount", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d", inverseReviewEnabled: true })
+    const cardA = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "alpha",
+      front: "fa",
+      back: "ba",
+    })
+    const cardB = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "beta",
+      front: "fb",
+      back: "bb",
+    })
+
+    await trpc.review.complete({ cardId: cardA.id, chosenLevel: "3" })
+    await trpc.review.complete({ cardId: cardB.id, inverse: true })
+    await trpc.review.complete({ cardId: cardB.id, chosenLevel: "2" })
+
+    const stats = await prisma.reviewStat.findMany({ where: { deckId: deck.id } })
+    expect(stats).toHaveLength(1)
+    expect(stats[0]!.cardCount).toBe(2)
   })
 
   it("complete prunes review stats older than 15 days", async () => {

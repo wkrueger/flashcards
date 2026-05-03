@@ -106,18 +106,21 @@ describe("decks domain", () => {
     )
     const threeDaysAgo = new Date(utcDay.getTime() - 3 * DAY_MS)
     await prisma.reviewStat.create({
-      data: { deckId: deck.id, date: utcDay, cardMinutes: 100 },
+      data: { deckId: deck.id, date: utcDay, cardMinutes: 100, cardCount: 4 },
     })
     await prisma.reviewStat.create({
-      data: { deckId: deck.id, date: threeDaysAgo, cardMinutes: 50 },
+      data: { deckId: deck.id, date: threeDaysAgo, cardMinutes: 50, cardCount: 2 },
     })
 
     const stats = await trpc.decks.reviewStats({ id: deck.id })
     expect(stats).toHaveLength(7)
     expect(stats[stats.length - 1]!.date.getTime()).toBe(utcDay.getTime())
     expect(stats[stats.length - 1]!.cardMinutes).toBe(100)
+    expect(stats[stats.length - 1]!.cardCount).toBe(4)
     expect(stats[stats.length - 4]!.date.getTime()).toBe(threeDaysAgo.getTime())
     expect(stats[stats.length - 4]!.cardMinutes).toBe(50)
+    expect(stats[stats.length - 4]!.cardCount).toBe(2)
     expect(stats[0]!.cardMinutes).toBe(0)
+    expect(stats[0]!.cardCount).toBe(0)
   })
 })

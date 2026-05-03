@@ -193,12 +193,19 @@ export const decksRouter = router({
     const rows = await ctx.prisma.reviewStat.findMany({
       where: { deckId: input.id, date: { gte: earliest } },
       orderBy: { date: "asc" },
-      select: { date: true, cardMinutes: true },
+      select: { date: true, cardMinutes: true, cardCount: true },
     })
-    const byTime = new Map(rows.map((r) => [r.date.getTime(), r.cardMinutes]))
+    const byTime = new Map(
+      rows.map((r) => [r.date.getTime(), { cardMinutes: r.cardMinutes, cardCount: r.cardCount }])
+    )
     return Array.from({ length: REVIEW_STATS_WINDOW_DAYS }, (_, i) => {
       const date = new Date(earliest.getTime() + i * DAY_MS)
-      return { date, cardMinutes: byTime.get(date.getTime()) ?? 0 }
+      const entry = byTime.get(date.getTime())
+      return {
+        date,
+        cardMinutes: entry?.cardMinutes ?? 0,
+        cardCount: entry?.cardCount ?? 0,
+      }
     })
   }),
 
