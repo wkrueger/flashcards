@@ -559,6 +559,66 @@ describe("anki import worker flow", () => {
     expect(cards[0]?.front).toBe("A very **good** and warm **day**")
   })
 
+  it("does not highlight partial matches inside larger words", async () => {
+    const userId = await makeUser("highlight-isolated-words")
+    const fixture = await createApkgFixture({
+      importRows: [["Guten Tag", "A very goodbye and warm daydream", "good day"]],
+    })
+    const process = await prisma.importProcess.create({
+      data: {
+        userId,
+        status: "ANALYZING",
+        filename: "fixture.apkg",
+        fileSize: 10,
+        storagePath: fixture.archivePath,
+      },
+    })
+
+    await runAnalyzeAnkiImportJob(prisma, process.id)
+
+    const trpc = callerFor(userId)
+    await trpc.ankiImport.saveConfiguration({
+      id: process.id,
+      deck: {
+        name: "Imported deck",
+        defaultFrontLanguageId: null,
+        defaultBackLanguageId: null,
+      },
+      cardTypes: [
+        {
+          modelKey: "101",
+          selected: true,
+          subjectField: "German",
+          cardMappings: [{ frontField: "English", backField: "German" }],
+          plugins: [
+            {
+              type: "highlight_words",
+              frontWordsField: "Audio",
+              backWordsField: "Audio",
+            },
+          ],
+        },
+        {
+          modelKey: "202",
+          selected: false,
+        },
+      ],
+    })
+
+    await runImportAnkiImportJob(prisma, process.id)
+
+    const deck = await prisma.deck.findFirst({
+      where: { userId, name: "Imported deck" },
+    })
+    const cards = await prisma.card.findMany({
+      where: { deckId: deck?.id },
+      orderBy: { front: "asc" },
+    })
+
+    expect(cards).toHaveLength(1)
+    expect(cards[0]?.front).toBe("(good day)  \nA very goodbye and warm daydream")
+  })
+
   it("fails the import during dry-run validation when mapped cards would duplicate", async () => {
     const userId = await makeUser("duplicate")
     const fixture = await createApkgFixture({ duplicateImportRows: true })

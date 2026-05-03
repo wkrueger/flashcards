@@ -580,15 +580,21 @@ function findSequentialWordRanges(content: string, words: string[]): HighlightRa
   let searchStart = 0
 
   for (const word of words) {
-    const regex = new RegExp(escapeRegex(word), "i")
+    const regex = new RegExp(`(^|[^\\p{L}\\p{N}])(${escapeRegex(word)})(?=$|[^\\p{L}\\p{N}])`, "iu")
     const slice = content.slice(searchStart)
     const match = regex.exec(slice)
     if (!match || match.index === undefined) {
       return null
     }
 
-    const start = searchStart + match.index
-    const end = start + match[0].length
+    const boundary = match[1] ?? ""
+    const matchedWord = match[2]
+    if (!matchedWord) {
+      return null
+    }
+
+    const start = searchStart + match.index + boundary.length
+    const end = start + matchedWord.length
     ranges.push({ start, end })
     searchStart = end
   }
