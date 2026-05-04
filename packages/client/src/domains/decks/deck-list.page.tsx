@@ -1,9 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router"
 import { FileDown, Plus } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { MenuItem, PageHeader } from "../../components/AppShell"
 import { LightbulbIllustration } from "../../components/LightbulbIllustration"
-import { useSession } from "../../infra/auth-client"
 import { trpc } from "../../infra/trpc"
 import { Button } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
@@ -15,10 +14,7 @@ import { LanguageSelect } from "./language-select"
 export function DeckListPage() {
   const utils = trpc.useUtils()
   const navigate = useNavigate()
-  const { data: session, hasSessionHint, isPending: sessionPending } = useSession()
-  const decks = trpc.decks.list.useQuery(undefined, {
-    enabled: !!session?.user || (sessionPending && hasSessionHint),
-  })
+  const decks = trpc.decks.list.useQuery()
   const create = trpc.decks.create.useMutation({
     onSuccess: () => {
       utils.decks.list.invalidate()
@@ -32,6 +28,13 @@ export function DeckListPage() {
   const [frontLanguageId, setFrontLanguageId] = useState("")
   const [backLanguageId, setBackLanguageId] = useState("")
   const [open, setOpen] = useState(false)
+  const [showLoader, setShowLoader] = useState(false)
+
+  useEffect(() => {
+    if (!decks.isLoading) return
+    const id = setTimeout(() => setShowLoader(true), 1500)
+    return () => clearTimeout(id)
+  }, [decks.isLoading])
 
   const sameLanguage = !!frontLanguageId && !!backLanguageId && frontLanguageId === backLanguageId
 
@@ -121,7 +124,15 @@ export function DeckListPage() {
         }
       />
 
-      {!decks.isLoading && decks.data && decks.data.length > 0 ? (
+      {decks.isLoading ? (
+        showLoader && (
+          <div className="flex items-center justify-center gap-1.5 py-8">
+            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.15s]" />
+            <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
+          </div>
+        )
+      ) : decks.data && decks.data.length > 0 ? (
         <ul className="animate-reveal space-y-2">
           {decks.data.map((d) => (
             <li key={d.id}>
@@ -138,11 +149,11 @@ export function DeckListPage() {
             </li>
           ))}
         </ul>
-      ) : !decks.isLoading ? (
+      ) : (
         <p className="animate-reveal text-sm text-muted-foreground">
           No decks yet — create your first one.
         </p>
-      ) : null}
+      )}
 
       <Card
         className="relative mt-auto overflow-hidden"

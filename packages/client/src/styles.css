@@ -4,8 +4,6 @@
 
 @layer base {
   :root {
-    --app-shell-top-offset: 0rem;
-    --app-pill-top-offset: max(env(safe-area-inset-top), 0.75rem);
     --background: 140 35% 98%;
     --foreground: 150 25% 12%;
     --card: 140 32% 92%;
@@ -49,12 +47,6 @@
     --border: 150 12% 18%;
     --input: 150 12% 18%;
     --ring: 140 35% 60%;
-  }
-  @media (min-width: 640px) {
-    :root {
-      --app-shell-top-offset: 1.5rem;
-      --app-pill-top-offset: calc(max(env(safe-area-inset-top), 0.75rem) + 1.5rem);
-    }
   }
   html {
     font-size: 18px;

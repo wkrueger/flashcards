@@ -1,8 +1,4 @@
-import {
-  idInput,
-  previewCardTypeMappingInput,
-  saveAnkiImportConfigurationInput,
-} from "@cards/shared"
+import { idInput, previewCardTypeMappingInput, saveAnkiImportConfigurationInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import {
   deleteImportProcess,

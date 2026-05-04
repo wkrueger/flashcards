@@ -16,7 +16,5 @@ function AppLayout() {
     }
   }, [isPending, data, router])
 
-  if (!isPending && !data?.user) return null
-
   return <Outlet />
 }

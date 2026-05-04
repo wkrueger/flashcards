@@ -3,7 +3,6 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import {
   authClient,
   googleSsoEnabled,
-  primeSessionRefresh,
   sendVerificationEmail,
   signIn,
 } from "../../infra/auth-client"
@@ -13,19 +12,15 @@ import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
 import { AppTitle } from "../../components/AppTitle"
 import { GoogleIcon } from "../../components/GoogleIcon"
-import { usePublicAuthRedirect } from "./use-public-auth-redirect"
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const shouldRedirect = usePublicAuthRedirect()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [unverified, setUnverified] = useState(false)
   const [resent, setResent] = useState(false)
   const [loading, setLoading] = useState(false)
-
-  if (shouldRedirect) return null
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -45,7 +40,6 @@ export function LoginPage() {
       }
       return
     }
-    primeSessionRefresh()
     navigate({ to: "/" })
   }
 
