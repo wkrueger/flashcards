@@ -9,6 +9,8 @@ import { invalidateSessionCache, signOut, useSession } from "../infra/auth-clien
 import { cn } from "../lib/utils"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  console.log("app shell")
+
   return (
     <div className="min-h-dvh w-full">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x">

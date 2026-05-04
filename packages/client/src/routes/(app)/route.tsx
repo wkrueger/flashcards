@@ -3,7 +3,10 @@ import { getSessionCached } from "../../infra/auth-client"
 
 export const Route = createFileRoute("/(app)")({
   beforeLoad: async () => {
-    const { data } = await getSessionCached()
+    const { data } = await getSessionCached().catch((err) => {
+      console.log("error session", err)
+      throw err
+    })
     if (!data?.user) {
       throw redirect({ to: "/login", replace: true })
     }
