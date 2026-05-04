@@ -1,5 +1,10 @@
 import { TRPCError } from "@trpc/server"
-import type { AnkiCardMapping, AnkiImportListItemView } from "@cards/shared"
+import type {
+  AnkiCardMapping,
+  AnkiImportListItemView,
+  AnkiImportPreviewCard,
+  PreviewCardTypeMappingInput,
+} from "@cards/shared"
 import { randomSubjectKey } from "../subjects/subjects.service.js"
 import {
   ImportCardTypeKind,
@@ -8,7 +13,7 @@ import {
   type PrismaClient,
 } from "../../generated/prisma/client.js"
 import { readAnkiArchiveData, mapPreviewCard } from "./anki-import.archive.js"
-import { collectMappedRows } from "./anki-import.mapping.js"
+import { applyPluginsToContent, collectMappedRows } from "./anki-import.mapping.js"
 import {
   deleteFileIfExists,
   getErrorStatusCode,
@@ -67,6 +72,39 @@ export async function deleteImportProcess(prisma: PrismaClient, userId: string, 
   const process = await findOwnedImportProcess(prisma, userId, processId)
   await deleteFileIfExists(process.storagePath)
   await prisma.importProcess.delete({ where: { id: process.id } })
+}
+
+export async function previewCardTypeMapping(
+  prisma: PrismaClient,
+  userId: string,
+  input: PreviewCardTypeMappingInput
+): Promise<AnkiImportPreviewCard[]> {
+  const process = await findOwnedImportProcess(prisma, userId, input.processId)
+
+  const cardType = process.cardTypes.find((ct) => ct.modelKey === input.modelKey)
+  if (!cardType) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Card type not found." })
+  }
+
+  const sampleRows = parseJsonArray<Record<string, string>>(cardType.sampleRowsJson)
+
+  return sampleRows
+    .slice(0, 5)
+    .flatMap((row) =>
+      input.cardMappings.map((cm) => {
+        const subjectText = stripMediaAndMarkup(row[input.subjectField] ?? "")
+        const rawFront = stripMediaAndMarkup(row[cm.frontField] ?? "")
+        const rawBack = stripMediaAndMarkup(row[cm.backField] ?? "")
+        if (!subjectText || !rawFront || !rawBack) return null
+        return {
+          subjectText,
+          front: applyPluginsToContent(rawFront, "front", input.plugins, row),
+          back: applyPluginsToContent(rawBack, "back", input.plugins, row),
+        }
+      })
+    )
+    .filter((card): card is AnkiImportPreviewCard => card !== null)
+    .slice(0, 6)
 }
 
 export async function getImportProcessView(

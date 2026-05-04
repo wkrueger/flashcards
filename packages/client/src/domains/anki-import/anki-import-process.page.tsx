@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { ExternalLink, Play, Plus, Save, SlidersHorizontal, Trash2 } from "lucide-react"
+import { ExternalLink, Play, Plus, RefreshCw, Save, SlidersHorizontal, Trash2 } from "lucide-react"
 import type {
   AnkiCardMapping,
   AnkiImportCardTypeView,
@@ -143,6 +143,7 @@ function CardTypePreview({ cardType }: { cardType: AnkiImportCardTypeView }) {
 }
 
 type CardTypeSetupViewProps = {
+  processId: string
   cardType: AnkiImportCardTypeView
   mapping: { selected: boolean; subjectField: string; cardMappings: CardMappingRow[]; plugins: ImportPlugin[] }
   onChange: (next: { selected: boolean; subjectField: string; cardMappings: CardMappingRow[]; plugins: ImportPlugin[] }) => void
@@ -151,18 +152,27 @@ type CardTypeSetupViewProps = {
 }
 
 function CardTypeSetupView({
+  processId,
   cardType,
   mapping,
   onChange,
   onBack,
   disabled,
 }: CardTypeSetupViewProps) {
-  // const [localPreviews, setLocalPreviews] = useState<
-  //   Array<{ subjectText: string; front: string; back: string }>
-  // >([])
-  //
-  // const refreshPreview = () =>
-  //   setLocalPreviews(computeLocalPreviews(cardType.sampleRows, mapping))
+  const previewMutation = trpc.ankiImport.previewMapping.useMutation()
+
+  const refreshPreview = () => {
+    if (!mapping.subjectField) return
+    const validMappings = mapping.cardMappings.filter((cm) => cm.frontField && cm.backField)
+    if (!validMappings.length) return
+    previewMutation.mutate({
+      processId,
+      modelKey: cardType.modelKey,
+      subjectField: mapping.subjectField,
+      cardMappings: validMappings,
+      plugins: mapping.plugins,
+    })
+  }
 
   const updateCm = (cmIndex: number, patch: Partial<CardMappingRow>) => {
     const next = [...mapping.cardMappings]
@@ -323,6 +333,51 @@ function CardTypeSetupView({
         )}
       </div>
 
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Preview
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            onClick={refreshPreview}
+            disabled={disabled || previewMutation.isPending || !mapping.subjectField}
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", previewMutation.isPending && "animate-spin")} />
+            {previewMutation.isPending ? "Computing…" : "Compute preview"}
+          </Button>
+        </div>
+
+        {previewMutation.error && (
+          <p className="text-sm text-destructive">{previewMutation.error.message}</p>
+        )}
+
+        {previewMutation.data && previewMutation.data.length === 0 && (
+          <p className="text-sm text-muted-foreground">No preview cards — check that mapped fields are not empty in the sample rows.</p>
+        )}
+
+        {previewMutation.data?.map((card, index) => (
+          <div key={index} className="rounded-md border bg-card p-3">
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Subject</p>
+                <p className="whitespace-pre-wrap break-words text-sm">{card.subjectText}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Front</p>
+                <p className="whitespace-pre-wrap break-words text-sm">{card.front}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Back</p>
+                <p className="whitespace-pre-wrap break-words text-sm">{card.back}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <CardTypeSamples cardType={cardType} />
       <CardTypePreview cardType={cardType} />
     </div>
@@ -436,6 +491,7 @@ export function AnkiImportProcessPage() {
     if (cardType) {
       return (
         <CardTypeSetupView
+          processId={processId}
           cardType={cardType}
           mapping={mapping}
           onChange={(next) => setMappings((cur) => ({ ...cur, [setupModelKey]: next }))}

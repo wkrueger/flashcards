@@ -111,7 +111,7 @@ function applyHighlightWords(
   return `${content}\n\n(**${raw}**)`
 }
 
-function applyPlugins(
+export function applyPluginsToContent(
   content: string,
   side: "front" | "back",
   plugins: ImportPlugin[],
@@ -164,8 +164,8 @@ export function collectMappedRows(input: {
           return
         }
 
-        const front = applyPlugins(rawFront, "front", plugins, row.values)
-        const back = applyPlugins(rawBack, "back", plugins, row.values)
+        const front = applyPluginsToContent(rawFront, "front", plugins, row.values)
+        const back = applyPluginsToContent(rawBack, "back", plugins, row.values)
 
         const subjectKey = subjectKeyFor(subjectText)
         const frontHash = hashFront(front)

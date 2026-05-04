@@ -1,9 +1,10 @@
-import { idInput, saveAnkiImportConfigurationInput } from "@cards/shared"
+import { idInput, previewCardTypeMappingInput, saveAnkiImportConfigurationInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import {
   deleteImportProcess,
   getImportProcessView,
   listImportProcesses,
+  previewCardTypeMapping,
   saveImportConfiguration,
   startImportProcess,
 } from "./anki-import.service.js"
@@ -35,4 +36,10 @@ export const ankiImportRouter = router({
   delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {
     await deleteImportProcess(ctx.prisma, ctx.user.id, input.id)
   }),
+
+  previewMapping: protectedProcedure
+    .input(previewCardTypeMappingInput)
+    .mutation(async ({ ctx, input }) => {
+      return previewCardTypeMapping(ctx.prisma, ctx.user.id, input)
+    }),
 })
