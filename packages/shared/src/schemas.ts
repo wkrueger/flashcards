@@ -143,6 +143,15 @@ export const ankiImportCardTypeMappingInput = z
     }
   })
 
+export const previewCardTypeMappingInput = z.object({
+  processId: id,
+  modelKey: z.string().min(1),
+  subjectField: z.string().trim().min(1),
+  cardMappings: z.array(ankiCardMappingSchema).min(1),
+  plugins: z.array(importPluginSchema),
+})
+export type PreviewCardTypeMappingInput = z.infer<typeof previewCardTypeMappingInput>
+
 export const saveAnkiImportConfigurationInput = z.object({
   id,
   deck: ankiImportDeckConfigInput,
