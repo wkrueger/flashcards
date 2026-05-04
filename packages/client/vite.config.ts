@@ -1,12 +1,12 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
-import { TanStackRouterVite } from "@tanstack/router-plugin/vite"
+import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import { compression } from "vite-plugin-compression2"
 import path from "node:path"
 
 export default defineConfig(({ command }) => ({
   plugins: [
-    TanStackRouterVite({
+    tanstackRouter({
       target: "react",
       autoCodeSplitting: true,
       routesDirectory: "./src/routes",
