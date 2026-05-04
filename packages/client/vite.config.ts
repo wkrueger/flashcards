@@ -1,9 +1,10 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite"
+import { compression } from "vite-plugin-compression2"
 import path from "node:path"
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     TanStackRouterVite({
       target: "react",
@@ -12,6 +13,7 @@ export default defineConfig({
       generatedRouteTree: "./src/routeTree.gen.ts",
     }),
     react(),
+    ...(command === "build" ? [compression({ algorithms: ["gzip"], exclude: [/\.(png|webp|ico)$/] })] : []),
   ],
   resolve: {
     alias: {
@@ -26,4 +28,4 @@ export default defineConfig({
       "/trpc": "http://localhost:3001",
     },
   },
-})
+}))
