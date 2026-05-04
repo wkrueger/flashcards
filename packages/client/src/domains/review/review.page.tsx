@@ -22,7 +22,7 @@ import { trpc } from "../../infra/trpc"
 import { PageHeader } from "../../components/AppShell"
 import { Button, buttonVariants } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
-import { MarkdownView } from "../../components/MarkdownViewLazy"
+import { MarkdownView } from "../../components/MarkdownView"
 import { cn } from "../../lib/utils"
 import {
   displayFrontWithGeneratedTagPrefix,

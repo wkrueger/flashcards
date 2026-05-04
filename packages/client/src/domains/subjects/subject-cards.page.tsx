@@ -8,7 +8,7 @@ import { Card, CardContent } from "../../ui/card"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
-import { MarkdownView } from "../../components/MarkdownViewLazy"
+import { MarkdownView } from "../../components/MarkdownView"
 import { MenuItem, PageHeader } from "../../components/AppShell"
 import { displayFrontWithGeneratedTagPrefix } from "../cards/card-front-prefix"
 
