@@ -36,7 +36,7 @@ export function CardEditPage() {
     },
   })
 
-  if (card.isLoading) return <p>Loading…</p>
+  if (card.isLoading) return <p></p>
   if (!card.data) return <p>Not found</p>
 
   return (
