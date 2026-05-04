@@ -39,15 +39,24 @@ export function ReviewPage({
   const { deckId } = useParams({ strict: false }) as { deckId: string }
   const navigate = useNavigate()
   const utils = trpc.useUtils()
+  const reviewScopeKey = `${deckId}:${mode}:${initialSubjectId ?? ""}`
+  const [enteredScopeAt, setEnteredScopeAt] = useState(() => Date.now())
   const [revealed, setRevealed] = useState(false)
   const [initialConsumed, setInitialConsumed] = useState(false)
   const subjectId = initialConsumed ? undefined : initialSubjectId
 
   const next = trpc.review.next.useQuery(
     { deckId, mode, subjectId },
-    { refetchOnWindowFocus: false }
+    { refetchOnWindowFocus: false, refetchOnMount: "always", staleTime: 0 }
   )
   const currentCardId = next.data?.card?.id
+  const hasFreshCardForScope = next.dataUpdatedAt >= enteredScopeAt
+
+  useEffect(() => {
+    setEnteredScopeAt(Date.now())
+    setRevealed(false)
+    setInitialConsumed(false)
+  }, [reviewScopeKey])
 
   const complete = trpc.review.complete.useMutation({
     onMutate: () => {
@@ -123,7 +132,7 @@ export function ReviewPage({
     initialConsumed,
   ])
 
-  if (next.isLoading) return <p></p>
+  if (next.isLoading || (next.isFetching && !hasFreshCardForScope)) return <p></p>
 
   if (!next.data?.card) {
     if (mode === "normal") {
