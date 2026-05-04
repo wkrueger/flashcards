@@ -5,14 +5,18 @@ import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
 import { GoogleIcon } from "../../components/GoogleIcon"
+import { usePublicAuthRedirect } from "./use-public-auth-redirect"
 
 export function SignupPage() {
+  const shouldRedirect = usePublicAuthRedirect()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null)
+
+  if (shouldRedirect) return null
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()

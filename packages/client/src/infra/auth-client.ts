@@ -16,15 +16,48 @@ export const googleSsoEnabled = import.meta.env.VITE_GOOGLE_SSO_ENABLED === "tru
 
 type SessionResult = Awaited<ReturnType<typeof authClient.getSession>>
 type SessionData = SessionResult["data"]
+type SessionSnapshot = {
+  data: SessionData
+  hasSessionHint: boolean
+  isPending: boolean
+}
 
 const SESSION_TTL_MS = 30_000
+const SESSION_HINT_KEY = "cards.session.has-auth"
 let sessionCache: { promise: Promise<SessionResult>; expiresAt: number } | null = null
-let cachedData: SessionData = null
-const subscribers = new Set<(data: SessionData) => void>()
+let sessionSnapshot: SessionSnapshot = {
+  data: null,
+  hasSessionHint: readSessionHint(),
+  isPending: true,
+}
+const subscribers = new Set<(snapshot: SessionSnapshot) => void>()
 
-function notify(data: SessionData) {
-  cachedData = data
-  for (const cb of subscribers) cb(data)
+function readSessionHint() {
+  if (typeof window === "undefined") return false
+  return window.localStorage.getItem(SESSION_HINT_KEY) === "1"
+}
+
+function writeSessionHint(hasSessionHint: boolean) {
+  if (typeof window === "undefined") return
+  if (hasSessionHint) {
+    window.localStorage.setItem(SESSION_HINT_KEY, "1")
+    return
+  }
+  window.localStorage.removeItem(SESSION_HINT_KEY)
+}
+
+function notify(nextSnapshot: SessionSnapshot) {
+  sessionSnapshot = nextSnapshot
+  writeSessionHint(nextSnapshot.hasSessionHint)
+  for (const cb of subscribers) cb(nextSnapshot)
+}
+
+function resolveSession(data: SessionData) {
+  notify({
+    data,
+    hasSessionHint: !!data?.user,
+    isPending: false,
+  })
 }
 
 export function getSessionCached(): Promise<SessionResult> {
@@ -34,11 +67,16 @@ export function getSessionCached(): Promise<SessionResult> {
       promise: authClient
         .getSession()
         .then((res) => {
-          notify(res.data)
+          resolveSession(res.data)
           return res
         })
         .catch((err) => {
           sessionCache = null
+          notify({
+            data: null,
+            hasSessionHint: false,
+            isPending: false,
+          })
           throw err
         }),
       expiresAt: now + SESSION_TTL_MS,
@@ -47,31 +85,40 @@ export function getSessionCached(): Promise<SessionResult> {
   return sessionCache.promise
 }
 
-export function invalidateSessionCache() {
+export function primeSessionRefresh(hasSessionHint = true) {
   sessionCache = null
-  notify(null)
+  notify({
+    data: null,
+    hasSessionHint,
+    isPending: true,
+  })
 }
 
-export function useSession(): { data: SessionData; isPending: boolean } {
-  const [data, setData] = useState<SessionData>(cachedData)
-  const [isPending, setIsPending] = useState(cachedData == null)
+export function invalidateSessionCache() {
+  sessionCache = null
+  notify({
+    data: null,
+    hasSessionHint: false,
+    isPending: false,
+  })
+}
+
+export function useSession(): SessionSnapshot {
+  const [snapshot, setSnapshot] = useState(sessionSnapshot)
+
   useEffect(() => {
-    subscribers.add(setData)
+    subscribers.add(setSnapshot)
     let cancelled = false
     getSessionCached()
       .then((res) => {
-        if (!cancelled) {
-          setData(res.data)
-          setIsPending(false)
-        }
+        if (!cancelled) resolveSession(res.data)
       })
-      .catch(() => {
-        if (!cancelled) setIsPending(false)
-      })
+      .catch(() => {})
     return () => {
       cancelled = true
-      subscribers.delete(setData)
+      subscribers.delete(setSnapshot)
     }
   }, [])
-  return { data, isPending }
+
+  return snapshot
 }

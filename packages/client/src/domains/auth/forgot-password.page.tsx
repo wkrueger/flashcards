@@ -4,11 +4,15 @@ import { requestPasswordReset } from "../../infra/auth-client"
 import { Button } from "../../ui/button"
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
+import { usePublicAuthRedirect } from "./use-public-auth-redirect"
 
 export function ForgotPasswordPage() {
+  const shouldRedirect = usePublicAuthRedirect()
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+
+  if (shouldRedirect) return null
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()

@@ -13,7 +13,9 @@ export default defineConfig(({ command }) => ({
       generatedRouteTree: "./src/routeTree.gen.ts",
     }),
     react(),
-    ...(command === "build" ? [compression({ algorithms: ["gzip"], exclude: [/\.(png|webp|ico)$/] })] : []),
+    ...(command === "build"
+      ? [compression({ algorithms: ["gzip"], exclude: [/\.(png|webp|ico)$/] })]
+      : []),
   ],
   resolve: {
     alias: {

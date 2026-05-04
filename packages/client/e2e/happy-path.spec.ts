@@ -19,6 +19,10 @@ test("signup → deck → card → review → free review → edit → logout", 
 
   await expect(page.getByRole("heading", { name: "Your decks" })).toBeVisible()
 
+  await page.goto("/login")
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByRole("heading", { name: "Your decks" })).toBeVisible()
+
   await page.getByRole("button", { name: "New deck" }).click()
   await page.getByPlaceholder("e.g. German A1").fill("German A1")
   await page.getByRole("button", { name: "Create" }).click()
