@@ -87,20 +87,21 @@ model Language {
 }
 
 model Deck {
-  id                     String       @id @default(cuid())
+  id                     String                 @id @default(cuid())
   name                   String
   userId                 String
-  user                   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   defaultFrontLanguageId Int?
-  defaultFrontLanguage   Language?    @relation("DeckDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
+  defaultFrontLanguage   Language?              @relation("DeckDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
   defaultBackLanguageId  Int?
-  defaultBackLanguage    Language?    @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
-  inverseReviewEnabled   Boolean      @default(false)
-  inverseReviewStreak    Int          @default(0)
+  defaultBackLanguage    Language?              @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
+  inverseReviewEnabled   Boolean                @default(false)
+  inverseReviewStreak    Int                    @default(0)
   subjects               Subject[]
   cards                  Card[]
   reviewStats            ReviewStat[]
-  createdAt              DateTime     @default(now())
+  createdAt              DateTime               @default(now())
+  reviewStatUniqueCards  ReviewStatUniqueCard[]
 
   @@unique([userId, name])
 }
@@ -128,19 +129,20 @@ model Subject {
 }
 
 model Card {
-  id          String    @id @default(cuid())
-  deckId      String
-  deck        Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
-  subjectId   String
-  subject     Subject   @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  front       String
-  frontHash   String
-  back        String
-  genTemplate String?
-  lastSeenAt  DateTime?
-  timesSeen   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  cardTags    CardTag[]
+  id                    String                 @id @default(cuid())
+  deckId                String
+  deck                  Deck                   @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  subjectId             String
+  subject               Subject                @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  front                 String
+  frontHash             String
+  back                  String
+  genTemplate           String?
+  lastSeenAt            DateTime?
+  timesSeen             Int                    @default(0)
+  createdAt             DateTime               @default(now())
+  cardTags              CardTag[]
+  reviewStatUniqueCards ReviewStatUniqueCard[]
 
   @@unique([subjectId, frontHash])
   @@index([subjectId, lastSeenAt])
@@ -272,13 +274,28 @@ model WorkerJob {
 }
 
 model ReviewStat {
-  id          String   @id @default(cuid())
+  id          String                 @id @default(cuid())
   deckId      String
-  deck        Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  deck        Deck                   @relation(fields: [deckId], references: [id], onDelete: Cascade)
   date        DateTime
-  cardMinutes Int      @default(0)
-  cardCount   Int      @default(0)
+  cardMinutes Int                    @default(0)
+  cardCount   Int                    @default(0)
+  uniqueCards ReviewStatUniqueCard[]
 
   @@unique([deckId, date])
   @@index([deckId, date])
+}
+
+model ReviewStatUniqueCard {
+  id     String @id @default(cuid())
+  deckId String
+  deck   Deck   @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  cardId       String
+  card         Card        @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  reviewStat   ReviewStat? @relation(fields: [reviewStatId], references: [id])
+  reviewStatId String?
+
+  @@unique([deckId, cardId])
+  @@index([deckId, cardId])
 }

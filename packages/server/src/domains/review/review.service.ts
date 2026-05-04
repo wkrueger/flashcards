@@ -302,12 +302,13 @@ export async function completeReview(
     today.getTime() - REVIEW_STATS_RETENTION_DAYS * 24 * 60 * 60 * 1000
   )
 
-  await prisma.$transaction([
-    prisma.card.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.card.update({
       where: { id: card.id },
       data: { lastSeenAt: now, timesSeen: { increment: 1 } },
-    }),
-    prisma.subject.update({
+    })
+
+    await tx.subject.update({
       where: { id: card.subjectId },
       data: {
         lastSeenAt: now,
@@ -316,20 +317,83 @@ export async function completeReview(
         inverseReviewed: false,
         cooldownAt: cooldown,
       },
-    }),
-    prisma.deck.update({
+    })
+
+    await tx.deck.update({
       where: { id: card.deckId },
       data: { inverseReviewStreak: 0 },
-    }),
-    prisma.reviewStat.upsert({
-      where: { deckId_date: { deckId: card.deckId, date: today } },
-      create: { deckId: card.deckId, date: today, cardMinutes, cardCount: 1 },
-      update: { cardMinutes: { increment: cardMinutes }, cardCount: { increment: 1 } },
-    }),
-    prisma.reviewStat.deleteMany({
-      where: { deckId: card.deckId, date: { lt: retentionCutoff } },
-    }),
-  ])
+    })
+  })
+
+  // update stats:
+  // 1 row per day. When day changes, create a new row.
+  // cardMinutes increases for every card reviewed
+  // cardCount increases only for unique cards
+  // use a separate table to track already used cards
+  // clean up card tracking table on reset
+  //
+  // does not lock the request (no await), on purpose.
+
+  prisma
+    .$transaction(async (tx) => {
+      const foundStat = await tx.reviewStat.findFirst({
+        where: { deckId: card.deckId, date: today },
+        select: { id: true },
+      })
+
+      if (foundStat) {
+        const cardFound = await tx.reviewStatUniqueCard.findFirst({
+          where: { deckId: card.deckId, cardId: card.id },
+        })
+        await tx.reviewStat.update({
+          where: { id: foundStat.id },
+          data: {
+            cardMinutes: { increment: cardMinutes },
+            cardCount: { increment: cardFound ? 0 : 1 },
+          },
+          select: { id: true },
+        })
+        if (!cardFound) {
+          await tx.reviewStatUniqueCard.create({
+            data: {
+              cardId: card.id,
+              deckId: card.deckId,
+              reviewStatId: foundStat.id,
+            },
+          })
+        }
+      } else {
+        await tx.reviewStatUniqueCard.deleteMany({
+          where: { deckId: card.deckId },
+        })
+        const reviewStat = await tx.reviewStat.create({
+          data: {
+            deckId: card.deckId,
+            date: today,
+            cardMinutes,
+            cardCount: 1,
+          },
+          select: { id: true },
+        })
+        await tx.reviewStatUniqueCard.create({
+          data: {
+            cardId: card.id,
+            deckId: card.deckId,
+            reviewStatId: reviewStat.id,
+          },
+        })
+      }
+
+      await tx.reviewStat.deleteMany({
+        where: {
+          deckId: card.deckId,
+          date: { lt: retentionCutoff },
+        },
+      })
+    })
+    .catch((err) => {
+      console.error("while updating stats", err)
+    })
 
   return { ok: true, cooldownAt: cooldown }
 }

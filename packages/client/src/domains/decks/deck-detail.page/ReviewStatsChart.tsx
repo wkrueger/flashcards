@@ -13,8 +13,11 @@ function formatCardMinutes(minutes: number) {
 
 function formatCardsPerDay(cardCount: number, cardMinutes: number) {
   if (cardCount <= 0 || cardMinutes <= 0) return ""
-  const days = cardMinutes / (24 * 60)
-  return `${(days / cardCount).toFixed(1)}x`
+  const days = Math.ceil(cardMinutes / (24 * 60))
+  if (days > cardCount) {
+    return `+${days - cardCount}`
+  }
+  return ""
 }
 
 export function ReviewStatsChart({
