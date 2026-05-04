@@ -123,7 +123,7 @@ export function ReviewPage({
     initialConsumed,
   ])
 
-  if (next.isLoading) return <p>Loading…</p>
+  if (next.isLoading) return <p></p>
 
   if (!next.data?.card) {
     if (mode === "normal") {

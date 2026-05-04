@@ -159,7 +159,7 @@ export function SubjectCardsPage() {
     }
   }
 
-  if (subject.isLoading) return <p>Loading…</p>
+  if (subject.isLoading) return <p></p>
   if (!subject.data) return <p>Not found</p>
 
   const cards = subject.data.cards
