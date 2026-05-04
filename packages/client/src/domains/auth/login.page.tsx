@@ -14,7 +14,6 @@ import { AppTitle } from "../../components/AppTitle"
 import { GoogleIcon } from "../../components/GoogleIcon"
 
 export function LoginPage() {
-  console.log("login")
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")

@@ -12,8 +12,6 @@ import { Label } from "../../ui/label"
 import { LanguageSelect } from "./language-select"
 
 export function DeckListPage() {
-  console.log("deck list")
-
   const utils = trpc.useUtils()
   const navigate = useNavigate()
   const decks = trpc.decks.list.useQuery()

@@ -31,7 +31,10 @@ test("signup → deck → card → review → free review → edit → logout", 
   await page.getByRole("button", { name: "Create" }).click()
 
   await page.getByRole("link", { name: /Review 1 due/ }).click()
+  // Card front must render (catches MarkdownView crashes before reveal)
+  await expect(page.getByText(/ist groß/)).toBeVisible()
   await page.getByRole("button", { name: "Reveal" }).click()
+  await expect(page.getByText(/The.*house.*is big/)).toBeVisible()
   await page.getByRole("button", { name: /^3/ }).click()
 
   // After answering, no due cards in this deck → empty state with Free review.

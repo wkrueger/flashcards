@@ -31,6 +31,37 @@ describe("decks domain", () => {
     })
   })
 
+  it("get returns deck metadata including card/word/cooldown counts", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+
+    await trpc.cards.create({ deckId: deck.id, subjectText: "apple", front: "f1", back: "b1" })
+    await trpc.cards.create({ deckId: deck.id, subjectText: "apple", front: "f2", back: "b2" })
+    await trpc.cards.create({ deckId: deck.id, subjectText: "banana", front: "f3", back: "b3" })
+
+    const subject = await prisma.subject.findFirst({ where: { subject: "apple" } })
+    await prisma.subject.update({
+      where: { id: subject!.id },
+      data: { cooldownAt: new Date(Date.now() + DAY_MS) },
+    })
+
+    const result = await trpc.decks.get({ id: deck.id })
+    expect(result.id).toBe(deck.id)
+    expect(result.cardCount).toBe(3)
+    expect(result.wordCount).toBe(2)
+    expect(result.cooldownCount).toBe(1)
+  })
+
+  it("get throws NOT_FOUND for another user's deck", async () => {
+    const a = await makeUser("a")
+    const b = await makeUser("b")
+    const deck = await callerFor(a).decks.create({ name: "secret" })
+    await expect(callerFor(b).decks.get({ id: deck.id })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    })
+  })
+
   it("upcomingDueCounts counts subjects whose cooldown elapses within each window", async () => {
     const u = await makeUser("u")
     const trpc = callerFor(u)

@@ -76,6 +76,43 @@ describe("review domain", () => {
     await resetDomain()
   })
 
+  it("normal mode returns a due card for a specific deck", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "f",
+      back: "b",
+    })
+
+    const r = await trpc.review.next({ mode: "normal", deckId: deck.id })
+    expect(r.card).not.toBeNull()
+    expect(r.card?.id).toBe(card.id)
+  })
+
+  it("normal mode + complete round-trips the simplest deck review", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "f",
+      back: "b",
+    })
+
+    const r = await trpc.review.next({ mode: "normal", deckId: deck.id })
+    expect(r.card?.id).toBe(card.id)
+
+    await trpc.review.complete({ cardId: card.id, chosenLevel: "3" })
+
+    // Card is now on cooldown — next should return nothing
+    const r2 = await trpc.review.next({ mode: "normal", deckId: deck.id })
+    expect(r2.card).toBeNull()
+  })
+
   it("normal mode returns null when nothing due", async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({ name: "d" })
