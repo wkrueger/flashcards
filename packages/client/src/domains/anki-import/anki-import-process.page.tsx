@@ -363,9 +363,7 @@ function CardTypeSetupView({
         )}
 
         {previewMutation.data && previewMutation.data.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No preview cards — check that mapped fields are not empty in the sample rows.
-          </p>
+          <p className="text-sm text-muted-foreground">No preview cards — check that mapped fields are not empty in the sample rows.</p>
         )}
 
         {previewMutation.data?.map((card, index) => (
