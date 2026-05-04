@@ -11,7 +11,7 @@ import { cn } from "../lib/utils"
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh w-full">
-      <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x">
+      <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x sm:pt-[var(--app-shell-top-offset)]">
         <main className="flex flex-1 flex-col p-3 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
           {children}
         </main>
@@ -95,7 +95,7 @@ export function PageHeader({
         <div
           ref={pillRef}
           style={{
-            top: "max(env(safe-area-inset-top), 0.75rem)",
+            top: "var(--app-pill-top-offset)",
             right: "max(0.75rem, calc(50vw - 14rem + 0.75rem))",
           }}
           className="fixed z-40 flex items-center gap-0 rounded-full border border-border bg-popover p-0.5 text-xs shadow-md shadow-black/10 backdrop-blur-xl backdrop-saturate-150 [&_a]:rounded-full [&_a]:px-1.5 [&_a]:text-xs [&_button]:rounded-full [&_button]:px-1.5 [&_button]:text-xs dark:border-white/10 dark:bg-popover/60"
