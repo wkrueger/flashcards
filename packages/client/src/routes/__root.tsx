@@ -1,5 +1,5 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router"
-import { Toaster } from "sonner"
+import { LazyToaster } from "../components/LazyToaster"
 import { AppShell } from "../components/AppShell"
 
 export const Route = createRootRoute({
@@ -8,7 +8,7 @@ export const Route = createRootRoute({
       <AppShell>
         <Outlet />
       </AppShell>
-      <Toaster richColors position="bottom-center" />
+      <LazyToaster richColors position="bottom-center" />
     </>
   ),
   errorComponent: ({ error }) => (
@@ -24,7 +24,7 @@ export const Route = createRootRoute({
           </button>
         </div>
       </AppShell>
-      <Toaster richColors position="bottom-center" />
+      <LazyToaster richColors position="bottom-center" />
     </>
   ),
 })

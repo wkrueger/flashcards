@@ -3,11 +3,14 @@ import ReactDOM from "react-dom/client"
 import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
 import { TRPCClientError } from "@trpc/client"
-import { toast } from "sonner"
+import { toast } from "./infra/toast"
 import { trpc, trpcClient } from "./infra/trpc"
 import { ThemeProvider } from "./infra/theme"
+import { getSessionCached } from "./infra/auth-client"
 import { routeTree } from "./routeTree.gen"
 import "./styles.css"
+
+void getSessionCached()
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5_000, retry: false } },

@@ -144,8 +144,18 @@ function CardTypePreview({ cardType }: { cardType: AnkiImportCardTypeView }) {
 
 type CardTypeSetupViewProps = {
   cardType: AnkiImportCardTypeView
-  mapping: { selected: boolean; subjectField: string; cardMappings: CardMappingRow[]; plugins: ImportPlugin[] }
-  onChange: (next: { selected: boolean; subjectField: string; cardMappings: CardMappingRow[]; plugins: ImportPlugin[] }) => void
+  mapping: {
+    selected: boolean
+    subjectField: string
+    cardMappings: CardMappingRow[]
+    plugins: ImportPlugin[]
+  }
+  onChange: (next: {
+    selected: boolean
+    subjectField: string
+    cardMappings: CardMappingRow[]
+    plugins: ImportPlugin[]
+  }) => void
   onBack: () => void
   disabled?: boolean
 }
@@ -247,9 +257,7 @@ function CardTypeSetupView({
       </div>
 
       <div className="space-y-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Plugins
-        </p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Plugins</p>
         {mapping.plugins.map((plugin, pluginIndex) => (
           <div key={pluginIndex} className="space-y-2 rounded-md border bg-muted/10 p-3">
             <div className="flex items-center justify-between">
@@ -410,7 +418,6 @@ export function AnkiImportProcessPage() {
       )
     })
 
-
   const canStartImport =
     !!process.data &&
     process.data.status === "AWAITING_CONFIGURATION" &&
@@ -467,7 +474,9 @@ export function AnkiImportProcessPage() {
           selected: mapping.selected,
           subjectField: mapping.selected ? mapping.subjectField || undefined : undefined,
           cardMappings: mapping.selected
-            ? (mapping.cardMappings.filter((cm) => cm.frontField && cm.backField) as AnkiCardMapping[])
+            ? (mapping.cardMappings.filter(
+                (cm) => cm.frontField && cm.backField
+              ) as AnkiCardMapping[])
             : [],
           plugins: mapping.selected ? mapping.plugins : [],
         }
@@ -655,10 +664,13 @@ export function AnkiImportProcessPage() {
                           <CheckboxCard
                             checked={mapping.selected}
                             onChange={(next) =>
-                              setMappings((current) => ({
-                                ...current,
-                                [cardType.modelKey]: { ...mapping, selected: next },
-                              }) as MappingState)
+                              setMappings(
+                                (current) =>
+                                  ({
+                                    ...current,
+                                    [cardType.modelKey]: { ...mapping, selected: next },
+                                  }) as MappingState
+                              )
                             }
                             label="Import this card type"
                             disabled={disabled}
@@ -744,7 +756,6 @@ export function AnkiImportProcessPage() {
           </CardContent>
         </Card>
       )}
-
 
       {process.data.status === "FAILED" && (
         <Card>

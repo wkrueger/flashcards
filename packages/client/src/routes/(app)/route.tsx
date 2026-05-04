@@ -1,12 +1,20 @@
-import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
-import { getSessionCached } from "../../infra/auth-client"
+import { Outlet, createFileRoute, useRouter } from "@tanstack/react-router"
+import { useEffect } from "react"
+import { useSession } from "../../infra/auth-client"
 
 export const Route = createFileRoute("/(app)")({
-  beforeLoad: async () => {
-    const { data } = await getSessionCached()
-    if (!data?.user) {
-      throw redirect({ to: "/login", replace: true })
-    }
-  },
-  component: () => <Outlet />,
+  component: AppLayout,
 })
+
+function AppLayout() {
+  const router = useRouter()
+  const { data, isPending } = useSession()
+
+  useEffect(() => {
+    if (!isPending && !data?.user) {
+      router.navigate({ to: "/login", replace: true })
+    }
+  }, [isPending, data, router])
+
+  return <Outlet />
+}

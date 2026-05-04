@@ -1,7 +1,7 @@
 import { createTRPCReact } from "@trpc/react-query"
 import { httpBatchLink } from "@trpc/client"
 import { TRPCClientError } from "@trpc/client"
-import { toast } from "sonner"
+import { toast } from "./toast"
 import type { AppRouter } from "server/router"
 
 export const trpc = createTRPCReact<AppRouter>()

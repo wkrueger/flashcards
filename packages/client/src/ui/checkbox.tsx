@@ -36,9 +36,20 @@ interface CheckboxCardProps {
   disabled?: boolean
 }
 
-export function CheckboxCard({ checked, onChange, label, description, disabled }: CheckboxCardProps) {
+export function CheckboxCard({
+  checked,
+  onChange,
+  label,
+  description,
+  disabled,
+}: CheckboxCardProps) {
   return (
-    <label className={cn("flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors", disabled ? "opacity-60" : "cursor-pointer hover:bg-accent/40")}>
+    <label
+      className={cn(
+        "flex items-center gap-4 rounded-lg border bg-card p-4 transition-colors",
+        disabled ? "opacity-60" : "cursor-pointer hover:bg-accent/40"
+      )}
+    >
       <input
         type="checkbox"
         checked={checked}
