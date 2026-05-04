@@ -1,6 +1,6 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react"
 import { Check, RefreshCw, Trash2, X } from "lucide-react"
-import { MarkdownView } from "../../components/MarkdownViewLazy"
+import { MarkdownView } from "../../components/MarkdownView"
 import { Button } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
 import { cn } from "../../lib/utils"
