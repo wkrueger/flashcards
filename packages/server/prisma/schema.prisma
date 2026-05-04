@@ -277,6 +277,7 @@ model ReviewStat {
   deck        Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
   date        DateTime
   cardMinutes Int      @default(0)
+  cardCount   Int      @default(0)
 
   @@unique([deckId, date])
   @@index([deckId, date])

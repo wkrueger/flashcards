@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "ReviewStat" ADD COLUMN "cardCount" INTEGER NOT NULL DEFAULT 0;

@@ -323,8 +323,8 @@ export async function completeReview(
     }),
     prisma.reviewStat.upsert({
       where: { deckId_date: { deckId: card.deckId, date: today } },
-      create: { deckId: card.deckId, date: today, cardMinutes },
-      update: { cardMinutes: { increment: cardMinutes } },
+      create: { deckId: card.deckId, date: today, cardMinutes, cardCount: 1 },
+      update: { cardMinutes: { increment: cardMinutes }, cardCount: { increment: 1 } },
     }),
     prisma.reviewStat.deleteMany({
       where: { deckId: card.deckId, date: { lt: retentionCutoff } },
