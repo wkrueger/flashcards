@@ -14,8 +14,8 @@ export const COOLDOWN_MS: Record<FixationLevel, number> = {
   "2": 10 * MIN,
   "3": 12 * HOUR,
   "4": 2 * DAY,
-  "5": 7 * DAY,
-  "6": 14 * DAY,
+  "5": 5 * DAY,
+  "6": 12 * DAY,
 }
 
 export const COOLDOWN_LABEL: Record<FixationLevel, string> = {
@@ -23,8 +23,8 @@ export const COOLDOWN_LABEL: Record<FixationLevel, string> = {
   "2": "10 min",
   "3": "12 h",
   "4": "2 days",
-  "5": "1 week",
-  "6": "2 weeks",
+  "5": "5 days",
+  "6": "12 days",
 }
 
 export const FIXATION_EMOJI: Record<FixationLevel, string> = {
