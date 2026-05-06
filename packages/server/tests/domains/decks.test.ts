@@ -51,6 +51,7 @@ describe("decks domain", () => {
     expect(result.cardCount).toBe(3)
     expect(result.wordCount).toBe(2)
     expect(result.cooldownCount).toBe(1)
+    expect(result.speechRecognitionEnabled).toBe(true)
   })
 
   it("get returns the deck back-language speech recognition locale", async () => {
@@ -79,6 +80,23 @@ describe("decks domain", () => {
     const result = await trpc.decks.get({ id: deck.id })
     expect(result.speechRecognitionLocale).toBe("de-DE")
     await expect(callerFor(other).decks.get({ id: deck.id })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    })
+  })
+
+  it("updates the deck speech recognition setting within the user's scope", async () => {
+    const u = await makeUser("u")
+    const other = await makeUser("other")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+
+    await trpc.decks.update({ id: deck.id, speechRecognitionEnabled: false })
+
+    const result = await trpc.decks.get({ id: deck.id })
+    expect(result.speechRecognitionEnabled).toBe(false)
+    await expect(
+      callerFor(other).decks.update({ id: deck.id, speechRecognitionEnabled: true })
+    ).rejects.toMatchObject({
       code: "NOT_FOUND",
     })
   })

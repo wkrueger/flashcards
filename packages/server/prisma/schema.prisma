@@ -88,21 +88,22 @@ model Language {
 }
 
 model Deck {
-  id                     String                 @id @default(cuid())
-  name                   String
-  userId                 String
-  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  defaultFrontLanguageId Int?
-  defaultFrontLanguage   Language?              @relation("DeckDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
-  defaultBackLanguageId  Int?
-  defaultBackLanguage    Language?              @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
-  inverseReviewEnabled   Boolean                @default(false)
-  inverseReviewStreak    Int                    @default(0)
-  subjects               Subject[]
-  cards                  Card[]
-  reviewStats            ReviewStat[]
-  createdAt              DateTime               @default(now())
-  reviewStatUniqueCards  ReviewStatUniqueCard[]
+  id                       String                 @id @default(cuid())
+  name                     String
+  userId                   String
+  user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultFrontLanguageId   Int?
+  defaultFrontLanguage     Language?              @relation("DeckDefaultFrontLanguage", fields: [defaultFrontLanguageId], references: [id], onDelete: SetNull)
+  defaultBackLanguageId    Int?
+  defaultBackLanguage      Language?              @relation("DeckDefaultBackLanguage", fields: [defaultBackLanguageId], references: [id], onDelete: SetNull)
+  speechRecognitionEnabled Boolean                @default(true)
+  inverseReviewEnabled     Boolean                @default(false)
+  inverseReviewStreak      Int                    @default(0)
+  subjects                 Subject[]
+  cards                    Card[]
+  reviewStats              ReviewStat[]
+  createdAt                DateTime               @default(now())
+  reviewStatUniqueCards    ReviewStatUniqueCard[]
 
   @@unique([userId, name])
 }

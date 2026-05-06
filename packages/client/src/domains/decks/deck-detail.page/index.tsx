@@ -41,6 +41,7 @@ export function DeckDetailPage() {
   const [editName, setEditName] = useState("")
   const [editFrontLang, setEditFrontLang] = useState("")
   const [editBackLang, setEditBackLang] = useState("")
+  const [speechRecognitionEnabled, setSpeechRecognitionEnabled] = useState(true)
   const [inverseReviewEnabled, setInverseReviewEnabled] = useState(false)
 
   useEffect(() => {
@@ -57,11 +58,12 @@ export function DeckDetailPage() {
 
   useEffect(() => {
     if (deck.data) {
+      setSpeechRecognitionEnabled(deck.data.speechRecognitionEnabled)
       setInverseReviewEnabled(deck.data.inverseReviewEnabled)
     }
   }, [deck.data])
 
-  const updateInverseReview = trpc.decks.update.useMutation({
+  const updateReviewSettings = trpc.decks.update.useMutation({
     onMutate: async (input) => {
       await utils.decks.get.cancel({ id: deckId })
       const previousDeck = utils.decks.get.getData({ id: deckId })
@@ -69,6 +71,8 @@ export function DeckDetailPage() {
         current
           ? {
               ...current,
+              speechRecognitionEnabled:
+                input.speechRecognitionEnabled ?? current.speechRecognitionEnabled,
               inverseReviewEnabled: input.inverseReviewEnabled ?? current.inverseReviewEnabled,
             }
           : current
@@ -78,6 +82,7 @@ export function DeckDetailPage() {
     onError: (error, _input, context) => {
       if (context?.previousDeck) {
         utils.decks.get.setData({ id: deckId }, context.previousDeck)
+        setSpeechRecognitionEnabled(context.previousDeck.speechRecognitionEnabled)
         setInverseReviewEnabled(context.previousDeck.inverseReviewEnabled)
       }
       handleTRPCError(error)
@@ -93,14 +98,25 @@ export function DeckDetailPage() {
 
   useEffect(() => {
     if (!deck.data) return
-    if (inverseReviewEnabled === deck.data.inverseReviewEnabled) return
+    if (speechRecognitionEnabled === deck.data.speechRecognitionEnabled) return
 
     const timeoutId = window.setTimeout(() => {
-      updateInverseReview.mutate({ id: deckId, inverseReviewEnabled })
+      updateReviewSettings.mutate({ id: deckId, speechRecognitionEnabled })
     }, 300)
 
     return () => window.clearTimeout(timeoutId)
-  }, [deck.data, deckId, inverseReviewEnabled, updateInverseReview])
+  }, [deck.data, deckId, speechRecognitionEnabled, updateReviewSettings])
+
+  useEffect(() => {
+    if (!deck.data) return
+    if (inverseReviewEnabled === deck.data.inverseReviewEnabled) return
+
+    const timeoutId = window.setTimeout(() => {
+      updateReviewSettings.mutate({ id: deckId, inverseReviewEnabled })
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [deck.data, deckId, inverseReviewEnabled, updateReviewSettings])
 
   const editSameLanguage = !!editFrontLang && !!editBackLang && editFrontLang === editBackLang
 
@@ -297,7 +313,34 @@ export function DeckDetailPage() {
             </div>
           )}
 
-          <div className="mt-auto pt-4">
+          <div className="mt-auto space-y-2 pt-4">
+            <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
+              <input
+                type="checkbox"
+                checked={speechRecognitionEnabled}
+                onChange={(e) => setSpeechRecognitionEnabled(e.target.checked)}
+                className="peer sr-only"
+              />
+              <span
+                aria-hidden="true"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+              >
+                <Check className="h-4 w-4" />
+              </span>
+              <div className="min-w-0 space-y-1">
+                <div className="flex items-center gap-1 text-sm font-medium">
+                  <span>Speech recognition</span>
+                  {updateReviewSettings.isPending &&
+                    updateReviewSettings.variables?.speechRecognitionEnabled !== undefined && (
+                      <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
+                    )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Practice speaking the answer during review.
+                </p>
+              </div>
+            </label>
+
             <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
               <input
                 type="checkbox"
@@ -314,9 +357,10 @@ export function DeckDetailPage() {
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-1 text-sm font-medium">
                   <span>Allow inverse mode</span>
-                  {updateInverseReview.isPending && (
-                    <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
-                  )}
+                  {updateReviewSettings.isPending &&
+                    updateReviewSettings.variables?.inverseReviewEnabled !== undefined && (
+                      <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
+                    )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Occasionally review these cards back-to-front.

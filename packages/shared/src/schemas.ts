@@ -14,6 +14,7 @@ export const createDeckInput = z.object({
   name: z.string().trim().min(1).max(100),
   defaultFrontLanguageId: languageId.nullish(),
   defaultBackLanguageId: languageId.nullish(),
+  speechRecognitionEnabled: z.boolean().optional(),
   inverseReviewEnabled: z.boolean().optional(),
 })
 
@@ -22,6 +23,7 @@ export const updateDeckInput = z.object({
   name: z.string().trim().min(1).max(100).optional(),
   defaultFrontLanguageId: languageId.nullish(),
   defaultBackLanguageId: languageId.nullish(),
+  speechRecognitionEnabled: z.boolean().optional(),
   inverseReviewEnabled: z.boolean().optional(),
 })
 
