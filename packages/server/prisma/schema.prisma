@@ -75,10 +75,11 @@ model Verification {
 // ---------- domain ----------
 
 model Language {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  englishName String?
-  emoji       String
+  id                      Int     @id @default(autoincrement())
+  name                    String  @unique
+  englishName             String?
+  emoji                   String
+  speechRecognitionLocale String?
 
   decksAsDefaultFront           Deck[]          @relation("DeckDefaultFrontLanguage")
   decksAsDefaultBack            Deck[]          @relation("DeckDefaultBackLanguage")

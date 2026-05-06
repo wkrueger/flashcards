@@ -18,6 +18,8 @@ export function CardNewPage() {
     onSuccess: () => {
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.decks.list.invalidate()
+      utils.decks.get.invalidate({ id: deckId })
+      utils.decks.upcomingDueCounts.invalidate({ id: deckId })
       utils.review.next.invalidate()
       goBack()
     },

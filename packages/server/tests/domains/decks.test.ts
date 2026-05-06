@@ -53,6 +53,36 @@ describe("decks domain", () => {
     expect(result.cooldownCount).toBe(1)
   })
 
+  it("get returns the deck back-language speech recognition locale", async () => {
+    const u = await makeUser("u")
+    const other = await makeUser("other")
+    const trpc = callerFor(u)
+    const backLanguage = await prisma.language.upsert({
+      where: { name: "Speech Test Deutsch" },
+      update: {
+        englishName: "German",
+        emoji: "🇩🇪",
+        speechRecognitionLocale: "de-DE",
+      },
+      create: {
+        name: "Speech Test Deutsch",
+        englishName: "German",
+        emoji: "🇩🇪",
+        speechRecognitionLocale: "de-DE",
+      },
+    })
+    const deck = await trpc.decks.create({
+      name: "d",
+      defaultBackLanguageId: backLanguage.id,
+    })
+
+    const result = await trpc.decks.get({ id: deck.id })
+    expect(result.speechRecognitionLocale).toBe("de-DE")
+    await expect(callerFor(other).decks.get({ id: deck.id })).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    })
+  })
+
   it("get throws NOT_FOUND for another user's deck", async () => {
     const a = await makeUser("a")
     const b = await makeUser("b")

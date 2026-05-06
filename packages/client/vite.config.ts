@@ -4,6 +4,8 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import { compression } from "vite-plugin-compression2"
 import path from "node:path"
 
+const serverOrigin = `http://localhost:${process.env.E2E_SERVER_PORT ?? "3001"}`
+
 export default defineConfig(({ command }) => ({
   plugins: [
     tanstackRouter({
@@ -13,7 +15,9 @@ export default defineConfig(({ command }) => ({
       generatedRouteTree: "./src/routeTree.gen.ts",
     }),
     react(),
-    ...(command === "build" ? [compression({ algorithms: ["gzip"], exclude: [/\.(png|webp|ico)$/] })] : []),
+    ...(command === "build"
+      ? [compression({ algorithms: ["gzip"], exclude: [/\.(png|webp|ico)$/] })]
+      : []),
   ],
   resolve: {
     alias: {
@@ -24,8 +28,8 @@ export default defineConfig(({ command }) => ({
     host: true,
     port: 5173,
     proxy: {
-      "/api": "http://localhost:3001",
-      "/trpc": "http://localhost:3001",
+      "/api": serverOrigin,
+      "/trpc": serverOrigin,
     },
   },
 }))
