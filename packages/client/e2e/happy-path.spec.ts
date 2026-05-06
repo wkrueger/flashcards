@@ -90,6 +90,7 @@ test("signup → deck → card → review → free review → edit → logout", 
   await studyLanguageSelect.selectOption(deutschLanguageId)
   await page.getByRole("button", { name: "Create" }).click()
   await page.getByRole("link", { name: /German A1/ }).click()
+  await expect(page.getByRole("checkbox", { name: /Speech recognition/ })).toBeChecked()
 
   await page.getByRole("button", { name: "Menu" }).click()
   await page.getByRole("button", { name: "Add card" }).click()
@@ -119,8 +120,21 @@ test("signup → deck → card → review → free review → edit → logout", 
   await page.getByRole("button", { name: "Restart speech recognition" }).click()
   await expect(page.getByText("Das Haus ist groß")).not.toBeVisible()
   await page.getByRole("button", { name: "Reveal" }).click()
-  await expect(page.getByTestId("speech-recognition-card")).not.toBeVisible()
+  await expect(page.getByTestId("speech-recognition-card")).toBeVisible()
   await expect(page.getByText(/The.*house.*is big/)).toBeVisible()
+  await page.getByRole("button", { name: "Restart speech recognition" }).click()
+  await expect(page.getByRole("button", { name: "Stop speech recognition" })).toBeVisible()
+  await page.evaluate(() => {
+    ;(
+      window as typeof window & {
+        __lastSpeechRecognition?: {
+          emitResult: (transcript: string, isFinal?: boolean) => void
+        }
+      }
+    ).__lastSpeechRecognition?.emitResult("Noch einmal", true)
+  })
+  await expect(page.getByTestId("speech-recognition-transcript")).toContainText("Noch einmal")
+  await page.getByRole("button", { name: "Stop speech recognition" }).click()
   await page.getByRole("button", { name: /^3/ }).click()
 
   // After answering, no due cards in this deck → empty state with Free review.

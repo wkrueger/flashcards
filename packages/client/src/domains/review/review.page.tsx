@@ -204,7 +204,7 @@ export function ReviewPage({
   const hasSpeechRecognitionLocale =
     typeof speechRecognitionLocale === "string" && speechRecognitionLocale.length > 0
   const showSpeechRecognitionCard =
-    !inverse && hasSpeechRecognitionLocale && (!revealed || speechTranscript.trim().length > 0)
+    !inverse && Boolean(deck.data?.speechRecognitionEnabled) && hasSpeechRecognitionLocale
   const subtitle = subjectId
     ? inverse
       ? `Inverse review · ${card.subject.subject}`

@@ -77,6 +77,7 @@ export const decksRouter = router({
       defaultFrontLanguageId: deck.defaultFrontLanguageId,
       defaultBackLanguageId: deck.defaultBackLanguageId,
       speechRecognitionLocale: deck.defaultBackLanguage?.speechRecognitionLocale ?? null,
+      speechRecognitionEnabled: deck.speechRecognitionEnabled,
       inverseReviewEnabled: deck.inverseReviewEnabled,
       cardCount,
       wordCount,
@@ -103,6 +104,7 @@ export const decksRouter = router({
         userId: ctx.user.id,
         defaultFrontLanguageId: input.defaultFrontLanguageId ?? null,
         defaultBackLanguageId: input.defaultBackLanguageId ?? null,
+        speechRecognitionEnabled: input.speechRecognitionEnabled ?? true,
         inverseReviewEnabled: input.inverseReviewEnabled ?? false,
       },
     })
@@ -133,6 +135,8 @@ export const decksRouter = router({
       data.defaultFrontLanguageId = input.defaultFrontLanguageId ?? null
     if (input.defaultBackLanguageId !== undefined)
       data.defaultBackLanguageId = input.defaultBackLanguageId ?? null
+    if (input.speechRecognitionEnabled !== undefined)
+      data.speechRecognitionEnabled = input.speechRecognitionEnabled
     if (input.inverseReviewEnabled !== undefined)
       data.inverseReviewEnabled = input.inverseReviewEnabled
     return ctx.prisma.deck.update({
