@@ -217,6 +217,18 @@ export function ReviewPage({
         ? "Free review"
         : undefined
 
+  const speechRecognitionJsx =
+    showSpeechRecognitionCard && speechRecognitionLocale ? (
+      <SpeechRecognitionCard
+        className="mt-auto"
+        key={`${card.id}:${speechRecognitionLocale}`}
+        ref={speechRecognitionRef}
+        locale={speechRecognitionLocale}
+        transcript={speechTranscript}
+        onTranscriptChange={setSpeechTranscript}
+      />
+    ) : null
+
   return (
     <div className="flex flex-1 flex-col gap-3">
       <PageHeader
@@ -247,16 +259,6 @@ export function ReviewPage({
         </Card>
       </div>
 
-      {showSpeechRecognitionCard && speechRecognitionLocale ? (
-        <SpeechRecognitionCard
-          key={`${card.id}:${speechRecognitionLocale}`}
-          ref={speechRecognitionRef}
-          locale={speechRecognitionLocale}
-          transcript={speechTranscript}
-          onTranscriptChange={setSpeechTranscript}
-        />
-      ) : null}
-
       {revealed ? (
         <>
           <Card className="animate-reveal">
@@ -274,36 +276,50 @@ export function ReviewPage({
               <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <div className="mt-auto grid grid-cols-4 gap-2 animate-reveal">
-              {options.map((lvl: FixationLevel) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  disabled={complete.isPending}
-                  onClick={() => complete.mutate({ cardId: card.id, chosenLevel: lvl })}
-                  aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
-                  className={cn(
-                    "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
-                    LEVEL_COLOR[lvl]
-                  )}
-                >
-                  <span className="text-3xl leading-none">{FIXATION_EMOJI[lvl]}</span>
-                  <span className="text-sm opacity-90">{COOLDOWN_LABEL[lvl]}</span>
-                </button>
-              ))}
-            </div>
+            <>
+              {speechRecognitionJsx}
+              <div
+                className={cn(
+                  "grid grid-cols-4 gap-2 animate-reveal",
+                  !(showSpeechRecognitionCard && speechRecognitionLocale) && "mt-auto"
+                )}
+              >
+                {options.map((lvl: FixationLevel) => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    disabled={complete.isPending}
+                    onClick={() => complete.mutate({ cardId: card.id, chosenLevel: lvl })}
+                    aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
+                    className={cn(
+                      "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
+                      LEVEL_COLOR[lvl]
+                    )}
+                  >
+                    <span className="text-3xl leading-none">{FIXATION_EMOJI[lvl]}</span>
+                    <span className="text-sm opacity-90">{COOLDOWN_LABEL[lvl]}</span>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </>
       ) : (
-        <Button
-          className="mt-auto w-full"
-          onClick={() => {
-            if (!inverse) speechRecognitionRef.current?.stopAndKeepTranscript()
-            setRevealed(true)
-          }}
-        >
-          Reveal
-        </Button>
+        <>
+          {speechRecognitionJsx}
+          <Button
+            className={cn(
+              "w-full",
+              !(showSpeechRecognitionCard && speechRecognitionLocale) && "mt-auto"
+            )}
+            onClick={() => {
+              if (!inverse) speechRecognitionRef.current?.stopAndKeepTranscript()
+              setRevealed(true)
+            }}
+          >
+            Reveal
+          </Button>
+        </>
       )}
     </div>
   )
