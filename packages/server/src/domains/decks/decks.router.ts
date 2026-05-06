@@ -51,6 +51,11 @@ export const decksRouter = router({
     const [deck, cardCount, wordCount, cooldownCount] = await Promise.all([
       ctx.prisma.deck.findFirst({
         where: { id: input.id, userId: ctx.user.id },
+        include: {
+          defaultBackLanguage: {
+            select: { speechRecognitionLocale: true },
+          },
+        },
       }),
       ctx.prisma.card.count({ where: { deckId: input.id } }),
       ctx.prisma.subject.count({
@@ -71,6 +76,7 @@ export const decksRouter = router({
       createdAt: deck.createdAt,
       defaultFrontLanguageId: deck.defaultFrontLanguageId,
       defaultBackLanguageId: deck.defaultBackLanguageId,
+      speechRecognitionLocale: deck.defaultBackLanguage?.speechRecognitionLocale ?? null,
       inverseReviewEnabled: deck.inverseReviewEnabled,
       cardCount,
       wordCount,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
 import { ArrowRight, Pencil } from "lucide-react"
 import {
@@ -28,6 +28,7 @@ import {
   displayFrontWithGeneratedTagPrefix,
   displayWithGeneratedTagPrefix,
 } from "../cards/card-front-prefix"
+import { SpeechRecognitionCard, type SpeechRecognitionCardHandle } from "./speech-recognition-card"
 
 export function ReviewPage({
   mode,
@@ -40,12 +41,18 @@ export function ReviewPage({
   const navigate = useNavigate()
   const utils = trpc.useUtils()
   const [revealed, setRevealed] = useState(false)
+  const [speechTranscript, setSpeechTranscript] = useState("")
   const [initialConsumed, setInitialConsumed] = useState(false)
+  const speechRecognitionRef = useRef<SpeechRecognitionCardHandle>(null)
   const subjectId = initialConsumed ? undefined : initialSubjectId
   const routeScopeKey = `${deckId}:${mode}:${initialSubjectId ?? ""}`
   const queryScopeKey = `${deckId}:${mode}:${subjectId ?? ""}`
   const [enteredQueryScopeAt, setEnteredQueryScopeAt] = useState(() => Date.now())
 
+  const deck = trpc.decks.get.useQuery(
+    { id: deckId },
+    { refetchOnWindowFocus: false, refetchOnMount: false, staleTime: 5 * 60 * 1000 }
+  )
   const next = trpc.review.next.useQuery(
     { deckId, mode, subjectId },
     { refetchOnWindowFocus: false, refetchOnMount: "always", staleTime: 0 }
@@ -59,8 +66,13 @@ export function ReviewPage({
 
   useEffect(() => {
     setRevealed(false)
+    setSpeechTranscript("")
     setInitialConsumed(false)
   }, [routeScopeKey])
+
+  useEffect(() => {
+    setSpeechTranscript("")
+  }, [currentCardId])
 
   const complete = trpc.review.complete.useMutation({
     onMutate: () => {
@@ -75,6 +87,7 @@ export function ReviewPage({
       if (prefetched) {
         utils.review.next.setData({ deckId, mode, subjectId }, prefetched)
         setRevealed(false)
+        setSpeechTranscript("")
       }
     },
     onSuccess: async (_result, variables) => {
@@ -92,11 +105,13 @@ export function ReviewPage({
         })
         utils.review.next.setData({ deckId, mode, subjectId: undefined }, freshNext)
         setRevealed(false)
+        setSpeechTranscript("")
         setInitialConsumed(true)
         return
       }
 
       setRevealed(false)
+      setSpeechTranscript("")
 
       const prefetched = utils.review.next.getData({
         deckId,
@@ -185,6 +200,11 @@ export function ReviewPage({
     ? displayWithGeneratedTagPrefix(card.back, card.tags)
     : displayFrontWithGeneratedTagPrefix(card.front, card.tags)
   const revealedSource = inverse ? card.front : card.back
+  const speechRecognitionLocale = deck.data?.speechRecognitionLocale ?? null
+  const hasSpeechRecognitionLocale =
+    typeof speechRecognitionLocale === "string" && speechRecognitionLocale.length > 0
+  const showSpeechRecognitionCard =
+    !inverse && hasSpeechRecognitionLocale && (!revealed || speechTranscript.trim().length > 0)
   const subtitle = subjectId
     ? inverse
       ? `Inverse review · ${card.subject.subject}`
@@ -227,6 +247,16 @@ export function ReviewPage({
         </Card>
       </div>
 
+      {showSpeechRecognitionCard && speechRecognitionLocale ? (
+        <SpeechRecognitionCard
+          key={`${card.id}:${speechRecognitionLocale}`}
+          ref={speechRecognitionRef}
+          locale={speechRecognitionLocale}
+          transcript={speechTranscript}
+          onTranscriptChange={setSpeechTranscript}
+        />
+      ) : null}
+
       {revealed ? (
         <>
           <Card className="animate-reveal">
@@ -265,7 +295,13 @@ export function ReviewPage({
           )}
         </>
       ) : (
-        <Button className="mt-auto w-full" onClick={() => setRevealed(true)}>
+        <Button
+          className="mt-auto w-full"
+          onClick={() => {
+            if (!inverse) speechRecognitionRef.current?.stopAndKeepTranscript()
+            setRevealed(true)
+          }}
+        >
           Reveal
         </Button>
       )}

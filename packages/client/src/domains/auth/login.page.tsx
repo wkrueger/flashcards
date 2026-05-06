@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import {
   authClient,
   googleSsoEnabled,
+  invalidateSessionCache,
   sendVerificationEmail,
   signIn,
 } from "../../infra/auth-client"
@@ -40,6 +41,7 @@ export function LoginPage() {
       }
       return
     }
+    invalidateSessionCache()
     navigate({ to: "/" })
   }
 

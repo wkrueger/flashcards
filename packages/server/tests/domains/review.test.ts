@@ -71,6 +71,19 @@ async function seedSubjects(
   }
 }
 
+async function waitForDeckReviewStats(
+  deckId: string,
+  predicate: (stats: Awaited<ReturnType<typeof prisma.reviewStat.findMany>>) => boolean
+) {
+  let stats: Awaited<ReturnType<typeof prisma.reviewStat.findMany>> = []
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    stats = await prisma.reviewStat.findMany({ where: { deckId } })
+    if (predicate(stats)) return stats
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  return stats
+}
+
 describe("review domain", () => {
   beforeEach(async () => {
     await resetDomain()
@@ -494,9 +507,15 @@ describe("review domain", () => {
     await trpc.review.complete({ cardId: cardA.id, chosenLevel: "3" })
     await trpc.review.complete({ cardId: cardB.id, chosenLevel: "5" })
 
-    const stats = await prisma.reviewStat.findMany({ where: { deckId: deck.id } })
-    expect(stats).toHaveLength(1)
     const expected = Math.round(COOLDOWN_MS["3"] / 60_000) + Math.round(COOLDOWN_MS["5"] / 60_000)
+    const stats = await waitForDeckReviewStats(
+      deck.id,
+      (nextStats) =>
+        nextStats.length === 1 &&
+        nextStats[0]!.cardMinutes === expected &&
+        nextStats[0]!.cardCount === 2
+    )
+    expect(stats).toHaveLength(1)
     expect(stats[0]!.cardMinutes).toBe(expected)
     expect(stats[0]!.cardCount).toBe(2)
   })
@@ -537,7 +556,10 @@ describe("review domain", () => {
     await trpc.review.complete({ cardId: cardB.id, inverse: true })
     await trpc.review.complete({ cardId: cardB.id, chosenLevel: "2" })
 
-    const stats = await prisma.reviewStat.findMany({ where: { deckId: deck.id } })
+    const stats = await waitForDeckReviewStats(
+      deck.id,
+      (nextStats) => nextStats.length === 1 && nextStats[0]!.cardCount === 2
+    )
     expect(stats).toHaveLength(1)
     expect(stats[0]!.cardCount).toBe(2)
   })
@@ -559,7 +581,10 @@ describe("review domain", () => {
 
     await trpc.review.complete({ cardId: card.id, chosenLevel: "3" })
 
-    const stats = await prisma.reviewStat.findMany({ where: { deckId: deck.id } })
+    const stats = await waitForDeckReviewStats(
+      deck.id,
+      (nextStats) => !nextStats.some((s) => s.date.getTime() === stale.getTime())
+    )
     expect(stats.find((s) => s.date.getTime() === stale.getTime())).toBeUndefined()
   })
 
