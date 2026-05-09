@@ -27,7 +27,7 @@ Current algorithm (subject to change):
  - ~90% of the time, pick between most recently seen cards
  - ~10% of the time, pick a random card from the whole deck
 
-This means that, when you have a big deck, you will mostly keep circling on the new words until you get comfortable with them
+This means that, when you have a big deck, you will mostly keep circling on the new words until you get comfortable with them, and then slowly progress.
 
 Inverse review:
  - Inverse review is seen as an "easy mode" review. An inverse review updates the "last seen" field but does not add a cooldown;
