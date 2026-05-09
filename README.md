@@ -174,18 +174,3 @@ Ensure environment variables are set before starting (e.g. via your process mana
 platform). The frontend is static — serve `packages/client/dist/` from any static host and
 proxy `/trpc` and `/api` to the Fastify process.
 
-### First-time user setup
-
-Visit `/signup` to create your account, then set `DISABLE_USER_CREATION=true` in `.env`
-and restart the server to prevent further signups.
-
-### Subsequent deployments
-
-```bash
-git pull
-pnpm install --frozen-lockfile
-pnpm build
-# restart the server process
-```
-
-```
