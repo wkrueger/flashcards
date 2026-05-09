@@ -10,7 +10,7 @@ I have initially built this mostly for personal use.
 - Call an AI API (currently OpenAI) to generate phrases for cards;
 - Imports some patterns of Anki files;
 - Includes a speech recognition box so that the user is encouraged to read phrases out loud. Correction is out of scope of the project. Heavily subject to browser compatibility (works on Safari);
-- Pleasant UI.
+- Pleasant UI. Colorful daily stats.
 
 ### Choices and details:
 
