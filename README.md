@@ -70,19 +70,6 @@ Server runtime and Prisma CLI read environment variables from `packages/server/.
 
 Languages have no UI — add new ones by editing the SQLite `Language` table directly.
 
-### User creation
-
-> While the app was built for multi user from start to avoid future refactors, the multi-user feature is latent and insecure. For now I'm adding a feature to disable user creation for personal safe use.
-
-Set this in `packages/server/.env` to disable new signups while keeping existing user login
-available:
-
-```env
-DISABLE_USER_CREATION=true
-```
-
-Accepted enabled values are `true`, `1`, and `yes`. Leave it unset or set it to `false` in local
-development when you want the signup page to create users.
 
 ### Email (Mailgun)
 
