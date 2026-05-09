@@ -1,8 +1,38 @@
 # Cards
 
-Mobile-first vocabulary flashcards with spaced-repetition cooldowns. Multi-user, email + password auth.
+Mobile-first vocabulary flashcards with spaced-repetition cooldowns. Multi-user.  
+I have initially built this mostly for personal use.
 
-> PS: this is built with A1 with very low code reviewing.
+### Current features:
+
+- Simple flashcards;
+- Occasionally displays cards in inverse order;
+- Call an AI API (currently OpenAI) to generate phrases for cards;
+- Imports some patterns of Anki files;
+- Includes a speech recognition box so that the user is encouraged to read out phrases loud. Correction is out of scope of the project. Heavily subject to browser compatibility (works on Safari);
+- Pleasant UI.
+
+### Choices and details:
+
+ - Uses a simplified voting system. Just select the next time you want to see the card. This is a bit different from usual spaced repetition since no calculation is made based on how many times you've seen the card;
+ - Current choices as of this writing: 5s, 10m, 12h, 2d, 5d, 12d;
+ - Only 4 choices appear at a time. If you had checked 2d, the next time you review the card you will be given the 5d choice, and so on;
+ - Cards are grouped by "words" (subjects, in app terminology), so that we can have a variety of phrases;
+
+Current algorithm (subject to change):
+ - ~90% of the time, pick between most recently seen cards
+ - ~10% of the time, pick a random card from the whole deck
+
+This means that, when you have a big deck, you will mostly keep circling on the new words until you get comfortable with them
+
+Inverse review:
+ - Inverse review is seen as an "easy mode" review. An inverse review updates the "last seen" field but does not add a cooldown;
+ - You don't have the option to add a cooldown on inverse reviews;
+ - When you inverse review a card, the same card will be soon displayed on normal mode, since the "last seen" timer is updated;
+ - When you are struggling on a card, the inverse review chance is increased;
+
+
+---
 
 ## Stack
 
@@ -170,29 +200,6 @@ pnpm build
 ---
 
 ## Domain notes
-
-### Cooldowns by fixation level
-
-Stored as a string on `Subject.fixationLevel` to allow future levels without a column-type migration.
-
--- not up to date --
-
-### Pickup algorithm
-
--- not up to date --
-
-### Review modes
-
-- **Normal**: only cards whose subject is past its cooldown. Empty state offers a "Free review" entry point.
-- **Free**: ignores cooldowns; surfaces a card even when nothing is technically due. Stats and cooldowns still update on completion.
-
-### Cooldown buttons
-
-After revealing the back, the user sees four buttons. If the previous fixation was 4 or 5, they get `2..5`; otherwise `1..4`.
-
-### Card template generation
-
-The new-card screen includes "Generate card from template". The current template creates 1-5 phrase cards for a word or expression using the selected front/back languages. Preview generation uses OpenAI; saving confirmed previews uses the normal card creation API.
 
 ## Anki phrase extraction
 
