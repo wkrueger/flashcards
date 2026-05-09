@@ -9,7 +9,7 @@ I have initially built this mostly for personal use.
 - Occasionally displays cards in inverse order;
 - Call an AI API (currently OpenAI) to generate phrases for cards;
 - Imports some patterns of Anki files;
-- Includes a speech recognition box so that the user is encouraged to read out phrases loud. Correction is out of scope of the project. Heavily subject to browser compatibility (works on Safari);
+- Includes a speech recognition box so that the user is encouraged to read phrases out loud. Correction is out of scope of the project. Heavily subject to browser compatibility (works on Safari);
 - Pleasant UI.
 
 ### Choices and details:
