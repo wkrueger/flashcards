@@ -14,6 +14,9 @@ I have initially built this mostly for personal use.
 
 ### Choices and details:
 
+UI:
+ - The UI has constrained width on purpose, so that I avoid tinkering with more breakpoints;
+
  - Uses a simplified voting system. Just select the next time you want to see the card. This is a bit different from usual spaced repetition since no calculation is made based on how many times you've seen the card;
  - Current choices as of this writing: 5s, 10m, 12h, 2d, 5d, 12d;
  - Only 4 choices appear at a time. If you had checked 2d, the next time you review the card you will be given the 5d choice, and so on;
