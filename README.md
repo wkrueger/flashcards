@@ -5,7 +5,7 @@ I have initially built this mostly for personal use.
 
 ### Current features:
 
-- Simple flashcards;
+- Simple flashcards; Phrases with highlighted words;
 - Occasionally displays cards in inverse order;
 - Call an AI API (currently OpenAI) to generate phrases for cards;
 - Imports some patterns of Anki files;
