@@ -298,14 +298,19 @@ export function CardTemplateGeneratePage() {
 
         {previewError && <p className="text-sm text-destructive">{previewError}</p>}
 
-        <Button
-          type="submit"
-          className="mt-auto w-full gap-2"
-          disabled={!canSubmit || generate.isPending}
-        >
-          <Sparkles className="h-4 w-4" />
-          {generate.isPending ? "Generating…" : "Generate previews"}
-        </Button>
+        <div className="mt-auto space-y-2">
+          <p className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
+            Test users have a rate limit on phrase generation.
+          </p>
+          <Button
+            type="submit"
+            className="w-full gap-2"
+            disabled={!canSubmit || generate.isPending}
+          >
+            <Sparkles className="h-4 w-4" />
+            {generate.isPending ? "Generating…" : "Generate previews"}
+          </Button>
+        </div>
       </form>
     </div>
   )

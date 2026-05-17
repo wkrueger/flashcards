@@ -42,7 +42,7 @@ export function SubjectAutocomplete({
       <PopoverAnchor asChild>
         <Input
           value={value}
-          placeholder="Subject (e.g. Haus)"
+          placeholder="Subject"
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setTimeout(() => setFocused(false), 150)}
