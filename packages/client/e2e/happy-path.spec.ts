@@ -94,7 +94,7 @@ test("signup → deck → card → review → free review → edit → logout", 
 
   await page.getByRole("button", { name: "Menu" }).click()
   await page.getByRole("button", { name: "Add card" }).click()
-  await page.getByPlaceholder("Subject (e.g. Haus)").fill("Haus")
+  await page.getByRole("textbox", { name: "Subject" }).fill("Haus")
   await page.getByLabel("Front (markdown)").fill("**Haus** ist groß.")
   await page.getByLabel("Back (markdown)").fill("The **house** is big.")
   await page.getByRole("button", { name: "Create" }).click()
@@ -117,12 +117,12 @@ test("signup → deck → card → review → free review → edit → logout", 
   await expect(page.getByTestId("speech-recognition-transcript")).toContainText("Das Haus ist groß")
   await page.getByRole("button", { name: "Stop speech recognition" }).click()
   await expect(page.getByRole("button", { name: "Restart speech recognition" })).toBeVisible()
-  await page.getByRole("button", { name: "Restart speech recognition" }).click()
+  await page.getByRole("button", { name: /^(Start|Restart) speech recognition$/ }).click()
   await expect(page.getByText("Das Haus ist groß")).not.toBeVisible()
   await page.getByRole("button", { name: "Reveal" }).click()
   await expect(page.getByTestId("speech-recognition-card")).toBeVisible()
   await expect(page.getByText(/The.*house.*is big/)).toBeVisible()
-  await page.getByRole("button", { name: "Restart speech recognition" }).click()
+  await page.getByRole("button", { name: /^(Start|Restart) speech recognition$/ }).click()
   await expect(page.getByRole("button", { name: "Stop speech recognition" })).toBeVisible()
   await page.evaluate(() => {
     ;(

@@ -23,6 +23,7 @@ import { Route as appDecksDeckIdIndexRouteImport } from './routes/(app)/decks.$d
 import { Route as appImportsAnkiNewRouteImport } from './routes/(app)/imports.anki.new'
 import { Route as appImportsAnkiProcessIdRouteImport } from './routes/(app)/imports.anki.$processId'
 import { Route as appDecksDeckIdReviewRouteImport } from './routes/(app)/decks.$deckId.review'
+import { Route as appDecksDeckIdImportRouteImport } from './routes/(app)/decks.$deckId.import'
 import { Route as appDecksDeckIdReviewIndexRouteImport } from './routes/(app)/decks.$deckId.review.index'
 import { Route as appDecksDeckIdSubjectsSubjectIdRouteImport } from './routes/(app)/decks.$deckId.subjects.$subjectId'
 import { Route as appDecksDeckIdReviewFreeRouteImport } from './routes/(app)/decks.$deckId.review.free'
@@ -100,6 +101,11 @@ const appDecksDeckIdReviewRoute = appDecksDeckIdReviewRouteImport.update({
   path: '/review',
   getParentRoute: () => appDecksDeckIdRoute,
 } as any)
+const appDecksDeckIdImportRoute = appDecksDeckIdImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => appDecksDeckIdRoute,
+} as any)
 const appDecksDeckIdReviewIndexRoute =
   appDecksDeckIdReviewIndexRouteImport.update({
     id: '/',
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/': typeof appIndexRoute
   '/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
   '/imports/anki': typeof appImportsAnkiRouteWithChildren
+  '/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
   '/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
   '/imports/anki/new': typeof appImportsAnkiNewRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/': typeof appIndexRoute
+  '/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
   '/imports/anki/new': typeof appImportsAnkiNewRoute
   '/decks/$deckId': typeof appDecksDeckIdIndexRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/(app)/': typeof appIndexRoute
   '/(app)/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
   '/(app)/imports/anki': typeof appImportsAnkiRouteWithChildren
+  '/(app)/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/(app)/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
   '/(app)/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
   '/(app)/imports/anki/new': typeof appImportsAnkiNewRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/'
     | '/decks/$deckId'
     | '/imports/anki'
+    | '/decks/$deckId/import'
     | '/decks/$deckId/review'
     | '/imports/anki/$processId'
     | '/imports/anki/new'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/'
+    | '/decks/$deckId/import'
     | '/imports/anki/$processId'
     | '/imports/anki/new'
     | '/decks/$deckId'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/(app)/'
     | '/(app)/decks/$deckId'
     | '/(app)/imports/anki'
+    | '/(app)/decks/$deckId/import'
     | '/(app)/decks/$deckId/review'
     | '/(app)/imports/anki/$processId'
     | '/(app)/imports/anki/new'
@@ -383,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appDecksDeckIdReviewRouteImport
       parentRoute: typeof appDecksDeckIdRoute
     }
+    '/(app)/decks/$deckId/import': {
+      id: '/(app)/decks/$deckId/import'
+      path: '/import'
+      fullPath: '/decks/$deckId/import'
+      preLoaderRoute: typeof appDecksDeckIdImportRouteImport
+      parentRoute: typeof appDecksDeckIdRoute
+    }
     '/(app)/decks/$deckId/review/': {
       id: '/(app)/decks/$deckId/review/'
       path: '/'
@@ -452,6 +471,7 @@ const appDecksDeckIdReviewRouteWithChildren =
   appDecksDeckIdReviewRoute._addFileChildren(appDecksDeckIdReviewRouteChildren)
 
 interface appDecksDeckIdRouteChildren {
+  appDecksDeckIdImportRoute: typeof appDecksDeckIdImportRoute
   appDecksDeckIdReviewRoute: typeof appDecksDeckIdReviewRouteWithChildren
   appDecksDeckIdIndexRoute: typeof appDecksDeckIdIndexRoute
   appDecksDeckIdCardsGenerateRoute: typeof appDecksDeckIdCardsGenerateRoute
@@ -461,6 +481,7 @@ interface appDecksDeckIdRouteChildren {
 }
 
 const appDecksDeckIdRouteChildren: appDecksDeckIdRouteChildren = {
+  appDecksDeckIdImportRoute: appDecksDeckIdImportRoute,
   appDecksDeckIdReviewRoute: appDecksDeckIdReviewRouteWithChildren,
   appDecksDeckIdIndexRoute: appDecksDeckIdIndexRoute,
   appDecksDeckIdCardsGenerateRoute: appDecksDeckIdCardsGenerateRoute,

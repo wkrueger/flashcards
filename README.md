@@ -15,26 +15,29 @@ I have initially built this mostly for personal use.
 ### Choices and details:
 
 UI:
- - The UI has constrained width on purpose, so that I avoid tinkering with more breakpoints;
+
+- The UI has constrained width on purpose, so that I avoid tinkering with more breakpoints;
 
 Flashcards:
- - Uses a simplified voting system. Just select the next time you want to see the card. This is a bit different from usual spaced repetition since no calculation is made based on how many times you've seen the card;
- - Current choices as of this writing: 5s, 10m, 12h, 2d, 5d, 12d;
- - Only 4 choices appear at a time. If you had checked 2d, the next time you review the card you will be given the 5d choice, and so on;
- - Cards are grouped by "words" (subjects, in app terminology), so that we can have a variety of phrases;
+
+- Uses a simplified voting system. Just select the next time you want to see the card. This is a bit different from usual spaced repetition since no calculation is made based on how many times you've seen the card;
+- Current choices as of this writing: 5s, 10m, 12h, 2d, 5d, 12d;
+- Only 4 choices appear at a time. If you had checked 2d, the next time you review the card you will be given the 5d choice, and so on;
+- Cards are grouped by "words" (subjects, in app terminology), so that we can have a variety of phrases;
 
 Current algorithm (subject to change):
- - ~90% of the time, pick between most recently seen cards
- - ~10% of the time, pick a random card from the whole deck
+
+- ~90% of the time, pick between most recently seen cards
+- ~10% of the time, pick a random card from the whole deck
 
 This means that, when you have a big deck, you will mostly keep circling on the new words until you get comfortable with them, and then slowly progress.
 
 Inverse review:
- - Inverse review is seen as an "easy mode" review. An inverse review updates the "last seen" field but does not add a cooldown;
- - You don't have the option to add a cooldown on inverse reviews;
- - When you inverse review a card, the same card will be soon displayed on normal mode, since the "last seen" timer is updated;
- - When you are struggling on a card, the inverse review chance is increased;
 
+- Inverse review is seen as an "easy mode" review. An inverse review updates the "last seen" field but does not add a cooldown;
+- You don't have the option to add a cooldown on inverse reviews;
+- When you inverse review a card, the same card will be soon displayed on normal mode, since the "last seen" timer is updated;
+- When you are struggling on a card, the inverse review chance is increased;
 
 ---
 
@@ -69,7 +72,6 @@ pnpm --filter server prisma:seed              # seeds languages (English, Deutsc
 Server runtime and Prisma CLI read environment variables from `packages/server/.env`.
 
 Languages have no UI — add new ones by editing the SQLite `Language` table directly.
-
 
 ### Email (Mailgun)
 
@@ -173,4 +175,3 @@ node packages/server/dist/main.js
 Ensure environment variables are set before starting (e.g. via your process manager or host
 platform). The frontend is static — serve `packages/client/dist/` from any static host and
 proxy `/trpc` and `/api` to the Fastify process.
-

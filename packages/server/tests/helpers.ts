@@ -29,6 +29,7 @@ export function callerFor(userId: string) {
 
 export async function resetDomain() {
   await prisma.workerJob.deleteMany()
+  await prisma.spreadsheetImport.deleteMany()
   await prisma.importCardType.deleteMany()
   await prisma.importProcess.deleteMany()
   await prisma.card.deleteMany()

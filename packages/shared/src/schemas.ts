@@ -212,3 +212,17 @@ export type AnkiImportProcessView = {
   createdDeckId: string | null
   cardTypes: AnkiImportCardTypeView[]
 }
+
+export type SpreadsheetImportStatusView = {
+  jobId: string
+  importId: string | null
+  deckId: string
+  status: "UPLOADED" | "IMPORTING" | "SUCCEEDED" | "FAILED"
+  filename: string | null
+  rowCount: number
+  createdCardCount: number
+  updatedCardCount: number
+  deletedCardCount: number
+  errorSummary: string | null
+  errorDetails: string[]
+}

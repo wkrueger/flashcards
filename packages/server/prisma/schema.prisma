@@ -27,6 +27,7 @@ model User {
   subjects        Subject[]
   tags            Tag[]
   importProcesses ImportProcess[]
+  spreadsheetImports SpreadsheetImport[]
 }
 
 enum TagOwnerType {
@@ -104,6 +105,7 @@ model Deck {
   reviewStats              ReviewStat[]
   createdAt                DateTime               @default(now())
   reviewStatUniqueCards    ReviewStatUniqueCard[]
+  spreadsheetImports       SpreadsheetImport[]
 
   @@unique([userId, name])
 }
@@ -193,6 +195,7 @@ enum ImportCardTypeKind {
 enum WorkerJobType {
   ANALYZE_ANKI_IMPORT
   RUN_ANKI_IMPORT
+  RUN_DECK_SPREADSHEET_IMPORT
 }
 
 enum WorkerJobStatus {
@@ -273,6 +276,40 @@ model WorkerJob {
 
   @@index([status, availableAt, createdAt])
   @@index([processId])
+}
+
+enum SpreadsheetImportStatus {
+  UPLOADED
+  IMPORTING
+  SUCCEEDED
+  FAILED
+}
+
+model SpreadsheetImport {
+  id               String                  @id @default(cuid())
+  userId           String
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deckId           String
+  deck             Deck                    @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  status           SpreadsheetImportStatus @default(UPLOADED)
+  filename         String
+  fileSize         Int
+  storagePath      String
+  workerJobId      String?
+  rowCount         Int                     @default(0)
+  createdCardCount Int                     @default(0)
+  updatedCardCount Int                     @default(0)
+  deletedCardCount Int                     @default(0)
+  errorSummary     String?
+  errorDetailsJson String?
+  completedAt      DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([deckId, createdAt])
+  @@index([status, createdAt])
+  @@index([workerJobId])
 }
 
 model ReviewStat {

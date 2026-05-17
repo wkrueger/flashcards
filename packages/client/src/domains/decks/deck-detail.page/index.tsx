@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { Check, LoaderCircle, Pencil, Plus, Sparkles, Trash2 } from "lucide-react"
+import { Check, Download, LoaderCircle, Pencil, Plus, Sparkles, Trash2, Upload } from "lucide-react"
 import { handleTRPCError, trpc } from "../../../infra/trpc"
 import { Button, buttonVariants } from "../../../ui/button"
 import { cn } from "../../../lib/utils"
@@ -151,6 +151,20 @@ export function DeckDetailPage() {
               onSelect={() => setEditOpen(true)}
             >
               Edit deck
+            </MenuItem>
+            <MenuItem
+              icon={<Upload className="h-[18px] w-[18px]" />}
+              onSelect={() => {
+                window.location.href = `/api/decks/${deckId}/spreadsheet/export`
+              }}
+            >
+              Export spreadsheet
+            </MenuItem>
+            <MenuItem
+              icon={<Download className="h-[18px] w-[18px]" />}
+              onSelect={() => navigate({ to: "/decks/$deckId/import", params: { deckId } })}
+            >
+              Import spreadsheet
             </MenuItem>
             <MenuItem
               icon={<Trash2 className="h-[18px] w-[18px]" />}

@@ -1,4 +1,4 @@
-import { defineConfig } from "vite"
+import { defineConfig, type PluginOption } from "vite"
 import react from "@vitejs/plugin-react"
 import { tanstackRouter } from "@tanstack/router-plugin/vite"
 import { compression } from "vite-plugin-compression2"
@@ -13,10 +13,10 @@ export default defineConfig(({ command }) => ({
       autoCodeSplitting: true,
       routesDirectory: "./src/routes",
       generatedRouteTree: "./src/routeTree.gen.ts",
-    }),
-    react(),
+    }) as PluginOption,
+    react() as PluginOption,
     ...(command === "build"
-      ? [compression({ algorithms: ["gzip"], exclude: [/\.(png|webp|ico)$/] })]
+      ? [compression({ algorithms: ["gzip"], exclude: [/\.(png|webp|ico)$/] }) as PluginOption]
       : []),
   ],
   resolve: {

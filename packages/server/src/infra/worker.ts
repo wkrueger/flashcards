@@ -9,6 +9,10 @@ import {
   runAnalyzeAnkiImportJob,
   runImportAnkiImportJob,
 } from "../domains/anki-import/anki-import.service.js"
+import {
+  handleDeckSpreadsheetImportWorkerJobError,
+  runDeckSpreadsheetImportJob,
+} from "../domains/deck-spreadsheet/deck-spreadsheet.service/index.js"
 
 const WORKER_POLL_INTERVAL_MS = 1_000
 
@@ -40,6 +44,14 @@ const workerJobHandlers: Record<WorkerJobType, WorkerJobHandler> = {
     },
     async onError(prisma, job, message) {
       await handleAnkiImportWorkerJobError(prisma, job.processId, message)
+    },
+  },
+  [WorkerJobType.RUN_DECK_SPREADSHEET_IMPORT]: {
+    async run(prisma, job) {
+      await runDeckSpreadsheetImportJob(prisma, job.id)
+    },
+    async onError(prisma, job, message) {
+      await handleDeckSpreadsheetImportWorkerJobError(prisma, job.id, message)
     },
   },
 }

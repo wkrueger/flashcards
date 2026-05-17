@@ -115,6 +115,14 @@ These are durable preferences for this project — apply them on every change.
 
 Group source files by **business domain** (`domains/decks/`, `domains/cards/`, `domains/review/`, `domains/auth/`), not by technical layer. Each domain folder holds its router/service/schema (server) or page/sub-components (client). Cross-cutting plumbing (db, auth, trpc init, theme provider, generic UI primitives) lives under `infra/` or `ui/`. Don't introduce top-level `routers/`, `services/`, or `components/` buckets that span domains.
 
+### Function ordering
+
+When sorting functions within a file, place entry points first and secondary/helper functions later. This keeps the public workflow readable before implementation details.
+
+Inline helper functions when they are used only once and have fewer than 5 lines. Keep a helper only when it names an important concept, hides noisy mechanics, or is likely to be reused.
+
+Avoid files longer than 500 lines. When splitting a large file, create a directory with the exact old filename minus its extension, then move the split files into that directory.
+
 ### Prettier
 
 `.prettierrc.json` at the repo root: `printWidth: 100`, `semi: false`, otherwise defaults. Always run `pnpm format` after introducing or moving code; `pnpm format:check` is one of the quality gates. `.prettierignore` covers the Prisma generated client, `routeTree.gen.ts`, migrations, lockfile, and DB files.
