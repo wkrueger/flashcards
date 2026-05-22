@@ -279,10 +279,10 @@ export function DeckDetailPage() {
           <div className="flex items-start gap-4">
             <TopStat label="cards" value={deck.data.cardCount} />
             <TopStat label="words" value={deck.data.wordCount} />
+            <TopStat label={["cards", "seen"]} value={deck.data.cardsSeen} />
             <div className="flex-1" />
             <TopStat label={["due in", "24h"]} value={upcoming.data?.in24h} />
             <TopStat label={["due in", "2 days"]} value={upcoming.data?.in2d} />
-            <TopStat label={["due in", "1 week"]} value={upcoming.data?.in1w} />
           </div>
 
           <div className="flex flex-col gap-2">

@@ -33,6 +33,8 @@ export interface PickResult {
           subject: string
           fixationLevel: string
           inverseReviewed: boolean
+          firstSeenAt: Date | null
+          lastSeenAt: Date | null
         }
         tags: string[]
       })
@@ -52,6 +54,7 @@ type ReviewCard = Prisma.CardGetPayload<{
         subject: true
         fixationLevel: true
         inverseReviewed: true
+        firstSeenAt: true
         lastSeenAt: true
       }
     }
@@ -193,6 +196,7 @@ export async function pickNextCard({
           subject: true,
           fixationLevel: true,
           inverseReviewed: true,
+          firstSeenAt: true,
           lastSeenAt: true,
         },
       },
@@ -265,6 +269,7 @@ async function getIsInverse(
               subject: true,
               fixationLevel: true,
               inverseReviewed: true,
+              firstSeenAt: true,
               lastSeenAt: true,
             },
           },
@@ -303,6 +308,10 @@ export async function completeReview(
         where: { id: card.subjectId },
         data: { lastSeenAt: now, inverseReviewed: true },
       }),
+      prisma.subject.updateMany({
+        where: { id: card.subjectId, firstSeenAt: null },
+        data: { firstSeenAt: now },
+      }),
       prisma.deck.update({
         where: { id: card.deckId },
         data: { inverseReviewStreak: { increment: 1 } },
@@ -337,6 +346,11 @@ export async function completeReview(
         inverseReviewed: false,
         cooldownAt: cooldown,
       },
+    })
+
+    await tx.subject.updateMany({
+      where: { id: card.subjectId, firstSeenAt: null },
+      data: { firstSeenAt: now },
     })
 
     await tx.deck.update({

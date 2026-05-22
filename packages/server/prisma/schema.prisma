@@ -119,6 +119,7 @@ model Subject {
   randomKey       Int       @default(0)
   userId          String
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstSeenAt     DateTime?
   lastSeenAt      DateTime?
   timesSeen       Int       @default(0)
   fixationLevel   String    @default("1")

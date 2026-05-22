@@ -15,6 +15,7 @@ async function seedSubjects(
   specs: {
     text: string
     cooldownAt: Date
+    firstSeenAt?: Date
     lastSeenAt?: Date
     fixationLevel?: string
     inverseReviewed?: boolean
@@ -30,6 +31,7 @@ async function seedSubjects(
         subjectKey: subjectKeyFor(s.text),
         randomKey: Math.floor((index / specs.length) * SUBJECT_RANDOM_KEY_RANGE),
         cooldownAt: s.cooldownAt,
+        firstSeenAt: s.firstSeenAt,
         lastSeenAt: s.lastSeenAt,
         fixationLevel: s.fixationLevel,
         inverseReviewed: s.inverseReviewed,
@@ -464,7 +466,7 @@ describe("review domain", () => {
     expect(r.card?.tags).toEqual(["gen:meaning"])
   })
 
-  it("inverse complete only updates lastSeenAt", async () => {
+  it("inverse complete only updates seen timestamps", async () => {
     const u = await makeUser("u")
     const trpc = callerFor(u)
     const deck = await trpc.decks.create({ name: "d", inverseReviewEnabled: true })
@@ -485,6 +487,8 @@ describe("review domain", () => {
     expect(subjAfter.fixationLevel).toBe(subjBefore.fixationLevel)
     expect(subjAfter.inverseReviewed).toBe(true)
     expect(subjAfter.cooldownAt.getTime()).toBe(subjBefore.cooldownAt.getTime())
+    expect(subjBefore.firstSeenAt).toBeNull()
+    expect(subjAfter.firstSeenAt).not.toBeNull()
     expect(subjAfter.lastSeenAt).not.toBeNull()
     const deckAfter = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
     expect(deckAfter.inverseReviewStreak).toBe(1)
@@ -517,12 +521,20 @@ describe("review domain", () => {
     expect(subj.fixationLevel).toBe("3")
     expect(subj.inverseReviewed).toBe(false)
     expect(subj.timesSeen).toBe(1)
+    expect(subj.firstSeenAt).not.toBeNull()
     const deckAfter = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
     expect(deckAfter.inverseReviewStreak).toBe(0)
 
     const reloaded = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
     expect(reloaded.timesSeen).toBe(1)
     expect(reloaded.lastSeenAt).not.toBeNull()
+
+    const firstSeenAt = subj.firstSeenAt!
+    await trpc.review.complete({ cardId: card.id, chosenLevel: "2" })
+    const afterSecondReview = await prisma.subject.findFirstOrThrow({
+      where: { userId: u, subject: "Haus" },
+    })
+    expect(afterSecondReview.firstSeenAt!.getTime()).toBe(firstSeenAt.getTime())
   })
 
   it("non-inverse complete records cardMinutes and cardCount against today's deck stats", async () => {

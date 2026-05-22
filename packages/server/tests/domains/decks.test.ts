@@ -31,7 +31,7 @@ describe("decks domain", () => {
     })
   })
 
-  it("get returns deck metadata including card/word/cooldown counts", async () => {
+  it("get returns deck metadata including card/word/cooldown/seen counts", async () => {
     const u = await makeUser("u")
     const trpc = callerFor(u)
     const deck = await trpc.decks.create({ name: "d" })
@@ -39,6 +39,11 @@ describe("decks domain", () => {
     await trpc.cards.create({ deckId: deck.id, subjectText: "apple", front: "f1", back: "b1" })
     await trpc.cards.create({ deckId: deck.id, subjectText: "apple", front: "f2", back: "b2" })
     await trpc.cards.create({ deckId: deck.id, subjectText: "banana", front: "f3", back: "b3" })
+    await prisma.card.updateMany({ where: { deckId: deck.id }, data: { timesSeen: 2 } })
+    await prisma.card.updateMany({
+      where: { deckId: deck.id, front: "f3" },
+      data: { timesSeen: 0 },
+    })
 
     const subject = await prisma.subject.findFirst({ where: { subject: "apple" } })
     await prisma.subject.update({
@@ -51,6 +56,7 @@ describe("decks domain", () => {
     expect(result.cardCount).toBe(3)
     expect(result.wordCount).toBe(2)
     expect(result.cooldownCount).toBe(1)
+    expect(result.cardsSeen).toBe(2)
     expect(result.speechRecognitionEnabled).toBe(true)
   })
 
