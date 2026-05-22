@@ -1,11 +1,15 @@
 const GENERATED_FRONT_PREFIX: Record<string, string> = {
   "gen:bigger": "📖 ",
   "gen:meaning": "💡 ",
+  "review:never-seen": "🌱 ",
 }
 
 export function displayWithGeneratedTagPrefix(text: string, tags: readonly string[]) {
-  const tag = Object.keys(GENERATED_FRONT_PREFIX).find((candidate) => tags.includes(candidate))
-  return tag ? `${GENERATED_FRONT_PREFIX[tag]}${text}` : text
+  const prefix = Object.entries(GENERATED_FRONT_PREFIX)
+    .filter(([tag]) => tags.includes(tag))
+    .map(([, emoji]) => emoji)
+    .join("")
+  return prefix ? `${prefix}${text}` : text
 }
 
 export function displayFrontWithGeneratedTagPrefix(front: string, tags: readonly string[]) {

@@ -18,6 +18,7 @@ const LEVEL_COLOR: Record<FixationLevel, string> = {
   "5": "bg-green-600 hover:bg-green-700 text-white",
   "6": "bg-emerald-700 hover:bg-emerald-800 text-white",
 }
+const NEW_SUBJECT_EMOJI_WINDOW_MS = 12 * 60 * 60 * 1000
 import { trpc } from "../../infra/trpc"
 import { PageHeader } from "../../components/AppShell"
 import { Button, buttonVariants } from "../../ui/button"
@@ -196,9 +197,18 @@ export function ReviewPage({
   const inverse = next.data.inverse
   const prev = fixationLevelSchema.parse(card.subject.fixationLevel)
   const options = buttonsForPrevious(prev)
+  const firstSeenAtMs = card.subject.firstSeenAt
+    ? new Date(card.subject.firstSeenAt).getTime()
+    : null
+  const showNewSubjectEmoji =
+    card.subject.lastSeenAt === null ||
+    (firstSeenAtMs !== null &&
+      Number.isFinite(firstSeenAtMs) &&
+      Date.now() - firstSeenAtMs < NEW_SUBJECT_EMOJI_WINDOW_MS)
+  const promptTags = showNewSubjectEmoji ? [...card.tags, "review:never-seen"] : card.tags
   const promptSource = inverse
-    ? displayWithGeneratedTagPrefix(card.back, card.tags)
-    : displayFrontWithGeneratedTagPrefix(card.front, card.tags)
+    ? displayWithGeneratedTagPrefix(card.back, promptTags)
+    : displayFrontWithGeneratedTagPrefix(card.front, promptTags)
   const revealedSource = inverse ? card.front : card.back
   const speechRecognitionLocale = deck.data?.speechRecognitionLocale ?? null
   const hasSpeechRecognitionLocale =
