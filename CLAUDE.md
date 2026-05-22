@@ -101,12 +101,6 @@ After editing `prisma/schema.prisma`, run `pnpm db:migrate`. After editing `rout
 
 `pnpm typecheck && pnpm lint && pnpm test && pnpm test:e2e` — that's the full suite. The e2e test rebuilds an isolated DB at `packages/server/prisma/e2e.db`; delete it before re-running if it gets sticky.
 
-## Open / deferred
-
-- **Stage 2 (AI card generation)** from the spec is intentionally not built. When it lands it will go in a new `domains/ai/` (server) + `domains/cards/card-generate.page.tsx` (client) per the domain-grouping rule.
-- No admin UI for languages — the spec says edit SQLite directly.
-- No password reset flow / email verification (better-auth supports it; not wired up).
-
 ## Project conventions (must follow)
 
 These are durable preferences for this project — apply them on every change.
