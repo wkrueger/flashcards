@@ -151,6 +151,73 @@ describe("cards domain", () => {
     expect(cardTags.map((cardTag) => cardTag.tag.name)).toEqual(["building"])
   })
 
+  it("deletes a subject when its last card is deleted", async () => {
+    const userId = await makeUser("alice")
+    const trpc = callerFor(userId)
+    const deck = await trpc.decks.create({ name: "German" })
+
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "front 1",
+      back: "back 1",
+    })
+
+    await trpc.cards.delete({ id: card.id })
+
+    const subjects = await prisma.subject.findMany({ where: { userId } })
+    expect(subjects).toHaveLength(0)
+  })
+
+  it("keeps a subject when one of multiple cards is deleted", async () => {
+    const userId = await makeUser("alice")
+    const trpc = callerFor(userId)
+    const deck = await trpc.decks.create({ name: "German" })
+
+    const first = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "front 1",
+      back: "back 1",
+    })
+    await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "front 2",
+      back: "back 2",
+    })
+
+    await trpc.cards.delete({ id: first.id })
+
+    const subjects = await prisma.subject.findMany({ where: { userId } })
+    expect(subjects).toHaveLength(1)
+    expect(subjects[0]!.subject).toBe("Haus")
+  })
+
+  it("deletes the previous subject when its last card moves to another subject", async () => {
+    const userId = await makeUser("alice")
+    const trpc = callerFor(userId)
+    const deck = await trpc.decks.create({ name: "German" })
+
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "front 1",
+      back: "back 1",
+    })
+
+    await trpc.cards.update({
+      id: card.id,
+      subjectText: "Baum",
+    })
+
+    const subjects = await prisma.subject.findMany({
+      where: { userId },
+      orderBy: { subject: "asc" },
+    })
+    expect(subjects.map((subject) => subject.subject)).toEqual(["Baum"])
+  })
+
   it("trims subjects and treats different casing as the same subject", async () => {
     const userId = await makeUser("alice")
     const trpc = callerFor(userId)

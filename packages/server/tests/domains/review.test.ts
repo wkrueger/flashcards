@@ -169,6 +169,44 @@ describe("review domain", () => {
     )
   })
 
+  it("cleans up empty deck subjects and retries when the chosen subject has no cards", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d" })
+    const past = (mins: number) => new Date(Date.now() - mins * 60_000)
+
+    await prisma.subject.create({
+      data: {
+        userId: u,
+        deckId: deck.id,
+        subject: "empty",
+        subjectKey: subjectKeyFor("empty"),
+        randomKey: 0,
+        cooldownAt: past(10),
+        lastSeenAt: past(1),
+      },
+    })
+    await seedSubjects(u, deck.id, [
+      {
+        text: "reviewable",
+        cooldownAt: past(10),
+        lastSeenAt: past(5),
+      },
+    ])
+
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      rng: () => 0,
+    })
+
+    expect(r.card?.subject.subject).toBe("reviewable")
+    await expect(
+      prisma.subject.findFirst({ where: { userId: u, deckId: deck.id, subject: "empty" } })
+    ).resolves.toBeNull()
+  })
+
   it("free mode picks even when all subjects are on cooldown", async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({ name: "d" })

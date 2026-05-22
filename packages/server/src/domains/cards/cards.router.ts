@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server"
 import { Prisma } from "../../generated/prisma/client.js"
 import { createCardInput, idInput, updateCardInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
-import { upsertSubjectByText } from "../subjects/subjects.service.js"
+import { deleteSubjectIfEmpty, upsertSubjectByText } from "../subjects/subjects.service.js"
 import { hashFront, normalizeCardTags, tagOwnershipFor } from "./cards.service.js"
 
 type Db = import("../../generated/prisma/client.js").PrismaClient
@@ -83,28 +83,25 @@ export const cardsRouter = router({
 
   create: protectedProcedure.input(createCardInput).mutation(async ({ ctx, input }) => {
     await ownDeck(ctx.prisma, ctx.user.id, input.deckId)
-    const subject = await upsertSubjectByText(
-      ctx.prisma,
-      ctx.user.id,
-      input.deckId,
-      input.subjectText
-    )
     const frontHash = hashFront(input.front)
     const tagLinks = buildTagLinks(ctx.user.id, input.tags)
     try {
-      const card = await ctx.prisma.card.create({
-        data: {
-          deckId: input.deckId,
-          subjectId: subject.id,
-          front: input.front,
-          frontHash,
-          back: input.back,
-          genTemplate: input.genTemplate ?? null,
-          cardTags: {
-            create: tagLinks,
+      const card = await ctx.prisma.$transaction(async (tx) => {
+        const subject = await upsertSubjectByText(tx, ctx.user.id, input.deckId, input.subjectText)
+        return tx.card.create({
+          data: {
+            deckId: input.deckId,
+            subjectId: subject.id,
+            front: input.front,
+            frontHash,
+            back: input.back,
+            genTemplate: input.genTemplate ?? null,
+            cardTags: {
+              create: tagLinks,
+            },
           },
-        },
-        include: cardInclude,
+          include: cardInclude,
+        })
       })
       return serializeCard(card)
     } catch (err) {
@@ -126,15 +123,6 @@ export const cardsRouter = router({
       data.frontHash = hashFront(input.front)
     }
     if (input.back !== undefined) data.back = input.back
-    if (input.subjectText !== undefined) {
-      const subject = await upsertSubjectByText(
-        ctx.prisma,
-        ctx.user.id,
-        card.deckId,
-        input.subjectText
-      )
-      data.subject = { connect: { id: subject.id } }
-    }
     if (input.tags !== undefined) {
       data.cardTags = {
         deleteMany: {},
@@ -142,10 +130,21 @@ export const cardsRouter = router({
       }
     }
     try {
-      const updated = await ctx.prisma.card.update({
-        where: { id: card.id },
-        data,
-        include: cardInclude,
+      const updated = await ctx.prisma.$transaction(async (tx) => {
+        let previousSubjectId: string | undefined
+        if (input.subjectText !== undefined) {
+          const subject = await upsertSubjectByText(tx, ctx.user.id, card.deckId, input.subjectText)
+          data.subject = { connect: { id: subject.id } }
+          if (subject.id !== card.subjectId) previousSubjectId = card.subjectId
+        }
+
+        const updatedCard = await tx.card.update({
+          where: { id: card.id },
+          data,
+          include: cardInclude,
+        })
+        if (previousSubjectId) await deleteSubjectIfEmpty(tx, previousSubjectId)
+        return updatedCard
       })
       return serializeCard(updated)
     } catch (err) {
@@ -161,7 +160,10 @@ export const cardsRouter = router({
 
   delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {
     const card = await ownCard(ctx.prisma, ctx.user.id, input.id)
-    await ctx.prisma.card.delete({ where: { id: card.id } })
+    await ctx.prisma.$transaction(async (tx) => {
+      await tx.card.delete({ where: { id: card.id } })
+      await deleteSubjectIfEmpty(tx, card.subjectId)
+    })
     return { ok: true }
   }),
 })

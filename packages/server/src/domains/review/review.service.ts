@@ -1,7 +1,10 @@
 import type { PrismaClient } from "../../generated/prisma/client.js"
 import { Prisma } from "../../generated/prisma/client.js"
 import { COOLDOWN_MS, fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
-import { randomSubjectKeyFromRng } from "../subjects/subjects.service.js"
+import {
+  deleteEmptySubjectsForDeck,
+  randomSubjectKeyFromRng,
+} from "../subjects/subjects.service.js"
 
 const REVIEW_STATS_RETENTION_DAYS = 15
 
@@ -19,6 +22,7 @@ export interface PickArgs {
   now?: Date
   rng?: () => number
   inverseRng?: () => number
+  cleanupRetried?: boolean
 }
 
 export interface PickResult {
@@ -92,6 +96,7 @@ export async function pickNextCard({
   now = new Date(),
   rng = Math.random,
   inverseRng = Math.random,
+  cleanupRetried = false,
 }: PickArgs): Promise<PickResult> {
   const deck = deckId
     ? await prisma.deck.findFirst({
@@ -202,6 +207,21 @@ export async function pickNextCard({
   })
 
   if (!selectedCard) {
+    if (deckId && !cleanupRetried) {
+      await deleteEmptySubjectsForDeck(prisma, userId, deckId)
+      return pickNextCard({
+        prisma,
+        userId,
+        deckId,
+        includeOnCooldown,
+        excludeCardId,
+        subjectId,
+        now,
+        rng,
+        inverseRng,
+        cleanupRetried: true,
+      })
+    }
     return { card: null, inverse: false }
   }
 
