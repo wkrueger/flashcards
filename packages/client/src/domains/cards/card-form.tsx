@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "../../ui/button"
+import { Card, CardContent } from "../../ui/card"
 import { Label } from "../../ui/label"
 import { Textarea } from "../../ui/textarea"
 import { SubjectAutocomplete } from "./subject-autocomplete"
@@ -29,6 +30,12 @@ export function CardForm({
   const [front, setFront] = useState(initial.front)
   const [back, setBack] = useState(initial.back)
 
+  useEffect(() => {
+    setSubjectText(initial.subjectText)
+    setFront(initial.front)
+    setBack(initial.back)
+  }, [initial.subjectText, initial.front, initial.back])
+
   return (
     <form
       className="flex flex-1 flex-col gap-3"
@@ -41,30 +48,43 @@ export function CardForm({
         })
       }}
     >
-      <div className="space-y-1">
-        <Label>Subject</Label>
-        <SubjectAutocomplete deckId={deckId} value={subjectText} onChange={setSubjectText} />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="front">Front (markdown)</Label>
-        <Textarea
-          id="front"
-          rows={4}
-          value={front}
-          onChange={(e) => setFront(e.target.value)}
-          required
-        />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="back">Back (markdown)</Label>
-        <Textarea
-          id="back"
-          rows={4}
-          value={back}
-          onChange={(e) => setBack(e.target.value)}
-          required
-        />
-      </div>
+      <Card>
+        <CardContent className="space-y-4 p-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold uppercase text-muted-foreground">Subject</Label>
+            <SubjectAutocomplete deckId={deckId} value={subjectText} onChange={setSubjectText} />
+          </div>
+          <div className="space-y-1.5 border-t pt-4">
+            <Label
+              htmlFor="front"
+              className="text-xs font-semibold uppercase text-muted-foreground"
+            >
+              Front (markdown)
+            </Label>
+            <Textarea
+              id="front"
+              rows={4}
+              value={front}
+              onChange={(e) => setFront(e.target.value)}
+              className="min-h-32 resize-y text-lg leading-7"
+              required
+            />
+          </div>
+          <div className="space-y-1.5 border-t pt-4">
+            <Label htmlFor="back" className="text-xs font-semibold uppercase text-muted-foreground">
+              Back (markdown)
+            </Label>
+            <Textarea
+              id="back"
+              rows={4}
+              value={back}
+              onChange={(e) => setBack(e.target.value)}
+              className="min-h-32 resize-y text-lg leading-7"
+              required
+            />
+          </div>
+        </CardContent>
+      </Card>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button
         type="submit"

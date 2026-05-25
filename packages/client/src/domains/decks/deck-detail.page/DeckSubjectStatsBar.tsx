@@ -67,14 +67,14 @@ export function DeckSubjectStatsBar({
         label: "due",
         count: clampedDue,
         percent: percentOf(clampedDue, subjectCount),
-        priority: 1,
+        priority: 2,
       },
       {
         id: "unseen",
         label: "unseen",
         count: clampedUnseen,
         percent: percentOf(clampedUnseen, subjectCount),
-        priority: 2,
+        priority: 1,
       },
     ]
 

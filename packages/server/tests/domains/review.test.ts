@@ -128,6 +128,23 @@ describe("review domain", () => {
     expect(r2.card).toBeNull()
   })
 
+  it("returns a specific card by id even when it is on cooldown", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "f",
+      back: "b",
+    })
+
+    await trpc.review.complete({ cardId: card.id, chosenLevel: "3" })
+
+    const r = await trpc.review.next({ mode: "normal", deckId: deck.id, cardId: card.id })
+    expect(r.card?.id).toBe(card.id)
+  })
+
   it("normal mode returns null when nothing due", async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({ name: "d" })

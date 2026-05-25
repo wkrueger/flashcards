@@ -19,6 +19,7 @@ export interface PickArgs {
   includeOnCooldown: boolean
   excludeCardId?: string
   subjectId?: string
+  cardId?: string
   now?: Date
   rng?: () => number
   inverseRng?: () => number
@@ -93,6 +94,7 @@ export async function pickNextCard({
   includeOnCooldown,
   excludeCardId,
   subjectId,
+  cardId,
   now = new Date(),
   rng = Math.random,
   inverseRng = Math.random,
@@ -106,6 +108,18 @@ export async function pickNextCard({
     : null
   const inverseEnabled = Boolean(deck?.inverseReviewEnabled)
   const inverseReviewStreak = deck?.inverseReviewStreak ?? 0
+
+  if (cardId) {
+    return pickSpecificCard({
+      prisma,
+      userId,
+      deckId,
+      cardId,
+      inverseEnabled,
+      inverseReviewStreak,
+      inverseRng,
+    })
+  }
 
   const pinnedToSubject = Boolean(subjectId)
   const subjectWhere: Prisma.SubjectWhereInput = { userId }
@@ -238,6 +252,67 @@ export async function pickNextCard({
       selectedCard = cardFallback
     }
   }
+  const { cardTags, ...rest } = selectedCard
+  const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
+  return { card: { ...rest, tags } as PickResult["card"], inverse: isInverse }
+}
+
+async function pickSpecificCard({
+  prisma,
+  userId,
+  deckId,
+  cardId,
+  inverseEnabled,
+  inverseReviewStreak,
+  inverseRng,
+}: {
+  prisma: PrismaClient
+  userId: string
+  deckId?: string
+  cardId: string
+  inverseEnabled: boolean
+  inverseReviewStreak: number
+  inverseRng: () => number
+}): Promise<PickResult> {
+  let selectedCard = await prisma.card.findFirst({
+    where: {
+      id: cardId,
+      deck: { userId },
+      ...(deckId ? { deckId } : {}),
+    },
+    include: {
+      subject: {
+        select: {
+          id: true,
+          subject: true,
+          fixationLevel: true,
+          inverseReviewed: true,
+          firstSeenAt: true,
+          lastSeenAt: true,
+        },
+      },
+      cardTags: {
+        include: { tag: true },
+      },
+    },
+  })
+
+  if (!selectedCard) return { card: null, inverse: false }
+
+  let isInverse = false
+  if (inverseEnabled) {
+    const { isInverse: isInverseResp, cardFallback } = await getIsInverse(
+      prisma,
+      selectedCard,
+      inverseReviewStreak,
+      inverseRng
+    )
+    isInverse = isInverseResp
+    if (cardFallback) {
+      selectedCard = cardFallback
+    }
+  }
+
   const { cardTags, ...rest } = selectedCard
   const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
   return { card: { ...rest, tags } as PickResult["card"], inverse: isInverse }

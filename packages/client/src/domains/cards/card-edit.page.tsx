@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams, useRouter } from "@tanstack/react-router"
+import { Link, useNavigate, useParams, useRouter, useSearch } from "@tanstack/react-router"
 import { Layers, Trash2 } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { CardForm } from "./card-form"
@@ -12,6 +12,7 @@ export function CardEditPage() {
   })
   const navigate = useNavigate()
   const router = useRouter()
+  const search = useSearch({ from: "/(app)/decks/$deckId/cards/$cardId/edit" })
   const utils = trpc.useUtils()
   const card = trpc.cards.get.useQuery({ id: cardId })
 
@@ -21,9 +22,19 @@ export function CardEditPage() {
   }
 
   const update = trpc.cards.update.useMutation({
-    onSuccess: () => {
+    onSuccess: (updatedCard) => {
+      utils.cards.get.setData({ id: cardId }, updatedCard)
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.review.next.invalidate()
+      if (search.returnToReviewCard) {
+        navigate({
+          to: "/decks/$deckId/review/cards/$cardId",
+          params: { deckId, cardId },
+          search: { mode: search.reviewMode ?? "normal" },
+          replace: true,
+        })
+        return
+      }
       goBack()
     },
   })

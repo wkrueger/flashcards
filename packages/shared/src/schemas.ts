@@ -74,6 +74,7 @@ export const reviewNextInput = z.object({
   mode: reviewModeSchema,
   excludeCardId: id.optional(),
   subjectId: id.optional(),
+  cardId: id.optional(),
 })
 
 export const reviewCompleteInput = z

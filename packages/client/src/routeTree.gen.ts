@@ -30,6 +30,7 @@ import { Route as appDecksDeckIdReviewFreeRouteImport } from './routes/(app)/dec
 import { Route as appDecksDeckIdCardsNewRouteImport } from './routes/(app)/decks.$deckId.cards.new'
 import { Route as appDecksDeckIdCardsGenerateRouteImport } from './routes/(app)/decks.$deckId.cards.generate'
 import { Route as appDecksDeckIdReviewSubjectsSubjectIdRouteImport } from './routes/(app)/decks.$deckId.review.subjects.$subjectId'
+import { Route as appDecksDeckIdReviewCardsCardIdRouteImport } from './routes/(app)/decks.$deckId.review.cards.$cardId'
 import { Route as appDecksDeckIdCardsCardIdEditRouteImport } from './routes/(app)/decks.$deckId.cards.$cardId.edit'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -141,6 +142,12 @@ const appDecksDeckIdReviewSubjectsSubjectIdRoute =
     path: '/subjects/$subjectId',
     getParentRoute: () => appDecksDeckIdReviewRoute,
   } as any)
+const appDecksDeckIdReviewCardsCardIdRoute =
+  appDecksDeckIdReviewCardsCardIdRouteImport.update({
+    id: '/cards/$cardId',
+    path: '/cards/$cardId',
+    getParentRoute: () => appDecksDeckIdReviewRoute,
+  } as any)
 const appDecksDeckIdCardsCardIdEditRoute =
   appDecksDeckIdCardsCardIdEditRouteImport.update({
     id: '/cards/$cardId/edit',
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
   '/decks/$deckId/review/': typeof appDecksDeckIdReviewIndexRoute
   '/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
+  '/decks/$deckId/review/cards/$cardId': typeof appDecksDeckIdReviewCardsCardIdRoute
   '/decks/$deckId/review/subjects/$subjectId': typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
 }
 export interface FileRoutesByTo {
@@ -189,6 +197,7 @@ export interface FileRoutesByTo {
   '/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
   '/decks/$deckId/review': typeof appDecksDeckIdReviewIndexRoute
   '/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
+  '/decks/$deckId/review/cards/$cardId': typeof appDecksDeckIdReviewCardsCardIdRoute
   '/decks/$deckId/review/subjects/$subjectId': typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
 }
 export interface FileRoutesById {
@@ -214,6 +223,7 @@ export interface FileRoutesById {
   '/(app)/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
   '/(app)/decks/$deckId/review/': typeof appDecksDeckIdReviewIndexRoute
   '/(app)/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
+  '/(app)/decks/$deckId/review/cards/$cardId': typeof appDecksDeckIdReviewCardsCardIdRoute
   '/(app)/decks/$deckId/review/subjects/$subjectId': typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
 }
 export interface FileRouteTypes {
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId/subjects/$subjectId'
     | '/decks/$deckId/review/'
     | '/decks/$deckId/cards/$cardId/edit'
+    | '/decks/$deckId/review/cards/$cardId'
     | '/decks/$deckId/review/subjects/$subjectId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId/subjects/$subjectId'
     | '/decks/$deckId/review'
     | '/decks/$deckId/cards/$cardId/edit'
+    | '/decks/$deckId/review/cards/$cardId'
     | '/decks/$deckId/review/subjects/$subjectId'
   id:
     | '__root__'
@@ -283,6 +295,7 @@ export interface FileRouteTypes {
     | '/(app)/decks/$deckId/subjects/$subjectId'
     | '/(app)/decks/$deckId/review/'
     | '/(app)/decks/$deckId/cards/$cardId/edit'
+    | '/(app)/decks/$deckId/review/cards/$cardId'
     | '/(app)/decks/$deckId/review/subjects/$subjectId'
   fileRoutesById: FileRoutesById
 }
@@ -444,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appDecksDeckIdReviewSubjectsSubjectIdRouteImport
       parentRoute: typeof appDecksDeckIdReviewRoute
     }
+    '/(app)/decks/$deckId/review/cards/$cardId': {
+      id: '/(app)/decks/$deckId/review/cards/$cardId'
+      path: '/cards/$cardId'
+      fullPath: '/decks/$deckId/review/cards/$cardId'
+      preLoaderRoute: typeof appDecksDeckIdReviewCardsCardIdRouteImport
+      parentRoute: typeof appDecksDeckIdReviewRoute
+    }
     '/(app)/decks/$deckId/cards/$cardId/edit': {
       id: '/(app)/decks/$deckId/cards/$cardId/edit'
       path: '/cards/$cardId/edit'
@@ -457,12 +477,14 @@ declare module '@tanstack/react-router' {
 interface appDecksDeckIdReviewRouteChildren {
   appDecksDeckIdReviewFreeRoute: typeof appDecksDeckIdReviewFreeRoute
   appDecksDeckIdReviewIndexRoute: typeof appDecksDeckIdReviewIndexRoute
+  appDecksDeckIdReviewCardsCardIdRoute: typeof appDecksDeckIdReviewCardsCardIdRoute
   appDecksDeckIdReviewSubjectsSubjectIdRoute: typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
 }
 
 const appDecksDeckIdReviewRouteChildren: appDecksDeckIdReviewRouteChildren = {
   appDecksDeckIdReviewFreeRoute: appDecksDeckIdReviewFreeRoute,
   appDecksDeckIdReviewIndexRoute: appDecksDeckIdReviewIndexRoute,
+  appDecksDeckIdReviewCardsCardIdRoute: appDecksDeckIdReviewCardsCardIdRoute,
   appDecksDeckIdReviewSubjectsSubjectIdRoute:
     appDecksDeckIdReviewSubjectsSubjectIdRoute,
 }

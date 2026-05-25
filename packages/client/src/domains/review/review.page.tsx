@@ -34,9 +34,11 @@ import { SpeechRecognitionCard, type SpeechRecognitionCardHandle } from "./speec
 export function ReviewPage({
   mode,
   initialSubjectId,
+  initialCardId,
 }: {
   mode: ReviewMode
   initialSubjectId?: string
+  initialCardId?: string
 }) {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
   const navigate = useNavigate()
@@ -45,9 +47,10 @@ export function ReviewPage({
   const [speechTranscript, setSpeechTranscript] = useState("")
   const [initialConsumed, setInitialConsumed] = useState(false)
   const speechRecognitionRef = useRef<SpeechRecognitionCardHandle>(null)
-  const subjectId = initialConsumed ? undefined : initialSubjectId
-  const routeScopeKey = `${deckId}:${mode}:${initialSubjectId ?? ""}`
-  const queryScopeKey = `${deckId}:${mode}:${subjectId ?? ""}`
+  const specificCardId = initialConsumed ? undefined : initialCardId
+  const subjectId = initialConsumed || specificCardId ? undefined : initialSubjectId
+  const routeScopeKey = `${deckId}:${mode}:${initialSubjectId ?? ""}:${initialCardId ?? ""}`
+  const queryScopeKey = `${deckId}:${mode}:${subjectId ?? ""}:${specificCardId ?? ""}`
   const [enteredQueryScopeAt, setEnteredQueryScopeAt] = useState(() => Date.now())
 
   const deck = trpc.decks.get.useQuery(
@@ -55,7 +58,7 @@ export function ReviewPage({
     { refetchOnWindowFocus: false, refetchOnMount: false, staleTime: 5 * 60 * 1000 }
   )
   const next = trpc.review.next.useQuery(
-    { deckId, mode, subjectId },
+    { deckId, mode, subjectId, cardId: specificCardId },
     { refetchOnWindowFocus: false, refetchOnMount: "always", staleTime: 0 }
   )
   const currentCardId = next.data?.card?.id
@@ -78,7 +81,7 @@ export function ReviewPage({
   const complete = trpc.review.complete.useMutation({
     onMutate: () => {
       if (!currentCardId) return
-      if (initialSubjectId && !initialConsumed) return
+      if ((initialSubjectId || initialCardId) && !initialConsumed) return
       const prefetched = utils.review.next.getData({
         deckId,
         mode,
@@ -97,7 +100,7 @@ export function ReviewPage({
       utils.decks.upcomingDueCounts.invalidate({ id: deckId })
       utils.decks.reviewStats.invalidate({ id: deckId })
 
-      if (initialSubjectId && !initialConsumed) {
+      if ((initialSubjectId || initialCardId) && !initialConsumed) {
         const freshNext = await utils.review.next.fetch({
           deckId,
           mode,
@@ -139,7 +142,7 @@ export function ReviewPage({
   useEffect(() => {
     if (!currentCardId) return
     if (complete.isPending) return
-    if (initialSubjectId && !initialConsumed) return
+    if ((initialSubjectId || initialCardId) && !initialConsumed) return
     utils.review.next.prefetch({ deckId, mode, subjectId, excludeCardId: currentCardId })
   }, [
     currentCardId,
@@ -149,6 +152,7 @@ export function ReviewPage({
     utils,
     complete.isPending,
     initialSubjectId,
+    initialCardId,
     initialConsumed,
   ])
 
@@ -253,6 +257,7 @@ export function ReviewPage({
               navigate({
                 to: "/decks/$deckId/cards/$cardId/edit",
                 params: { deckId, cardId: card.id },
+                search: { returnToReviewCard: true, reviewMode: mode },
               })
             }
           >

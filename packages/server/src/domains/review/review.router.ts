@@ -12,6 +12,7 @@ export const reviewRouter = router({
       includeOnCooldown: input.mode === "free",
       excludeCardId: input.excludeCardId,
       subjectId: input.subjectId,
+      cardId: input.cardId,
     })
   }),
 
