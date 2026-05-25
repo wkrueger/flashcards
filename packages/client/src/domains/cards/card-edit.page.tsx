@@ -15,8 +15,22 @@ export function CardEditPage() {
   const search = useSearch({ from: "/(app)/decks/$deckId/cards/$cardId/edit" })
   const utils = trpc.useUtils()
   const card = trpc.cards.get.useQuery({ id: cardId })
+  const rawSearch = new URLSearchParams(window.location.search)
+  const returnToReviewCard =
+    search.returnToReviewCard || rawSearch.get("returnToReviewCard") === "true"
+  const reviewMode =
+    search.reviewMode ?? (rawSearch.get("reviewMode") === "free" ? "free" : "normal")
 
   const goBack = () => {
+    if (returnToReviewCard) {
+      navigate({
+        to: "/decks/$deckId/review/cards/$cardId",
+        params: { deckId, cardId },
+        search: { mode: reviewMode },
+        replace: true,
+      })
+      return
+    }
     if (window.history.length > 1) router.history.back()
     else navigate({ to: "/decks/$deckId", params: { deckId } })
   }
@@ -26,11 +40,11 @@ export function CardEditPage() {
       utils.cards.get.setData({ id: cardId }, updatedCard)
       utils.cards.listByDeck.invalidate({ id: deckId })
       utils.review.next.invalidate()
-      if (search.returnToReviewCard) {
+      if (returnToReviewCard) {
         navigate({
           to: "/decks/$deckId/review/cards/$cardId",
           params: { deckId, cardId },
-          search: { mode: search.reviewMode ?? "normal" },
+          search: { mode: reviewMode },
           replace: true,
         })
         return

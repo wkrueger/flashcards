@@ -161,20 +161,93 @@ test("signup → deck → card → review → free review → edit → logout", 
   await expect(page.getByTestId("speech-recognition-transcript")).toContainText("Das Haus ist groß")
   await expect(page.getByText(/The.*house.*is big/)).toBeVisible()
 
-  // Edit from review screen.
-  await page.getByRole("button", { name: "Edit card" }).click()
-  await page.getByRole("textbox", { name: "Back" }).fill("The **house** is very big.")
-  await page.getByRole("button", { name: "Save" }).click()
-  await expect(page).toHaveURL(/\/decks\/.+\/review\/cards\/.+\?mode=free$/)
-  await expect(page.getByText(/Haus.*ist groß/)).toBeVisible()
-  await expect(page.getByText(/The.*house.*is very big/)).not.toBeVisible()
-  await page.getByRole("button", { name: "Reveal" }).click()
-  await expect(page.getByText(/The.*house.*is very big/)).toBeVisible()
-
   // Drop auth state and verify the app redirects anonymous users back to login.
   await page.context().clearCookies()
   await page.goto("/")
   await expect(page).toHaveURL(/\/login$/)
   await expect(page.getByRole("heading", { name: "flashcards" })).toBeVisible()
   await expect(page.getByRole("button", { name: "Log in" })).toBeVisible()
+})
+
+test("review edit exits return to the same card", async ({ page }) => {
+  const email = `e2e-review-edit-${Date.now()}@test.local`
+  const password = "passw0rd!"
+
+  await page.addInitScript(() => {
+    type SpeechRecognitionMockWindow = Window &
+      typeof globalThis & {
+        SpeechRecognition?: unknown
+        webkitSpeechRecognition?: unknown
+      }
+
+    class MockSpeechRecognition {
+      static async available() {
+        return "available"
+      }
+    }
+
+    const speechWindow = window as SpeechRecognitionMockWindow
+    speechWindow.SpeechRecognition = MockSpeechRecognition
+    speechWindow.webkitSpeechRecognition = MockSpeechRecognition
+  })
+
+  await page.goto("/signup")
+  await page.getByLabel("Name").fill("E2E Review Edit")
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Sign up" }).click()
+  await page.getByRole("link", { name: "Back to log in" }).click()
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Log in" }).click()
+
+  await page.getByRole("button", { name: "New deck" }).click()
+  await page.getByPlaceholder("e.g. German A1").fill("German Review Edit")
+  const studyLanguageSelect = page.locator("select").nth(1)
+  const deutschLanguageId = await studyLanguageSelect
+    .locator("option", { hasText: "Deutsch" })
+    .getAttribute("value")
+  if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
+  await studyLanguageSelect.selectOption(deutschLanguageId)
+  await page.getByRole("button", { name: "Create" }).click()
+  await page.getByRole("link", { name: /German Review Edit/ }).click()
+
+  await page.getByRole("button", { name: "Menu" }).click()
+  await page.getByRole("button", { name: "Add card" }).click()
+  await page.getByRole("textbox", { name: "Subject" }).fill("Alpha")
+  await page.getByRole("textbox", { name: "Front" }).fill("Alpha front.")
+  await page.getByRole("textbox", { name: "Back" }).fill("Alpha back.")
+  await page.getByRole("button", { name: "Create" }).click()
+
+  await page.getByRole("button", { name: "Menu" }).click()
+  await page.getByRole("button", { name: "Add card" }).click()
+  await page.getByRole("textbox", { name: "Subject" }).fill("Beta")
+  await page.getByRole("textbox", { name: "Front" }).fill("Beta front.")
+  await page.getByRole("textbox", { name: "Back" }).fill("Beta back.")
+  await page.getByRole("button", { name: "Create" }).click()
+
+  await expect(page.getByTestId("deck-subject-stats")).toContainText("2 subjects, 2 cards")
+  await page.getByRole("link", { name: /Review 2 due/ }).click()
+
+  const alphaVisible = await page.getByText("Alpha front.").isVisible()
+  const currentFront = alphaVisible ? "Alpha front." : "Beta front."
+  const updatedBack = alphaVisible ? "Alpha back updated." : "Beta back updated."
+
+  await page.getByRole("button", { name: "Edit card" }).click()
+
+  const editUrl = page.url()
+  const cardId = editUrl.match(/\/cards\/([^/]+)\/edit/)?.[1]
+  if (!cardId) throw new Error(`Could not read card id from ${editUrl}`)
+
+  await page.locator('button[aria-label="Back"]').click()
+  await expect(page).toHaveURL(new RegExp(`/decks/[^/]+/review/cards/${cardId}\\?mode=normal$`))
+  await expect(page.getByText(currentFront)).toBeVisible()
+
+  await page.getByRole("button", { name: "Edit card" }).click()
+  await page.getByRole("textbox", { name: "Back" }).fill(updatedBack)
+  await page.getByRole("button", { name: "Save" }).click()
+  await expect(page).toHaveURL(new RegExp(`/decks/[^/]+/review/cards/${cardId}\\?mode=normal$`))
+  await expect(page.getByText(currentFront)).toBeVisible()
+  await page.getByRole("button", { name: "Reveal" }).click()
+  await expect(page.getByText(updatedBack)).toBeVisible()
 })

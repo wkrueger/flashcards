@@ -9,8 +9,7 @@ type Search = {
 export const Route = createFileRoute("/(app)/decks/$deckId/cards/$cardId/edit")({
   validateSearch: (search: Record<string, unknown>): Search => {
     return {
-      returnToReviewCard:
-        search.returnToReviewCard === true || search.returnToReviewCard === "true",
+      returnToReviewCard: search.returnToReviewCard === true,
       reviewMode:
         search.reviewMode === "normal" || search.reviewMode === "free"
           ? search.reviewMode
