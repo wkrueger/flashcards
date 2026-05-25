@@ -1,5 +1,4 @@
 import { createFileRoute, useParams, useSearch } from "@tanstack/react-router"
-import { reviewModeSchema } from "@cards/shared"
 import { ReviewPage } from "../../domains/review/review.page"
 
 type Search = {
@@ -14,8 +13,7 @@ function CardReviewRoute() {
 
 export const Route = createFileRoute("/(app)/decks/$deckId/review/cards/$cardId")({
   validateSearch: (search: Record<string, unknown>): Search => {
-    const mode = reviewModeSchema.safeParse(search.mode)
-    return { mode: mode.success ? mode.data : "normal" }
+    return { mode: search.mode === "free" ? "free" : "normal" }
   },
   component: CardReviewRoute,
 })

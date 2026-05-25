@@ -5,10 +5,10 @@ import {
   buttonsForPrevious,
   COOLDOWN_LABEL,
   FIXATION_EMOJI,
+  FIXATION_LEVELS,
   type FixationLevel,
-  fixationLevelSchema,
-  type ReviewMode,
-} from "@cards/shared"
+} from "@cards/shared/fixation"
+import { type ReviewMode } from "@cards/shared"
 
 const LEVEL_COLOR: Record<FixationLevel, string> = {
   "1": "bg-red-500 hover:bg-red-600 text-white",
@@ -199,7 +199,9 @@ export function ReviewPage({
 
   const card = next.data.card
   const inverse = next.data.inverse
-  const prev = fixationLevelSchema.parse(card.subject.fixationLevel)
+  const prev = FIXATION_LEVELS.includes(card.subject.fixationLevel as FixationLevel)
+    ? (card.subject.fixationLevel as FixationLevel)
+    : "1"
   const options = buttonsForPrevious(prev)
   const firstSeenAtMs = card.subject.firstSeenAt
     ? new Date(card.subject.firstSeenAt).getTime()

@@ -1,5 +1,7 @@
 import { z } from "zod"
-import { fixationLevelSchema } from "./fixation.js"
+import { FIXATION_LEVELS } from "./fixation.js"
+
+export const fixationLevelSchema = z.enum(FIXATION_LEVELS)
 
 export const reviewModeSchema = z.enum(["normal", "free"])
 export type ReviewMode = z.infer<typeof reviewModeSchema>

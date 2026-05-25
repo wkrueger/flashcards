@@ -1,9 +1,5 @@
-import { z } from "zod"
-
 export const FIXATION_LEVELS = ["1", "2", "3", "4", "5", "6"] as const
 export type FixationLevel = (typeof FIXATION_LEVELS)[number]
-
-export const fixationLevelSchema = z.enum(FIXATION_LEVELS)
 
 const MIN = 60_000
 const HOUR = 60 * MIN
