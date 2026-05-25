@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { cn } from "../../../lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../../ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "../../../ui/popover"
 
 type MarkerId = "due" | "unseen" | "24h" | "48h"
 
@@ -156,8 +156,8 @@ export function DeckSubjectStatsBar({
   })
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
+    <Popover>
+      <PopoverTrigger asChild>
         <button
           ref={containerRef}
           type="button"
@@ -220,11 +220,13 @@ export function DeckSubjectStatsBar({
             {formatCount(subjectCount, "subject")}, {formatCount(cardCount, "card")}
           </span>
         </button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Deck stats</DialogTitle>
-        </DialogHeader>
+      </PopoverTrigger>
+      <PopoverContent align="center" sideOffset={10} className="group w-72 p-4">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 hidden h-3 w-3 -translate-x-1/2 rotate-45 bg-popover group-data-[side=bottom]:-top-[7px] group-data-[side=bottom]:block group-data-[side=bottom]:border-l group-data-[side=bottom]:border-t group-data-[side=top]:-bottom-[7px] group-data-[side=top]:block group-data-[side=top]:border-b group-data-[side=top]:border-r"
+        />
+        <h3 className="mb-3 text-sm font-semibold">Deck stats</h3>
         <dl className="space-y-3 text-sm">
           <div className="flex items-center justify-between gap-4">
             <dt className="text-muted-foreground">Subjects</dt>
@@ -255,8 +257,8 @@ export function DeckSubjectStatsBar({
             </div>
           )}
         </dl>
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   )
 }
 
