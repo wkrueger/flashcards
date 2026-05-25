@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react"
+import { ChangeEvent, useEffect, useRef, useState } from "react"
 import { Button } from "../../ui/button"
 import { Card, CardContent } from "../../ui/card"
 import { Label } from "../../ui/label"
-import { Textarea } from "../../ui/textarea"
 import { SubjectAutocomplete } from "./subject-autocomplete"
 
 export interface CardFormValues {
@@ -38,7 +37,7 @@ export function CardForm({
 
   return (
     <form
-      className="flex flex-1 flex-col gap-3"
+      className="flex flex-1 flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         onSubmit({
@@ -48,43 +47,18 @@ export function CardForm({
         })
       }}
     >
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold uppercase text-muted-foreground">Subject</Label>
+        <SubjectAutocomplete deckId={deckId} value={subjectText} onChange={setSubjectText} />
+      </div>
+
       <Card>
-        <CardContent className="space-y-4 p-4">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold uppercase text-muted-foreground">Subject</Label>
-            <SubjectAutocomplete deckId={deckId} value={subjectText} onChange={setSubjectText} />
-          </div>
-          <div className="space-y-1.5 border-t pt-4">
-            <Label
-              htmlFor="front"
-              className="text-xs font-semibold uppercase text-muted-foreground"
-            >
-              Front (markdown)
-            </Label>
-            <Textarea
-              id="front"
-              rows={4}
-              value={front}
-              onChange={(e) => setFront(e.target.value)}
-              className="min-h-32 resize-y text-lg leading-7"
-              required
-            />
-          </div>
-          <div className="space-y-1.5 border-t pt-4">
-            <Label htmlFor="back" className="text-xs font-semibold uppercase text-muted-foreground">
-              Back (markdown)
-            </Label>
-            <Textarea
-              id="back"
-              rows={4}
-              value={back}
-              onChange={(e) => setBack(e.target.value)}
-              className="min-h-32 resize-y text-lg leading-7"
-              required
-            />
-          </div>
+        <CardContent className="space-y-3 p-4">
+          <CardBodyField id="front" label="Front" value={front} onChange={setFront} autoFocus />
+          <CardBodyField id="back" label="Back" value={back} onChange={setBack} bordered />
         </CardContent>
       </Card>
+
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button
         type="submit"
@@ -94,5 +68,51 @@ export function CardForm({
         {pending ? "…" : submitLabel}
       </Button>
     </form>
+  )
+}
+
+function CardBodyField({
+  id,
+  label,
+  value,
+  onChange,
+  autoFocus,
+  bordered,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (value: string) => void
+  autoFocus?: boolean
+  bordered?: boolean
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+
+  return (
+    <div className={bordered ? "border-t pt-3" : undefined}>
+      <Label
+        htmlFor={id}
+        className="mb-1 block text-xs font-semibold uppercase text-muted-foreground"
+      >
+        {label}
+      </Label>
+      <textarea
+        ref={ref}
+        id={id}
+        rows={2}
+        value={value}
+        onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value)}
+        autoFocus={autoFocus}
+        className="block w-full resize-none border-0 bg-transparent p-0 text-lg leading-7 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0"
+        required
+      />
+    </div>
   )
 }
