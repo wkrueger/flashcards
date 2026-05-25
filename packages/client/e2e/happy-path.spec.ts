@@ -95,8 +95,8 @@ test("signup → deck → card → review → free review → edit → logout", 
   await page.getByRole("button", { name: "Menu" }).click()
   await page.getByRole("button", { name: "Add card" }).click()
   await page.getByRole("textbox", { name: "Subject" }).fill("Haus")
-  await page.getByLabel("Front (markdown)").fill("**Haus** ist groß.")
-  await page.getByLabel("Back (markdown)").fill("The **house** is big.")
+  await page.getByRole("textbox", { name: "Front" }).fill("**Haus** ist groß.")
+  await page.getByRole("textbox", { name: "Back" }).fill("The **house** is big.")
   await page.getByRole("button", { name: "Create" }).click()
 
   await expect(page.getByTestId("deck-subject-stats")).toContainText("1 subject, 1 card")
@@ -163,9 +163,13 @@ test("signup → deck → card → review → free review → edit → logout", 
 
   // Edit from review screen.
   await page.getByRole("button", { name: "Edit card" }).click()
-  await page.getByLabel("Back (markdown)").fill("The **house** is very big.")
+  await page.getByRole("textbox", { name: "Back" }).fill("The **house** is very big.")
   await page.getByRole("button", { name: "Save" }).click()
-  await expect(page).toHaveURL(/\/decks\/.+$/)
+  await expect(page).toHaveURL(/\/decks\/.+\/review\/cards\/.+\?mode=free$/)
+  await expect(page.getByText(/Haus.*ist groß/)).toBeVisible()
+  await expect(page.getByText(/The.*house.*is very big/)).not.toBeVisible()
+  await page.getByRole("button", { name: "Reveal" }).click()
+  await expect(page.getByText(/The.*house.*is very big/)).toBeVisible()
 
   // Drop auth state and verify the app redirects anonymous users back to login.
   await page.context().clearCookies()
