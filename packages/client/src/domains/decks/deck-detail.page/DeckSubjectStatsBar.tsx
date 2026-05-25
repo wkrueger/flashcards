@@ -22,6 +22,31 @@ interface DeckSubjectStatsBarProps {
 }
 
 const LABEL_GAP_PX = 6
+const LABEL_TOP_PADDING_CLASS = "pt-10"
+const SEGMENT_STYLES = {
+  unseen: "bg-card",
+  due: "",
+  remaining: "",
+} as const
+
+const SEGMENT_BACKGROUNDS = {
+  due: "linear-gradient(90deg, hsl(28 92% 56%) 0%, hsl(28 78% 30%) 100%)",
+  remaining: "linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(150 55% 28%) 100%)",
+} as const
+
+const MARKER_LABEL_STYLES: Record<MarkerId, string> = {
+  unseen: "text-muted-foreground",
+  due: "text-muted-foreground",
+  "24h": "text-muted-foreground",
+  "48h": "text-muted-foreground",
+}
+
+const MARKER_ARROW_STYLES: Record<MarkerId, string> = {
+  unseen: "border-t-muted-foreground",
+  due: "border-t-[hsl(28_92%_56%)]",
+  "24h": "border-t-muted-foreground",
+  "48h": "border-t-muted-foreground",
+}
 
 export function DeckSubjectStatsBar({
   cardCount,
@@ -46,16 +71,22 @@ export function DeckSubjectStatsBar({
   const dueBoundary = Math.max(clampedUnseen, clampedDue)
 
   const segments = [
-    { id: "unseen", width: percentOf(clampedUnseen, subjectCount), className: "bg-muted" },
+    {
+      id: "unseen",
+      width: percentOf(clampedUnseen, subjectCount),
+      className: SEGMENT_STYLES.unseen,
+    },
     {
       id: "due",
       width: percentOf(Math.max(0, dueBoundary - clampedUnseen), subjectCount),
-      className: "bg-primary",
+      className: SEGMENT_STYLES.due,
+      backgroundImage: SEGMENT_BACKGROUNDS.due,
     },
     {
       id: "remaining",
       width: percentOf(Math.max(0, subjectCount - dueBoundary), subjectCount),
-      className: "bg-accent",
+      className: SEGMENT_STYLES.remaining,
+      backgroundImage: SEGMENT_BACKGROUNDS.remaining,
     },
   ]
 
@@ -165,7 +196,7 @@ export function DeckSubjectStatsBar({
           data-testid="deck-subject-stats"
         >
           <span className="sr-only">{summary}</span>
-          <span aria-hidden="true" className="relative block pt-12">
+          <span aria-hidden="true" className={cn("relative block", LABEL_TOP_PADDING_CLASS)}>
             {markers.map((marker) => {
               const visible = visibleMarkerIds.includes(marker.id)
               return (
@@ -186,7 +217,12 @@ export function DeckSubjectStatsBar({
                   <span className="block text-sm font-semibold leading-none tabular-nums">
                     {marker.count}
                   </span>
-                  <span className="mt-1 block text-[10px] font-medium uppercase leading-none text-muted-foreground">
+                  <span
+                    className={cn(
+                      "mt-1 block text-[10px] font-medium uppercase leading-none",
+                      MARKER_LABEL_STYLES[marker.id]
+                    )}
+                  >
                     {marker.label}
                   </span>
                 </span>
@@ -197,7 +233,10 @@ export function DeckSubjectStatsBar({
               {markers.map((marker) => (
                 <span
                   key={marker.id}
-                  className="absolute -top-2 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent border-t-foreground"
+                  className={cn(
+                    "absolute -top-2 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent",
+                    MARKER_ARROW_STYLES[marker.id]
+                  )}
                   style={{ left: `${marker.percent}%`, transform: "translateX(-50%)" }}
                 />
               ))}
@@ -207,7 +246,10 @@ export function DeckSubjectStatsBar({
                     <span
                       key={segment.id}
                       className={cn("h-full", segment.className)}
-                      style={{ width: `${segment.width}%` }}
+                      style={{
+                        width: `${segment.width}%`,
+                        backgroundImage: segment.backgroundImage,
+                      }}
                     />
                   ))
                 ) : (
