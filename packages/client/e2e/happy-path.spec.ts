@@ -99,6 +99,7 @@ test("signup → deck → card → review → free review → edit → logout", 
   await page.getByLabel("Back (markdown)").fill("The **house** is big.")
   await page.getByRole("button", { name: "Create" }).click()
 
+  await expect(page.getByTestId("deck-subject-stats")).toContainText("1 subject, 1 card")
   await page.getByRole("link", { name: /Review 1 due/ }).click()
   // Card front must render (catches MarkdownView crashes before reveal)
   await expect(page.getByText(/ist groß/)).toBeVisible()

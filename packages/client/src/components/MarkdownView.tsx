@@ -56,12 +56,14 @@ function splitParagraphToken(token: Token): Token[] {
     return [paragraphToken]
   }
 
-  return parts.map((part: string): Tokens.Paragraph => ({
-    ...paragraphToken,
-    raw: part,
-    text: part,
-    tokens: Lexer.lexInline(part),
-  }))
+  return parts.map(
+    (part: string): Tokens.Paragraph => ({
+      ...paragraphToken,
+      raw: part,
+      text: part,
+      tokens: Lexer.lexInline(part),
+    })
+  )
 }
 
 function cloneNestedTokens(token: Token): Token {

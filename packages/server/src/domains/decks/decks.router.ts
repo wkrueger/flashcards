@@ -48,30 +48,34 @@ export const decksRouter = router({
 
   get: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const now = new Date()
-    const [deck, cardCount, wordCount, cooldownCount, cardsSeen] = await Promise.all([
-      ctx.prisma.deck.findFirst({
-        where: { id: input.id, userId: ctx.user.id },
-        include: {
-          defaultBackLanguage: {
-            select: { speechRecognitionLocale: true },
+    const [deck, cardCount, wordCount, cooldownCount, seenSubjectCount, unseenSubjectCount] =
+      await Promise.all([
+        ctx.prisma.deck.findFirst({
+          where: { id: input.id, userId: ctx.user.id },
+          include: {
+            defaultBackLanguage: {
+              select: { speechRecognitionLocale: true },
+            },
           },
-        },
-      }),
-      ctx.prisma.card.count({ where: { deckId: input.id } }),
-      ctx.prisma.subject.count({
-        where: { deckId: input.id, userId: ctx.user.id },
-      }),
-      ctx.prisma.subject.count({
-        where: {
-          userId: ctx.user.id,
-          deckId: input.id,
-          cooldownAt: { gt: now },
-        },
-      }),
-      ctx.prisma.card.count({
-        where: { deckId: input.id, timesSeen: { gt: 0 } },
-      }),
-    ])
+        }),
+        ctx.prisma.card.count({ where: { deckId: input.id } }),
+        ctx.prisma.subject.count({
+          where: { deckId: input.id, userId: ctx.user.id },
+        }),
+        ctx.prisma.subject.count({
+          where: {
+            userId: ctx.user.id,
+            deckId: input.id,
+            cooldownAt: { gt: now },
+          },
+        }),
+        ctx.prisma.subject.count({
+          where: { deckId: input.id, userId: ctx.user.id, firstSeenAt: { not: null } },
+        }),
+        ctx.prisma.subject.count({
+          where: { deckId: input.id, userId: ctx.user.id, firstSeenAt: null },
+        }),
+      ])
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
     return {
       id: deck.id,
@@ -85,7 +89,8 @@ export const decksRouter = router({
       cardCount,
       wordCount,
       cooldownCount,
-      cardsSeen,
+      seenSubjectCount,
+      unseenSubjectCount,
     }
   }),
 

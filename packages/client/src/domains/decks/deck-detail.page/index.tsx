@@ -10,6 +10,7 @@ import { Label } from "../../../ui/label"
 import { LanguageSelect } from "../language-select"
 import { MenuItem, PageHeader } from "../../../components/AppShell"
 import { ReviewStatsChart } from "./ReviewStatsChart"
+import { DeckSubjectStatsBar } from "./DeckSubjectStatsBar"
 
 export function DeckDetailPage() {
   const { deckId } = useParams({ from: "/(app)/decks/$deckId" })
@@ -276,14 +277,14 @@ export function DeckDetailPage() {
 
       {deck.data && (
         <>
-          <div className="flex items-start gap-4">
-            <TopStat label="cards" value={deck.data.cardCount} />
-            <TopStat label="words" value={deck.data.wordCount} />
-            <TopStat label={["cards", "seen"]} value={deck.data.cardsSeen} />
-            <div className="flex-1" />
-            <TopStat label={["due in", "24h"]} value={upcoming.data?.in24h} />
-            <TopStat label={["due in", "2 days"]} value={upcoming.data?.in2d} />
-          </div>
+          <DeckSubjectStatsBar
+            cardCount={deck.data.cardCount}
+            subjectCount={deck.data.wordCount}
+            unseenCount={deck.data.unseenSubjectCount}
+            dueCount={dueCount}
+            dueIn24h={upcoming.data?.in24h}
+            dueIn48h={upcoming.data?.in2d}
+          />
 
           <div className="flex flex-col gap-2">
             {dueCount > 0 ? (
@@ -384,31 +385,6 @@ export function DeckDetailPage() {
           </div>
         </>
       )}
-    </div>
-  )
-}
-
-function TopStat({
-  label,
-  value,
-}: {
-  label: string | [string, string]
-  value: number | undefined
-}) {
-  return (
-    <div className="max-w-12 text-center">
-      <p className="text-xl font-semibold">{value ?? "–"}</p>
-      <p className="text-xs text-muted-foreground">
-        {Array.isArray(label) ? (
-          <>
-            {label[0]}
-            <br />
-            {label[1]}
-          </>
-        ) : (
-          label
-        )}
-      </p>
     </div>
   )
 }
