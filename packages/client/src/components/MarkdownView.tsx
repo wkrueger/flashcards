@@ -18,12 +18,7 @@ marked.use({
 
 export function MarkdownView({ source }: { source: string }) {
   const html = useMemo(() => renderMarkdown(source), [source])
-  return (
-    <div
-      className="prose prose-lg max-w-none dark:prose-invert [&>*:first-child]:mt-0"
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  )
+  return <div className="max-w-none [&>*+*]:mt-3" dangerouslySetInnerHTML={{ __html: html }} />
 }
 
 export default MarkdownView
