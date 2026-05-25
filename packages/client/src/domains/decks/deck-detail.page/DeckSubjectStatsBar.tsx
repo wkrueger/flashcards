@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { cn } from "../../../lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../../ui/dialog"
 
 type MarkerId = "due" | "unseen" | "24h" | "48h"
 
@@ -30,8 +31,8 @@ export function DeckSubjectStatsBar({
   dueIn24h,
   dueIn48h,
 }: DeckSubjectStatsBarProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const labelRefs = useRef<Record<MarkerId, HTMLDivElement | null>>({
+  const containerRef = useRef<HTMLButtonElement | null>(null)
+  const labelRefs = useRef<Record<MarkerId, HTMLSpanElement | null>>({
     due: null,
     unseen: null,
     "24h": null,
@@ -155,63 +156,107 @@ export function DeckSubjectStatsBar({
   })
 
   return (
-    <div ref={containerRef} className="space-y-2" data-testid="deck-subject-stats">
-      <p className="sr-only">{summary}</p>
-      <div aria-hidden="true" className="relative pt-12">
-        {markers.map((marker) => {
-          const visible = visibleMarkerIds.includes(marker.id)
-          return (
-            <div
-              key={marker.id}
-              ref={(node) => {
-                labelRefs.current[marker.id] = node
-              }}
-              className={cn(
-                "absolute top-0 min-w-10 text-center transition-opacity",
-                visible ? "opacity-100" : "opacity-0"
-              )}
-              style={{
-                left: `${marker.percent}%`,
-                transform: labelTransform(marker.percent),
-              }}
-            >
-              <span className="block text-sm font-semibold leading-none tabular-nums">
-                {marker.count}
-              </span>
-              <span className="mt-1 block text-[10px] font-medium uppercase leading-none text-muted-foreground">
-                {marker.label}
-              </span>
-            </div>
-          )
-        })}
-
-        <div className="relative">
-          {markers.map((marker) => (
-            <span
-              key={marker.id}
-              className="absolute -top-2 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent border-t-foreground"
-              style={{ left: `${marker.percent}%`, transform: "translateX(-50%)" }}
-            />
-          ))}
-          <div className="flex h-2 overflow-hidden rounded-full bg-muted">
-            {hasSubjects ? (
-              segments.map((segment) => (
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          ref={containerRef}
+          type="button"
+          className="block w-full space-y-2 rounded-md text-left outline-none transition-colors hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          data-testid="deck-subject-stats"
+        >
+          <span className="sr-only">{summary}</span>
+          <span aria-hidden="true" className="relative block pt-12">
+            {markers.map((marker) => {
+              const visible = visibleMarkerIds.includes(marker.id)
+              return (
                 <span
-                  key={segment.id}
-                  className={cn("h-full", segment.className)}
-                  style={{ width: `${segment.width}%` }}
+                  key={marker.id}
+                  ref={(node) => {
+                    labelRefs.current[marker.id] = node
+                  }}
+                  className={cn(
+                    "absolute top-0 min-w-10 text-center transition-opacity",
+                    visible ? "opacity-100" : "opacity-0"
+                  )}
+                  style={{
+                    left: `${marker.percent}%`,
+                    transform: labelTransform(marker.percent),
+                  }}
+                >
+                  <span className="block text-sm font-semibold leading-none tabular-nums">
+                    {marker.count}
+                  </span>
+                  <span className="mt-1 block text-[10px] font-medium uppercase leading-none text-muted-foreground">
+                    {marker.label}
+                  </span>
+                </span>
+              )
+            })}
+
+            <span className="relative block">
+              {markers.map((marker) => (
+                <span
+                  key={marker.id}
+                  className="absolute -top-2 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent border-t-foreground"
+                  style={{ left: `${marker.percent}%`, transform: "translateX(-50%)" }}
                 />
-              ))
-            ) : (
-              <span className="h-full w-full bg-muted" />
-            )}
+              ))}
+              <span className="flex h-2 overflow-hidden rounded-full bg-muted">
+                {hasSubjects ? (
+                  segments.map((segment) => (
+                    <span
+                      key={segment.id}
+                      className={cn("h-full", segment.className)}
+                      style={{ width: `${segment.width}%` }}
+                    />
+                  ))
+                ) : (
+                  <span className="h-full w-full bg-muted" />
+                )}
+              </span>
+            </span>
+          </span>
+          <span className="block text-center text-sm text-muted-foreground">
+            {formatCount(subjectCount, "subject")}, {formatCount(cardCount, "card")}
+          </span>
+        </button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Deck stats</DialogTitle>
+        </DialogHeader>
+        <dl className="space-y-3 text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <dt className="text-muted-foreground">Subjects</dt>
+            <dd className="font-medium tabular-nums">{subjectCount}</dd>
           </div>
-        </div>
-      </div>
-      <p className="text-center text-sm text-muted-foreground">
-        {formatCount(subjectCount, "subject")}, {formatCount(cardCount, "card")}
-      </p>
-    </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt className="text-muted-foreground">Cards</dt>
+            <dd className="font-medium tabular-nums">{cardCount}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt className="text-muted-foreground">Unseen</dt>
+            <dd className="font-medium tabular-nums">{clampedUnseen}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <dt className="text-muted-foreground">Due now</dt>
+            <dd className="font-medium tabular-nums">{clampedDue}</dd>
+          </div>
+          {dueIn24h !== undefined && (
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-muted-foreground">Due within 24 hours</dt>
+              <dd className="font-medium tabular-nums">{clampCount(dueIn24h, subjectCount)}</dd>
+            </div>
+          )}
+          {dueIn48h !== undefined && (
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-muted-foreground">Due within 48 hours</dt>
+              <dd className="font-medium tabular-nums">{clampCount(dueIn48h, subjectCount)}</dd>
+            </div>
+          )}
+        </dl>
+      </DialogContent>
+    </Dialog>
   )
 }
 
