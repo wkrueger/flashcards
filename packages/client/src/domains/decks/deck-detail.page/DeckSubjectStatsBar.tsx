@@ -199,6 +199,7 @@ export function DeckSubjectStatsBar({
           <span aria-hidden="true" className={cn("relative block", LABEL_TOP_PADDING_CLASS)}>
             {markers.map((marker) => {
               const visible = visibleMarkerIds.includes(marker.id)
+              const position = chartPosition(marker.percent)
               return (
                 <span
                   key={marker.id}
@@ -206,12 +207,12 @@ export function DeckSubjectStatsBar({
                     labelRefs.current[marker.id] = node
                   }}
                   className={cn(
-                    "absolute top-0 min-w-10 text-center transition-opacity",
+                    "absolute top-0 text-center transition-opacity",
                     visible ? "opacity-100" : "opacity-0"
                   )}
                   style={{
-                    left: `${marker.percent}%`,
-                    transform: labelTransform(marker.percent),
+                    left: `${position}%`,
+                    transform: labelTransform(position),
                   }}
                 >
                   <span className="block text-sm font-semibold leading-none tabular-nums">
@@ -230,17 +231,20 @@ export function DeckSubjectStatsBar({
             })}
 
             <span className="relative block">
-              {markers.map((marker) => (
-                <span
-                  key={marker.id}
-                  className={cn(
-                    "absolute -top-2 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent",
-                    MARKER_ARROW_STYLES[marker.id]
-                  )}
-                  style={{ left: `${marker.percent}%`, transform: "translateX(-50%)" }}
-                />
-              ))}
-              <span className="flex h-2 overflow-hidden rounded-full bg-muted">
+              {markers.map((marker) => {
+                const position = chartPosition(marker.percent)
+                return (
+                  <span
+                    key={marker.id}
+                    className={cn(
+                      "absolute -top-2 h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent",
+                      MARKER_ARROW_STYLES[marker.id]
+                    )}
+                    style={{ left: `${position}%`, transform: "translateX(-50%)" }}
+                  />
+                )
+              })}
+              <span className="flex h-2 flex-row-reverse overflow-hidden rounded-full bg-muted">
                 {hasSubjects ? (
                   segments.map((segment) => (
                     <span
@@ -312,6 +316,10 @@ function clampCount(count: number, total: number) {
 function percentOf(count: number, total: number) {
   if (total <= 0) return 0
   return (count / total) * 100
+}
+
+function chartPosition(percent: number) {
+  return 100 - percent
 }
 
 function labelTransform(percent: number) {

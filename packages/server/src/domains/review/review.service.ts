@@ -190,7 +190,7 @@ export async function pickNextCard({
     }
   }
 
-  const candidates = [...candidates1, ...candidates1, ...candidates2]
+  const candidates = [...candidates1, ...candidates2]
 
   if (candidates.length === 0) return { card: null, inverse: false }
 
