@@ -1,8 +1,11 @@
 import { TRPCError } from "@trpc/server"
 import { createDeckInput, idInput, updateDeckInput } from "@cards/shared"
+import dayjs from "dayjs"
+import utc from "dayjs/plugin/utc.js"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { randomSubjectKey } from "../subjects/subjects.service.js"
-import { startOfUtcDay } from "../review/review.service.js"
+
+dayjs.extend(utc)
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const SAMPLE_SUBJECT_LIMIT = 8
@@ -207,7 +210,7 @@ export const decksRouter = router({
       select: { id: true },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
-    const today = startOfUtcDay(new Date())
+    const today = dayjs.utc().startOf("day").toDate()
     const earliest = new Date(today.getTime() - (REVIEW_STATS_WINDOW_DAYS - 1) * DAY_MS)
     const rows = await ctx.prisma.reviewStat.findMany({
       where: { deckId: input.id, date: { gte: earliest } },

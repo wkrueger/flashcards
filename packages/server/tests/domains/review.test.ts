@@ -17,6 +17,7 @@ async function seedSubjects(
     cooldownAt: Date
     firstSeenAt?: Date
     lastSeenAt?: Date
+    lastSeenShuffle?: Date
     fixationLevel?: string
     inverseReviewed?: boolean
     tags?: string[]
@@ -33,6 +34,7 @@ async function seedSubjects(
         cooldownAt: s.cooldownAt,
         firstSeenAt: s.firstSeenAt,
         lastSeenAt: s.lastSeenAt,
+        lastSeenShuffle: s.lastSeenShuffle ?? s.lastSeenAt,
         fixationLevel: s.fixationLevel,
         inverseReviewed: s.inverseReviewed,
       },
@@ -186,6 +188,36 @@ describe("review domain", () => {
     )
   })
 
+  it("normal mode orders recent candidates by shuffled last seen time", async () => {
+    const u = await makeUser("u")
+    const deck = await callerFor(u).decks.create({ name: "d" })
+    const past = (mins: number) => new Date(Date.now() - mins * 60_000)
+    await seedSubjects(u, deck.id, [
+      {
+        text: "last-seen-newest",
+        cooldownAt: past(10),
+        lastSeenAt: past(1),
+        lastSeenShuffle: past(20),
+      },
+      {
+        text: "shuffle-newest",
+        cooldownAt: past(10),
+        lastSeenAt: past(5),
+        lastSeenShuffle: past(1),
+      },
+    ])
+
+    const r = await pickNextCard({
+      prisma,
+      userId: u,
+      deckId: deck.id,
+      includeOnCooldown: false,
+      rng: () => 0,
+    })
+
+    expect(r.card?.subject.subject).toBe("shuffle-newest")
+  })
+
   it("cleans up empty deck subjects and retries when the chosen subject has no cards", async () => {
     const u = await makeUser("u")
     const deck = await callerFor(u).decks.create({ name: "d" })
@@ -200,6 +232,7 @@ describe("review domain", () => {
         randomKey: 0,
         cooldownAt: past(10),
         lastSeenAt: past(1),
+        lastSeenShuffle: past(1),
       },
     })
     await seedSubjects(u, deck.id, [
@@ -507,6 +540,7 @@ describe("review domain", () => {
     expect(subjBefore.firstSeenAt).toBeNull()
     expect(subjAfter.firstSeenAt).not.toBeNull()
     expect(subjAfter.lastSeenAt).not.toBeNull()
+    expect(subjAfter.lastSeenShuffle?.getTime()).toBe(subjAfter.lastSeenAt?.getTime())
     const deckAfter = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
     expect(deckAfter.inverseReviewStreak).toBe(1)
     const cardAfter = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
@@ -552,6 +586,31 @@ describe("review domain", () => {
       where: { userId: u, subject: "Haus" },
     })
     expect(afterSecondReview.firstSeenAt!.getTime()).toBe(firstSeenAt.getTime())
+  })
+
+  it("non-inverse complete stores shuffled last seen within the chosen level window", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    const card = await trpc.cards.create({
+      deckId: deck.id,
+      subjectText: "Haus",
+      front: "f",
+      back: "b",
+    })
+    const before = Date.now()
+
+    await trpc.review.complete({ cardId: card.id, chosenLevel: "5" })
+
+    const subj = await prisma.subject.findFirstOrThrow({
+      where: { userId: u, subject: "Haus" },
+    })
+    const after = Date.now()
+    const halfCooldown = COOLDOWN_MS["5"] / 2
+    expect(subj.lastSeenAt).not.toBeNull()
+    expect(subj.lastSeenShuffle).not.toBeNull()
+    expect(subj.lastSeenShuffle!.getTime()).toBeGreaterThanOrEqual(before - halfCooldown)
+    expect(subj.lastSeenShuffle!.getTime()).toBeLessThanOrEqual(after + halfCooldown)
   })
 
   it("non-inverse complete records cardMinutes and cardCount against today's deck stats", async () => {

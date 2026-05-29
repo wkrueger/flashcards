@@ -121,6 +121,7 @@ model Subject {
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   firstSeenAt     DateTime?
   lastSeenAt      DateTime?
+  lastSeenShuffle DateTime?
   timesSeen       Int       @default(0)
   fixationLevel   String    @default("1")
   inverseReviewed Boolean   @default(false)
@@ -130,6 +131,8 @@ model Subject {
   @@unique([deckId, subjectKey])
   @@index([deckId, randomKey])
   @@index([deckId, cooldownAt, randomKey])
+  @@index([deckId, lastSeenShuffle])
+  @@index([userId, lastSeenShuffle])
   @@index([userId, deckId])
 }
 

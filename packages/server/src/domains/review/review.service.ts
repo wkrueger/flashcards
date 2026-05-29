@@ -1,16 +1,16 @@
 import type { PrismaClient } from "../../generated/prisma/client.js"
 import { Prisma } from "../../generated/prisma/client.js"
 import { COOLDOWN_MS, fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
+import dayjs from "dayjs"
+import utc from "dayjs/plugin/utc.js"
 import {
   deleteEmptySubjectsForDeck,
   randomSubjectKeyFromRng,
 } from "../subjects/subjects.service.js"
 
-const REVIEW_STATS_RETENTION_DAYS = 15
+dayjs.extend(utc)
 
-export function startOfUtcDay(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-}
+const REVIEW_STATS_RETENTION_DAYS = 15
 
 export interface PickArgs {
   prisma: PrismaClient
@@ -62,30 +62,6 @@ type ReviewCard = Prisma.CardGetPayload<{
     cardTags: { include: { tag: true } }
   }
 }>
-
-class RerollError extends Error {}
-
-function inverseReviewProbabilityForCard(card: ReviewCard) {
-  const inverseReviewed = card.subject.inverseReviewed
-  const tags = card.cardTags.map((x) => x.tag.name)
-  const fixationLevel = card.subject.fixationLevel
-  const neverSeen = card.subject.lastSeenAt === null
-  if (inverseReviewed) {
-    if (tags.includes(MEANING_TAG)) throw new RerollError()
-    return 0
-  }
-  if (tags.includes(LONG_TEXT_TAG)) return 0.7
-  if (tags.includes(MEANING_TAG)) return 1
-  if (!neverSeen && fixationLevel === "1") return 0.7
-  if (!neverSeen && fixationLevel === "2") return 0.4
-  return INVERSE_REVIEW_PROBABILITY
-}
-
-function applyInverseStreakPenalty(probability: number, inverseReviewStreak: number) {
-  if (probability <= 0) return 0
-  if (inverseReviewStreak <= 0) return probability
-  return probability / (inverseReviewStreak + 1) ** 2
-}
 
 export async function pickNextCard({
   prisma,
@@ -143,7 +119,9 @@ export async function pickNextCard({
 
   const candidates1 = await prisma.subject.findMany({
     where: subjectWhere,
-    orderBy: includeOnCooldown ? { cooldownAt: "asc" } : { lastSeenAt: "desc" },
+    orderBy: includeOnCooldown
+      ? { cooldownAt: "asc" }
+      : [{ lastSeenShuffle: { sort: "desc", nulls: "last" } }, { lastSeenAt: "desc" }],
     select: { id: true, cooldownAt: true, randomKey: true },
     take: 4,
   })
@@ -257,6 +235,152 @@ export async function pickNextCard({
   return { card: { ...rest, tags } as PickResult["card"], inverse: isInverse }
 }
 
+export async function completeReview(
+  prisma: PrismaClient,
+  userId: string,
+  cardId: string,
+  options: { chosenLevel?: FixationLevel; inverse?: boolean },
+  now: Date = new Date()
+) {
+  const card = await prisma.card.findFirst({
+    where: { id: cardId, deck: { userId } },
+    include: { subject: true },
+  })
+  if (!card) throw Object.assign(new Error("Card not found"), { code: "CARD_NOT_FOUND" })
+
+  if (options.inverse) {
+    await prisma.$transaction([
+      prisma.card.update({ where: { id: card.id }, data: { lastSeenAt: now } }),
+      prisma.subject.update({
+        where: { id: card.subjectId },
+        data: { lastSeenAt: now, lastSeenShuffle: now, inverseReviewed: true },
+      }),
+      prisma.subject.updateMany({
+        where: { id: card.subjectId, firstSeenAt: null },
+        data: { firstSeenAt: now },
+      }),
+      prisma.deck.update({
+        where: { id: card.deckId },
+        data: { inverseReviewStreak: { increment: 1 } },
+      }),
+    ])
+    return { ok: true, cooldownAt: card.subject.cooldownAt }
+  }
+
+  if (!options.chosenLevel) {
+    throw Object.assign(new Error("chosenLevel required"), { code: "BAD_INPUT" })
+  }
+  const chosenLevel = fixationLevelSchema.parse(options.chosenLevel)
+  const cooldown = nextCooldownAt(chosenLevel, now)
+  const lastSeenShuffle = new Date(now.getTime() + (Math.random() - 0.5) * COOLDOWN_MS[chosenLevel])
+  const cardMinutes = Math.round(COOLDOWN_MS[chosenLevel] / 60_000)
+  const today = dayjs.utc(now).startOf("day").toDate()
+  const retentionCutoff = new Date(
+    today.getTime() - REVIEW_STATS_RETENTION_DAYS * 24 * 60 * 60 * 1000
+  )
+
+  await prisma.$transaction(async (tx) => {
+    await tx.card.update({
+      where: { id: card.id },
+      data: { lastSeenAt: now, timesSeen: { increment: 1 } },
+    })
+
+    await tx.subject.update({
+      where: { id: card.subjectId },
+      data: {
+        lastSeenAt: now,
+        lastSeenShuffle,
+        timesSeen: { increment: 1 },
+        fixationLevel: chosenLevel,
+        inverseReviewed: false,
+        cooldownAt: cooldown,
+      },
+    })
+
+    await tx.subject.updateMany({
+      where: { id: card.subjectId, firstSeenAt: null },
+      data: { firstSeenAt: now },
+    })
+
+    await tx.deck.update({
+      where: { id: card.deckId },
+      data: { inverseReviewStreak: 0 },
+    })
+  })
+
+  // update stats:
+  // 1 row per day. When day changes, create a new row.
+  // cardMinutes increases for every card reviewed
+  // cardCount increases only for unique cards
+  // use a separate table to track already used cards
+  // clean up card tracking table on reset
+  //
+  // does not lock the request (no await), on purpose.
+
+  prisma
+    .$transaction(async (tx) => {
+      const foundStat = await tx.reviewStat.findFirst({
+        where: { deckId: card.deckId, date: today },
+        select: { id: true },
+      })
+
+      if (foundStat) {
+        const cardFound = await tx.reviewStatUniqueCard.findFirst({
+          where: { deckId: card.deckId, cardId: card.id },
+        })
+        await tx.reviewStat.update({
+          where: { id: foundStat.id },
+          data: {
+            cardMinutes: { increment: cardMinutes },
+            cardCount: { increment: cardFound ? 0 : 1 },
+          },
+          select: { id: true },
+        })
+        if (!cardFound) {
+          await tx.reviewStatUniqueCard.create({
+            data: {
+              cardId: card.id,
+              deckId: card.deckId,
+              reviewStatId: foundStat.id,
+            },
+          })
+        }
+      } else {
+        await tx.reviewStatUniqueCard.deleteMany({
+          where: { deckId: card.deckId },
+        })
+        const reviewStat = await tx.reviewStat.create({
+          data: {
+            deckId: card.deckId,
+            date: today,
+            cardMinutes,
+            cardCount: 1,
+          },
+          select: { id: true },
+        })
+        await tx.reviewStatUniqueCard.create({
+          data: {
+            cardId: card.id,
+            deckId: card.deckId,
+            reviewStatId: reviewStat.id,
+          },
+        })
+      }
+
+      await tx.reviewStat.deleteMany({
+        where: {
+          deckId: card.deckId,
+          date: { lt: retentionCutoff },
+        },
+      })
+    })
+    .catch((err) => {
+      console.error("while updating stats", err)
+    })
+
+  return { ok: true, cooldownAt: cooldown }
+}
+
 async function pickSpecificCard({
   prisma,
   userId,
@@ -363,146 +487,26 @@ async function getIsInverse(
   return { isInverse: inverseRoll < inverseProbability, cardFallback }
 }
 
-export async function completeReview(
-  prisma: PrismaClient,
-  userId: string,
-  cardId: string,
-  options: { chosenLevel?: FixationLevel; inverse?: boolean },
-  now: Date = new Date()
-) {
-  const card = await prisma.card.findFirst({
-    where: { id: cardId, deck: { userId } },
-    include: { subject: true },
-  })
-  if (!card) throw Object.assign(new Error("Card not found"), { code: "CARD_NOT_FOUND" })
-
-  if (options.inverse) {
-    await prisma.$transaction([
-      prisma.card.update({ where: { id: card.id }, data: { lastSeenAt: now } }),
-      prisma.subject.update({
-        where: { id: card.subjectId },
-        data: { lastSeenAt: now, inverseReviewed: true },
-      }),
-      prisma.subject.updateMany({
-        where: { id: card.subjectId, firstSeenAt: null },
-        data: { firstSeenAt: now },
-      }),
-      prisma.deck.update({
-        where: { id: card.deckId },
-        data: { inverseReviewStreak: { increment: 1 } },
-      }),
-    ])
-    return { ok: true, cooldownAt: card.subject.cooldownAt }
+function inverseReviewProbabilityForCard(card: ReviewCard) {
+  const inverseReviewed = card.subject.inverseReviewed
+  const tags = card.cardTags.map((x) => x.tag.name)
+  const fixationLevel = card.subject.fixationLevel
+  const neverSeen = card.subject.lastSeenAt === null
+  if (inverseReviewed) {
+    if (tags.includes(MEANING_TAG)) throw new RerollError()
+    return 0
   }
-
-  if (!options.chosenLevel) {
-    throw Object.assign(new Error("chosenLevel required"), { code: "BAD_INPUT" })
-  }
-  const chosenLevel = fixationLevelSchema.parse(options.chosenLevel)
-  const cooldown = nextCooldownAt(chosenLevel, now)
-  const cardMinutes = Math.round(COOLDOWN_MS[chosenLevel] / 60_000)
-  const today = startOfUtcDay(now)
-  const retentionCutoff = new Date(
-    today.getTime() - REVIEW_STATS_RETENTION_DAYS * 24 * 60 * 60 * 1000
-  )
-
-  await prisma.$transaction(async (tx) => {
-    await tx.card.update({
-      where: { id: card.id },
-      data: { lastSeenAt: now, timesSeen: { increment: 1 } },
-    })
-
-    await tx.subject.update({
-      where: { id: card.subjectId },
-      data: {
-        lastSeenAt: now,
-        timesSeen: { increment: 1 },
-        fixationLevel: chosenLevel,
-        inverseReviewed: false,
-        cooldownAt: cooldown,
-      },
-    })
-
-    await tx.subject.updateMany({
-      where: { id: card.subjectId, firstSeenAt: null },
-      data: { firstSeenAt: now },
-    })
-
-    await tx.deck.update({
-      where: { id: card.deckId },
-      data: { inverseReviewStreak: 0 },
-    })
-  })
-
-  // update stats:
-  // 1 row per day. When day changes, create a new row.
-  // cardMinutes increases for every card reviewed
-  // cardCount increases only for unique cards
-  // use a separate table to track already used cards
-  // clean up card tracking table on reset
-  //
-  // does not lock the request (no await), on purpose.
-
-  prisma
-    .$transaction(async (tx) => {
-      const foundStat = await tx.reviewStat.findFirst({
-        where: { deckId: card.deckId, date: today },
-        select: { id: true },
-      })
-
-      if (foundStat) {
-        const cardFound = await tx.reviewStatUniqueCard.findFirst({
-          where: { deckId: card.deckId, cardId: card.id },
-        })
-        await tx.reviewStat.update({
-          where: { id: foundStat.id },
-          data: {
-            cardMinutes: { increment: cardMinutes },
-            cardCount: { increment: cardFound ? 0 : 1 },
-          },
-          select: { id: true },
-        })
-        if (!cardFound) {
-          await tx.reviewStatUniqueCard.create({
-            data: {
-              cardId: card.id,
-              deckId: card.deckId,
-              reviewStatId: foundStat.id,
-            },
-          })
-        }
-      } else {
-        await tx.reviewStatUniqueCard.deleteMany({
-          where: { deckId: card.deckId },
-        })
-        const reviewStat = await tx.reviewStat.create({
-          data: {
-            deckId: card.deckId,
-            date: today,
-            cardMinutes,
-            cardCount: 1,
-          },
-          select: { id: true },
-        })
-        await tx.reviewStatUniqueCard.create({
-          data: {
-            cardId: card.id,
-            deckId: card.deckId,
-            reviewStatId: reviewStat.id,
-          },
-        })
-      }
-
-      await tx.reviewStat.deleteMany({
-        where: {
-          deckId: card.deckId,
-          date: { lt: retentionCutoff },
-        },
-      })
-    })
-    .catch((err) => {
-      console.error("while updating stats", err)
-    })
-
-  return { ok: true, cooldownAt: cooldown }
+  if (tags.includes(LONG_TEXT_TAG)) return 0.7
+  if (tags.includes(MEANING_TAG)) return 1
+  if (!neverSeen && fixationLevel === "1") return 0.7
+  if (!neverSeen && fixationLevel === "2") return 0.4
+  return INVERSE_REVIEW_PROBABILITY
 }
+
+function applyInverseStreakPenalty(probability: number, inverseReviewStreak: number) {
+  if (probability <= 0) return 0
+  if (inverseReviewStreak <= 0) return probability
+  return probability / (inverseReviewStreak + 1) ** 2
+}
+
+class RerollError extends Error {}
