@@ -219,4 +219,41 @@ describe("completion invalidation on drift paths", () => {
     const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
     expect(row.completionScore).toBeNull()
   })
+
+  it("adding a card with a new subject does not invalidate; percent uses the live divisor", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({ data: { name: "D", userId } })
+    await seedCard(userId, deck.id, "a", "6") // 1 point
+
+    // first read computes 100% (1 / 1) and caches the score
+    expect((await callerFor(userId).decks.get({ id: deck.id })).completionPercent).toBe(100)
+
+    // real add path: new subject "b" defaults to fixation "1" = 0 points
+    await callerFor(userId).cards.create({
+      deckId: deck.id,
+      subjectText: "b",
+      front: "fb",
+      back: "bb",
+    })
+
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBe(1) // an add must NOT invalidate the cached score
+
+    // percent divides by the live subject count: 1 / 2 = 50%
+    expect((await callerFor(userId).decks.get({ id: deck.id })).completionPercent).toBe(50)
+  })
+
+  it("moving a card to a new subject empties the old subject and invalidates", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({
+      data: { name: "D", userId, completionScore: 1, completionComputedAt: new Date() },
+    })
+    const { card } = await seedCard(userId, deck.id, "a", "6")
+
+    // move the only card to a new subject → old subject "a" becomes empty and is deleted
+    await callerFor(userId).cards.update({ id: card.id, subjectText: "b" })
+
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBeNull()
+  })
 })
