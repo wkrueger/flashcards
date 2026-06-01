@@ -116,7 +116,12 @@ Add to `packages/shared/src/fixation.ts`, beside `COOLDOWN_MS`:
 
 ```ts
 export const COMPLETION_POINTS: Record<FixationLevel, number> = {
-  "1": 0, "2": 0, "3": 0.25, "4": 0.5, "5": 0.75, "6": 1,
+  "1": 0,
+  "2": 0,
+  "3": 0.25,
+  "4": 0.5,
+  "5": 0.75,
+  "6": 1,
 }
 ```
 
