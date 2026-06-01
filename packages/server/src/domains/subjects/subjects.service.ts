@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto"
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js"
+import { markDeckCompletionStale } from "../decks/deck-completion.service.js"
 
 export const SUBJECT_RANDOM_KEY_RANGE = 2_147_483_647
 
@@ -37,13 +38,15 @@ export async function upsertSubjectByText(
   })
 }
 
-export async function deleteSubjectIfEmpty(prisma: SubjectDb, subjectId: string) {
-  return prisma.subject.deleteMany({
+export async function deleteSubjectIfEmpty(prisma: SubjectDb, subjectId: string, deckId: string) {
+  const result = await prisma.subject.deleteMany({
     where: {
       id: subjectId,
       cards: { none: {} },
     },
   })
+  if (result.count > 0) await markDeckCompletionStale(prisma, deckId)
+  return result
 }
 
 export async function deleteEmptySubjectsForDeck(
@@ -51,11 +54,13 @@ export async function deleteEmptySubjectsForDeck(
   userId: string,
   deckId: string
 ) {
-  return prisma.subject.deleteMany({
+  const result = await prisma.subject.deleteMany({
     where: {
       userId,
       deckId,
       cards: { none: {} },
     },
   })
+  if (result.count > 0) await markDeckCompletionStale(prisma, deckId)
+  return result
 }

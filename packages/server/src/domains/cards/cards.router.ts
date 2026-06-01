@@ -143,7 +143,7 @@ export const cardsRouter = router({
           data,
           include: cardInclude,
         })
-        if (previousSubjectId) await deleteSubjectIfEmpty(tx, previousSubjectId)
+        if (previousSubjectId) await deleteSubjectIfEmpty(tx, previousSubjectId, card.deckId)
         return updatedCard
       })
       return serializeCard(updated)
@@ -162,7 +162,7 @@ export const cardsRouter = router({
     const card = await ownCard(ctx.prisma, ctx.user.id, input.id)
     await ctx.prisma.$transaction(async (tx) => {
       await tx.card.delete({ where: { id: card.id } })
-      await deleteSubjectIfEmpty(tx, card.subjectId)
+      await deleteSubjectIfEmpty(tx, card.subjectId, card.deckId)
     })
     return { ok: true }
   }),

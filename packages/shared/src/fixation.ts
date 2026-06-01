@@ -14,6 +14,15 @@ export const COOLDOWN_MS: Record<FixationLevel, number> = {
   "6": 12 * DAY,
 }
 
+export const COMPLETION_POINTS: Record<FixationLevel, number> = {
+  "1": 0,
+  "2": 0,
+  "3": 0.25,
+  "4": 0.5,
+  "5": 0.75,
+  "6": 1,
+}
+
 export const COOLDOWN_LABEL: Record<FixationLevel, string> = {
   "1": "5 s",
   "2": "10 min",

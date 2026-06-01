@@ -3,6 +3,7 @@ import { Prisma } from "../../generated/prisma/client.js"
 import { idInput, renameSubjectInput, subjectAutocompleteInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { normalizeSubjectText, subjectKeyFor } from "./subjects.service.js"
+import { markDeckCompletionStale } from "../decks/deck-completion.service.js"
 
 const subjectCardInclude = Prisma.validator<Prisma.CardInclude>()({
   cardTags: { include: { tag: true } },
@@ -89,10 +90,11 @@ export const subjectsRouter = router({
   delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {
     const subject = await ctx.prisma.subject.findFirst({
       where: { id: input.id, userId: ctx.user.id },
-      select: { id: true },
+      select: { id: true, deckId: true },
     })
     if (!subject) throw new TRPCError({ code: "NOT_FOUND" })
     await ctx.prisma.subject.delete({ where: { id: subject.id } })
+    await markDeckCompletionStale(ctx.prisma, subject.deckId)
     return { ok: true }
   }),
 })

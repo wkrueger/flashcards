@@ -4,6 +4,11 @@ import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc.js"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { randomSubjectKey } from "../subjects/subjects.service.js"
+import {
+  COMPLETION_STALE_MS,
+  completionPercent,
+  recomputeDeckCompletion,
+} from "./deck-completion.service.js"
 
 dayjs.extend(utc)
 
@@ -80,6 +85,14 @@ export const decksRouter = router({
         }),
       ])
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    let completionScore = deck.completionScore
+    const stale =
+      completionScore == null ||
+      deck.completionComputedAt == null ||
+      now.getTime() - deck.completionComputedAt.getTime() > COMPLETION_STALE_MS
+    if (stale) {
+      completionScore = await recomputeDeckCompletion(ctx.prisma, deck.id, now)
+    }
     return {
       id: deck.id,
       name: deck.name,
@@ -91,6 +104,7 @@ export const decksRouter = router({
       inverseReviewEnabled: deck.inverseReviewEnabled,
       cardCount,
       wordCount,
+      completionPercent: completionPercent(completionScore, wordCount),
       cooldownCount,
       seenSubjectCount,
       unseenSubjectCount,
