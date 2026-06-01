@@ -284,6 +284,7 @@ export function DeckDetailPage() {
             dueCount={dueCount}
             dueIn24h={upcoming.data?.in24h}
             dueIn48h={upcoming.data?.in2d}
+            completionPercent={deck.data.completionPercent}
           />
 
           <div className="flex flex-col gap-2">

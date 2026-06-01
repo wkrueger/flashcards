@@ -19,6 +19,7 @@ interface DeckSubjectStatsBarProps {
   dueCount: number
   dueIn24h?: number
   dueIn48h?: number
+  completionPercent?: number | null
 }
 
 const LABEL_GAP_PX = 6
@@ -55,6 +56,7 @@ export function DeckSubjectStatsBar({
   dueCount,
   dueIn24h,
   dueIn48h,
+  completionPercent,
 }: DeckSubjectStatsBarProps) {
   const containerRef = useRef<HTMLButtonElement | null>(null)
   const labelRefs = useRef<Record<MarkerId, HTMLSpanElement | null>>({
@@ -264,6 +266,7 @@ export function DeckSubjectStatsBar({
           </span>
           <span className="block text-center text-sm text-muted-foreground">
             {formatCount(subjectCount, "subject")}, {formatCount(cardCount, "card")}
+            {completionPercent != null ? `, ${completionPercent}%` : ""}
           </span>
         </button>
       </PopoverTrigger>
