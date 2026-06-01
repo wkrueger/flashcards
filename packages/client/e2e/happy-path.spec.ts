@@ -251,3 +251,68 @@ test("review edit exits return to the same card", async ({ page }) => {
   await page.getByRole("button", { name: "Reveal" }).click()
   await expect(page.getByText(updatedBack)).toBeVisible()
 })
+
+test("deck completion percent updates after a review", async ({ page }) => {
+  const email = `e2e-completion-${Date.now()}@test.local`
+  const password = "passw0rd!"
+
+  await page.addInitScript(() => {
+    type SpeechRecognitionMockWindow = Window &
+      typeof globalThis & {
+        SpeechRecognition?: unknown
+        webkitSpeechRecognition?: unknown
+      }
+    class MockSpeechRecognition {
+      static async available() {
+        return "available"
+      }
+    }
+    const speechWindow = window as SpeechRecognitionMockWindow
+    speechWindow.SpeechRecognition = MockSpeechRecognition
+    speechWindow.webkitSpeechRecognition = MockSpeechRecognition
+  })
+
+  await page.goto("/signup")
+  await page.getByLabel("Name").fill("E2E Completion")
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Sign up" }).click()
+  await page.getByRole("link", { name: "Back to log in" }).click()
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Log in" }).click()
+
+  await page.getByRole("button", { name: "New deck" }).click()
+  await page.getByPlaceholder("e.g. German A1").fill("German Completion")
+  const studyLanguageSelect = page.locator("select").nth(1)
+  const deutschLanguageId = await studyLanguageSelect
+    .locator("option", { hasText: "Deutsch" })
+    .getAttribute("value")
+  if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
+  await studyLanguageSelect.selectOption(deutschLanguageId)
+  await page.getByRole("button", { name: "Create" }).click()
+  await page.getByRole("link", { name: /German Completion/ }).click()
+  const deckUrl = page.url()
+
+  await page.getByRole("button", { name: "Menu" }).click()
+  await page.getByRole("button", { name: "Add card" }).click()
+  await page.getByRole("textbox", { name: "Subject" }).fill("Haus")
+  await page.getByRole("textbox", { name: "Front" }).fill("Haus front.")
+  await page.getByRole("textbox", { name: "Back" }).fill("Haus back.")
+  await page.getByRole("button", { name: "Create" }).click()
+
+  // Fresh deck: the single subject is unseen -> lazy recompute yields 0%.
+  await expect(page.getByTestId("deck-subject-stats")).toContainText("1 subject, 1 card, 0%")
+
+  await page.getByRole("link", { name: /Review 1 due/ }).click()
+  await expect(page.getByText("Haus front.")).toBeVisible()
+  await page.getByRole("button", { name: "Reveal" }).click()
+  const reviewDone = page.waitForResponse((resp) => resp.url().includes("review.complete"))
+  await page.getByRole("button", { name: /^3/ }).click()
+  await reviewDone
+  await expect(page.getByRole("heading", { name: "All caught up" })).toBeVisible()
+
+  // Reviewed at fixation 3 -> 0.25 over 1 subject -> 25%.
+  await page.goto(deckUrl)
+  await expect(page.getByTestId("deck-subject-stats")).toContainText("1 subject, 1 card, 25%")
+})
