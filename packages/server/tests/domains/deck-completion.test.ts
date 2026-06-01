@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { makeUser, resetDomain } from "../helpers.js"
+import { callerFor, makeUser, resetDomain } from "../helpers.js"
 import { prisma } from "../../src/infra/db.js"
 import {
   completionPercent,
@@ -62,5 +62,63 @@ describe("deck-completion.service", () => {
     const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
     expect(row.completionScore).toBeNull()
     expect(row.completionComputedAt).toBeNull()
+  })
+})
+
+describe("decks.get completionPercent (lazy recompute)", () => {
+  beforeEach(resetDomain)
+
+  it("returns null percent for a deck with no subjects", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({ data: { name: "Empty", userId } })
+    const res = await callerFor(userId).decks.get({ id: deck.id })
+    expect(res.completionPercent).toBeNull()
+  })
+
+  it("recomputes when completionScore is null and returns the percent", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({ data: { name: "Fresh", userId } })
+    await prisma.subject.create({
+      data: { userId, deckId: deck.id, subject: "a", subjectKey: "a", fixationLevel: "3" },
+    })
+    const res = await callerFor(userId).decks.get({ id: deck.id })
+    expect(res.completionPercent).toBe(25)
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBe(0.25)
+    expect(row.completionComputedAt).not.toBeNull()
+  })
+
+  it("recomputes when completionComputedAt is older than 24h", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({
+      data: {
+        name: "Stale",
+        userId,
+        completionScore: 0, // wrong on purpose
+        completionComputedAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+      },
+    })
+    await prisma.subject.create({
+      data: { userId, deckId: deck.id, subject: "a", subjectKey: "a", fixationLevel: "6" },
+    })
+    const res = await callerFor(userId).decks.get({ id: deck.id })
+    expect(res.completionPercent).toBe(100)
+  })
+
+  it("does not recompute when fresh (uses cached score)", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({
+      data: {
+        name: "Cached",
+        userId,
+        completionScore: 0.5, // stale value, but recent timestamp
+        completionComputedAt: new Date(),
+      },
+    })
+    await prisma.subject.create({
+      data: { userId, deckId: deck.id, subject: "a", subjectKey: "a", fixationLevel: "6" },
+    })
+    const res = await callerFor(userId).decks.get({ id: deck.id })
+    expect(res.completionPercent).toBe(50) // cached 0.5 / 1 subject, NOT recomputed to 100
   })
 })
