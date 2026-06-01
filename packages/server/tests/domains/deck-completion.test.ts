@@ -8,6 +8,7 @@ import {
   recomputeDeckCompletion,
 } from "../../src/domains/decks/deck-completion.service.js"
 import { subjectKeyFor } from "../../src/domains/subjects/subjects.service.js"
+import { completeReview } from "../../src/domains/review/review.service.js"
 
 async function makeDeck(userId: string, name = "Deck") {
   return prisma.deck.create({ data: { name, userId } })
@@ -120,5 +121,71 @@ describe("decks.get completionPercent (lazy recompute)", () => {
     })
     const res = await callerFor(userId).decks.get({ id: deck.id })
     expect(res.completionPercent).toBe(50) // cached 0.5 / 1 subject, NOT recomputed to 100
+  })
+})
+
+async function seedCard(userId: string, deckId: string, text: string, fixationLevel: string) {
+  const subject = await prisma.subject.create({
+    data: { userId, deckId, subject: text, subjectKey: subjectKeyFor(text), fixationLevel },
+  })
+  const card = await prisma.card.create({
+    data: { deckId, subjectId: subject.id, front: `f-${text}`, frontHash: text, back: `b-${text}` },
+  })
+  return { subject, card }
+}
+
+describe("completeReview completion update", () => {
+  beforeEach(resetDomain)
+
+  it("applies the delta when completionScore is already set", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({
+      data: { name: "D", userId, completionScore: 0, completionComputedAt: new Date() },
+    })
+    const { card } = await seedCard(userId, deck.id, "a", "1") // prev points 0
+
+    await completeReview(prisma, userId, card.id, { chosenLevel: "3" }) // 0.25
+
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBeCloseTo(0.25, 5)
+  })
+
+  it("applies a negative delta when fixation drops", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({
+      data: { name: "D", userId, completionScore: 1, completionComputedAt: new Date() },
+    })
+    const { card } = await seedCard(userId, deck.id, "a", "6") // prev points 1
+
+    await completeReview(prisma, userId, card.id, { chosenLevel: "3" }) // 0.25, delta -0.75
+
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBeCloseTo(0.25, 5)
+  })
+
+  it("full-recomputes when completionScore is null (self-heal)", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({ data: { name: "D", userId } }) // score null
+    const { card } = await seedCard(userId, deck.id, "a", "1")
+    await seedCard(userId, deck.id, "b", "6") // contributes 1 to a full recompute
+
+    await completeReview(prisma, userId, card.id, { chosenLevel: "5" }) // a -> 0.75
+
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBeCloseTo(1.75, 5) // 0.75 (a) + 1 (b)
+    expect(row.completionComputedAt).not.toBeNull()
+  })
+
+  it("inverse review does not change completionScore", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({
+      data: { name: "D", userId, completionScore: 0.5, completionComputedAt: new Date() },
+    })
+    const { card } = await seedCard(userId, deck.id, "a", "4")
+
+    await completeReview(prisma, userId, card.id, { inverse: true })
+
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBe(0.5)
   })
 })

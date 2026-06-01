@@ -7,6 +7,7 @@ import {
   deleteEmptySubjectsForDeck,
   randomSubjectKeyFromRng,
 } from "../subjects/subjects.service.js"
+import { pointsFor, recomputeDeckCompletion } from "../decks/deck-completion.service.js"
 
 dayjs.extend(utc)
 
@@ -271,6 +272,7 @@ export async function completeReview(
     throw Object.assign(new Error("chosenLevel required"), { code: "BAD_INPUT" })
   }
   const chosenLevel = fixationLevelSchema.parse(options.chosenLevel)
+  const previousLevel = card.subject.fixationLevel
   const cooldown = nextCooldownAt(chosenLevel, now)
   const lastSeenShuffle = new Date(now.getTime() + (Math.random() - 0.5) * COOLDOWN_MS[chosenLevel])
   const cardMinutes = Math.round(COOLDOWN_MS[chosenLevel] / 60_000)
@@ -296,6 +298,22 @@ export async function completeReview(
         cooldownAt: cooldown,
       },
     })
+
+    const deckRow = await tx.deck.findUnique({
+      where: { id: card.deckId },
+      select: { completionScore: true },
+    })
+    if (deckRow?.completionScore == null) {
+      await recomputeDeckCompletion(tx, card.deckId, now)
+    } else {
+      const delta = pointsFor(chosenLevel) - pointsFor(previousLevel)
+      if (delta !== 0) {
+        await tx.deck.update({
+          where: { id: card.deckId },
+          data: { completionScore: { increment: delta } },
+        })
+      }
+    }
 
     await tx.subject.updateMany({
       where: { id: card.subjectId, firstSeenAt: null },
