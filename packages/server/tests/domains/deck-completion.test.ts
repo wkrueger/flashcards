@@ -189,3 +189,34 @@ describe("completeReview completion update", () => {
     expect(row.completionScore).toBe(0.5)
   })
 })
+
+describe("completion invalidation on drift paths", () => {
+  beforeEach(resetDomain)
+
+  it("deleting a card that empties its subject nulls completionScore", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({
+      data: { name: "D", userId, completionScore: 1, completionComputedAt: new Date() },
+    })
+    const { card } = await seedCard(userId, deck.id, "a", "6")
+
+    await callerFor(userId).cards.delete({ id: card.id })
+
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBeNull()
+    expect(row.completionComputedAt).toBeNull()
+  })
+
+  it("deleting a subject nulls completionScore", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({
+      data: { name: "D", userId, completionScore: 1, completionComputedAt: new Date() },
+    })
+    const { subject } = await seedCard(userId, deck.id, "a", "6")
+
+    await callerFor(userId).subjects.delete({ id: subject.id })
+
+    const row = await prisma.deck.findUniqueOrThrow({ where: { id: deck.id } })
+    expect(row.completionScore).toBeNull()
+  })
+})

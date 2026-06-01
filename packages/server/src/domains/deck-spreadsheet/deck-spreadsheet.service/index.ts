@@ -9,6 +9,7 @@ import {
 import { DeckSpreadsheetError } from "../deck-spreadsheet.shared.js"
 import type { SpreadsheetImportStatusView } from "@cards/shared"
 import { applySpreadsheetRows } from "./import-rows.js"
+import { markDeckCompletionStale } from "../../decks/deck-completion.service.js"
 import { cleanupStaleSpreadsheetImports as cleanupStaleSpreadsheetImportsForStorage } from "./storage.js"
 import {
   CARD_HEADERS,
@@ -184,6 +185,7 @@ export async function runDeckSpreadsheetImportJob(prisma: PrismaClient, workerJo
       completedAt: new Date(),
     },
   })
+  await markDeckCompletionStale(prisma, spreadsheetImport.deckId)
 }
 
 export async function handleDeckSpreadsheetImportWorkerJobError(
