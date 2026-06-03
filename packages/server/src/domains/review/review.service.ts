@@ -399,6 +399,21 @@ export async function completeReview(
   return { ok: true, cooldownAt: cooldown }
 }
 
+export async function advanceCard(
+  prisma: PrismaClient,
+  userId: string,
+  cardId: string,
+  now: Date = new Date()
+) {
+  const card = await prisma.card.findFirst({
+    where: { id: cardId, deck: { userId } },
+    select: { id: true },
+  })
+  if (!card) throw Object.assign(new Error("Card not found"), { code: "CARD_NOT_FOUND" })
+  await prisma.card.update({ where: { id: card.id }, data: { lastSeenAt: now } })
+  return { ok: true }
+}
+
 async function pickSpecificCard({
   prisma,
   userId,

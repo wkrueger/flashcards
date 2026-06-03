@@ -30,6 +30,7 @@ import {
   displayWithGeneratedTagPrefix,
 } from "../cards/card-front-prefix"
 import { SpeechRecognitionCard, type SpeechRecognitionCardHandle } from "./speech-recognition-card"
+import { ReviewSequentialPage } from "./review-sequential.page"
 
 export function ReviewPage({
   mode,
@@ -155,6 +156,10 @@ export function ReviewPage({
     initialCardId,
     initialConsumed,
   ])
+
+  if (deck.data?.sequentialEnabled && !initialSubjectId && !initialCardId && mode === "normal") {
+    return <ReviewSequentialPage />
+  }
 
   if (next.isLoading || (next.isFetching && !hasFreshCardForScope)) return <p></p>
 

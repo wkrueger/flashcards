@@ -14,9 +14,18 @@ export async function applySpreadsheetRows(
 ): Promise<SpreadsheetImportResult> {
   const touchedSubjectIds = new Set<string>()
   const seenIds = new Set<string>()
+  const subjectOrderByKey = new Map<string, number | null>()
   let createdCardCount = 0
   let updatedCardCount = 0
   let deletedCardCount = 0
+
+  // First subject appearance wins: the order from the first row mentioning a
+  // subject is used for every later row of the same subject.
+  const resolveSubjectOrder = (name: string, rowOrder: number | null) => {
+    const key = subjectKeyFor(name)
+    if (!subjectOrderByKey.has(key)) subjectOrderByKey.set(key, rowOrder)
+    return subjectOrderByKey.get(key) ?? null
+  }
 
   for (const row of input.rows) {
     const logPrefix = `Row ${row.rowNumber}:`
@@ -52,7 +61,8 @@ export async function applySpreadsheetRows(
         prisma,
         input.userId,
         input.deckId,
-        row.subjectName
+        row.subjectName,
+        resolveSubjectOrder(row.subjectName, row.subjectOrder)
       )
 
       try {
@@ -63,6 +73,7 @@ export async function applySpreadsheetRows(
             front: row.front,
             frontHash: hashFront(row.front),
             back: row.back,
+            order: row.cardOrder,
             cardTags: {
               create: tagIds.map((tagId) => ({ tag: { connect: { id: tagId } } })),
             },
@@ -87,18 +98,30 @@ export async function applySpreadsheetRows(
     })
     if (!card) throw new Error(`${logPrefix} card "${row.id}" was not found in this deck.`)
 
+    const resolvedSubjectOrder = resolveSubjectOrder(row.subjectName, row.subjectOrder)
     const subject =
       card.subject.subject === row.subjectName
-        ? card.subject
-        : await upsertSubjectForImport(prisma, input.userId, input.deckId, row.subjectName)
+        ? await prisma.subject.update({
+            where: { id: card.subjectId },
+            data: { order: resolvedSubjectOrder },
+            select: { id: true, subject: true },
+          })
+        : await upsertSubjectForImport(
+            prisma,
+            input.userId,
+            input.deckId,
+            row.subjectName,
+            resolvedSubjectOrder
+          )
     const currentTagIds = card.cardTags.map((cardTag) => cardTag.tagId)
     const subjectChanged = card.subjectId !== subject.id
     const cardFieldsChanged = card.front !== row.front || card.back !== row.back
+    const orderChanged = card.order !== row.cardOrder
     const tagIdSet = new Set(tagIds)
     const tagsChanged =
       currentTagIds.length !== tagIds.length || currentTagIds.some((tagId) => !tagIdSet.has(tagId))
 
-    if (!subjectChanged && !cardFieldsChanged && !tagsChanged) continue
+    if (!subjectChanged && !cardFieldsChanged && !tagsChanged && !orderChanged) continue
 
     if (subjectChanged) touchedSubjectIds.add(card.subjectId)
 
@@ -110,6 +133,7 @@ export async function applySpreadsheetRows(
           front: row.front,
           frontHash: hashFront(row.front),
           back: row.back,
+          order: row.cardOrder,
           ...(tagsChanged
             ? {
                 cardTags: {
@@ -149,7 +173,8 @@ async function upsertSubjectForImport(
   prisma: Prisma.TransactionClient,
   userId: string,
   deckId: string,
-  subjectName: string
+  subjectName: string,
+  order: number | null
 ) {
   const subject = subjectName.trim()
   if (!subject) {
@@ -162,7 +187,10 @@ async function upsertSubjectForImport(
     select: { id: true },
   })
 
-  if (existing) return existing
+  if (existing) {
+    await prisma.subject.update({ where: { id: existing.id }, data: { order } })
+    return existing
+  }
 
   return prisma.subject.create({
     data: {
@@ -171,6 +199,7 @@ async function upsertSubjectForImport(
       subject,
       subjectKey,
       randomKey: randomSubjectKey(),
+      order,
     },
     select: { id: true },
   })

@@ -796,4 +796,34 @@ describe("review domain", () => {
     expect(r.inverse).toBe(false)
     expect(r.card?.subject.subject).toBe("Haus")
   })
+
+  describe("review.advance", () => {
+    it("updates only the card lastSeenAt, no fixation/cooldown/subject change", async () => {
+      const userId = await makeUser()
+      const deck = await prisma.deck.create({ data: { name: "D", userId } })
+      const subject = await prisma.subject.create({
+        data: {
+          deckId: deck.id,
+          userId,
+          subject: "s",
+          subjectKey: subjectKeyFor("s"),
+          randomKey: 1,
+          fixationLevel: "3",
+        },
+      })
+      const beforeCooldown = subject.cooldownAt
+      const card = await prisma.card.create({
+        data: { deckId: deck.id, subjectId: subject.id, front: "f", frontHash: "fh", back: "b" },
+      })
+
+      await callerFor(userId).review.advance({ cardId: card.id })
+
+      const updatedCard = await prisma.card.findUniqueOrThrow({ where: { id: card.id } })
+      const updatedSubject = await prisma.subject.findUniqueOrThrow({ where: { id: subject.id } })
+      expect(updatedCard.lastSeenAt).not.toBeNull()
+      expect(updatedSubject.fixationLevel).toBe("3")
+      expect(updatedSubject.lastSeenAt).toBeNull()
+      expect(updatedSubject.cooldownAt.getTime()).toBe(beforeCooldown.getTime())
+    })
+  })
 })

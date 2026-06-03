@@ -100,6 +100,7 @@ model Deck {
   speechRecognitionEnabled Boolean                @default(true)
   inverseReviewEnabled     Boolean                @default(false)
   inverseReviewStreak      Int                    @default(0)
+  sequentialEnabled        Boolean                @default(false)
   completionScore          Float?
   completionComputedAt     DateTime?
   subjects                 Subject[]
@@ -126,8 +127,10 @@ model Subject {
   lastSeenShuffle DateTime?
   timesSeen       Int       @default(0)
   fixationLevel   String    @default("1")
+  order           Int?
   inverseReviewed Boolean   @default(false)
   cooldownAt      DateTime  @default(now())
+  createdAt       DateTime  @default(now())
   cards           Card[]
 
   @@unique([deckId, subjectKey])
@@ -150,6 +153,7 @@ model Card {
   genTemplate           String?
   lastSeenAt            DateTime?
   timesSeen             Int                    @default(0)
+  order                 Int?
   createdAt             DateTime               @default(now())
   cardTags              CardTag[]
   reviewStatUniqueCards ReviewStatUniqueCard[]

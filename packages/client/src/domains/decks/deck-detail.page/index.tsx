@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { Check, Download, LoaderCircle, Pencil, Plus, Sparkles, Trash2, Upload } from "lucide-react"
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  LoaderCircle,
+  Pencil,
+  Plus,
+  Sparkles,
+  Trash2,
+  Upload,
+} from "lucide-react"
 import { handleTRPCError, trpc } from "../../../infra/trpc"
 import { Button, buttonVariants } from "../../../ui/button"
 import { cn } from "../../../lib/utils"
@@ -44,6 +55,8 @@ export function DeckDetailPage() {
   const [editBackLang, setEditBackLang] = useState("")
   const [speechRecognitionEnabled, setSpeechRecognitionEnabled] = useState(true)
   const [inverseReviewEnabled, setInverseReviewEnabled] = useState(false)
+  const [sequentialEnabled, setSequentialEnabled] = useState(false)
+  const [optionsExpanded, setOptionsExpanded] = useState(false)
 
   useEffect(() => {
     if (editOpen && deck.data) {
@@ -61,6 +74,7 @@ export function DeckDetailPage() {
     if (deck.data) {
       setSpeechRecognitionEnabled(deck.data.speechRecognitionEnabled)
       setInverseReviewEnabled(deck.data.inverseReviewEnabled)
+      setSequentialEnabled(deck.data.sequentialEnabled)
     }
   }, [deck.data])
 
@@ -75,6 +89,7 @@ export function DeckDetailPage() {
               speechRecognitionEnabled:
                 input.speechRecognitionEnabled ?? current.speechRecognitionEnabled,
               inverseReviewEnabled: input.inverseReviewEnabled ?? current.inverseReviewEnabled,
+              sequentialEnabled: input.sequentialEnabled ?? current.sequentialEnabled,
             }
           : current
       )
@@ -85,6 +100,7 @@ export function DeckDetailPage() {
         utils.decks.get.setData({ id: deckId }, context.previousDeck)
         setSpeechRecognitionEnabled(context.previousDeck.speechRecognitionEnabled)
         setInverseReviewEnabled(context.previousDeck.inverseReviewEnabled)
+        setSequentialEnabled(context.previousDeck.sequentialEnabled)
       }
       handleTRPCError(error)
     },
@@ -118,6 +134,17 @@ export function DeckDetailPage() {
 
     return () => window.clearTimeout(timeoutId)
   }, [deck.data, deckId, inverseReviewEnabled, updateReviewSettings])
+
+  useEffect(() => {
+    if (!deck.data) return
+    if (sequentialEnabled === deck.data.sequentialEnabled) return
+
+    const timeoutId = window.setTimeout(() => {
+      updateReviewSettings.mutate({ id: deckId, sequentialEnabled })
+    }, 300)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [deck.data, deckId, sequentialEnabled, updateReviewSettings])
 
   const editSameLanguage = !!editFrontLang && !!editBackLang && editFrontLang === editBackLang
 
@@ -153,6 +180,35 @@ export function DeckDetailPage() {
             >
               Edit deck
             </MenuItem>
+            <MenuItem
+              icon={
+                optionsExpanded ? (
+                  <ChevronDown className="h-[18px] w-[18px]" />
+                ) : (
+                  <ChevronRight className="h-[18px] w-[18px]" />
+                )
+              }
+              onSelect={() => setOptionsExpanded((v) => !v)}
+            >
+              Options
+            </MenuItem>
+            {optionsExpanded && (
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 pl-6 text-[15px] font-medium transition-colors hover:bg-accent/70">
+                <span>Sequential deck</span>
+                <input
+                  type="checkbox"
+                  checked={sequentialEnabled}
+                  onChange={(e) => setSequentialEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <span
+                  aria-hidden="true"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+                >
+                  <Check className="h-4 w-4" />
+                </span>
+              </label>
+            )}
             <MenuItem
               icon={<Upload className="h-[18px] w-[18px]" />}
               onSelect={() => {
@@ -288,7 +344,15 @@ export function DeckDetailPage() {
           />
 
           <div className="flex flex-col gap-2">
-            {dueCount > 0 ? (
+            {deck.data.sequentialEnabled ? (
+              <Link
+                to="/decks/$deckId/review"
+                params={{ deckId }}
+                className={cn(buttonVariants({ variant: "default" }))}
+              >
+                Review
+              </Link>
+            ) : dueCount > 0 ? (
               <Link
                 to="/decks/$deckId/review"
                 params={{ deckId }}

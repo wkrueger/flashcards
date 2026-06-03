@@ -252,6 +252,92 @@ test("review edit exits return to the same card", async ({ page }) => {
   await expect(page.getByText(updatedBack)).toBeVisible()
 })
 
+test("sequential deck walks cards in order with Next, Prev, and Restart", async ({ page }) => {
+  const email = `e2e-sequential-${Date.now()}@test.local`
+  const password = "passw0rd!"
+
+  await page.goto("/signup")
+  await page.getByLabel("Name").fill("E2E Sequential")
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Sign up" }).click()
+  await page.getByRole("link", { name: "Back to log in" }).click()
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Log in" }).click()
+
+  await page.getByRole("button", { name: "New deck" }).click()
+  await page.getByPlaceholder("e.g. German A1").fill("German Sequential")
+  await page.getByRole("button", { name: "Create" }).click()
+  await page.getByRole("link", { name: /German Sequential/ }).click()
+
+  const addCard = async (subject: string, front: string, back: string) => {
+    await page.getByRole("button", { name: "Menu" }).click()
+    await page.getByRole("button", { name: "Add card" }).click()
+    await page.getByRole("textbox", { name: "Subject" }).fill(subject)
+    await page.getByRole("textbox", { name: "Front" }).fill(front)
+    await page.getByRole("textbox", { name: "Back" }).fill(back)
+    await page.getByRole("button", { name: "Create" }).click()
+    // Wait until the form closes (back on deck detail) before reopening the menu,
+    // otherwise the next menu-open can race with navigation.
+    await expect(page.getByRole("textbox", { name: "Subject" })).toBeHidden()
+  }
+
+  await addCard("Alpha", "Alpha one front", "Alpha one back")
+  await addCard("Alpha", "Alpha two front", "Alpha two back")
+  await addCard("Beta", "Beta front", "Beta back")
+
+  await expect(page.getByTestId("deck-subject-stats")).toContainText("2 subjects, 3 cards")
+
+  // Enable sequential deck via the Options submenu (the checkbox is visually
+  // hidden shadcn-style, so toggle it via its label).
+  await page.getByRole("button", { name: "Menu" }).click()
+  await page.getByRole("button", { name: "Options" }).click()
+  await page.getByText("Sequential deck", { exact: true }).click()
+  await expect(page.getByRole("checkbox", { name: "Sequential deck" })).toBeChecked()
+  await page.keyboard.press("Escape")
+
+  // Sequential decks show a single "Review" button.
+  await page.getByRole("link", { name: "Review", exact: true }).click()
+
+  // First card of the first subject; not the last card → "Next", no fixation buttons.
+  await expect(page.getByText("Alpha one front")).toBeVisible()
+  await page.getByRole("button", { name: "Reveal" }).click()
+  await expect(page.getByText("Alpha one back")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Next" })).toBeVisible()
+  await page.getByRole("button", { name: "Next" }).click()
+
+  // Last card of the subject → fixation buttons, no "Next".
+  await expect(page.getByText("Alpha two front")).toBeVisible()
+  await page.getByRole("button", { name: "Reveal" }).click()
+  await expect(page.getByRole("button", { name: /^3/ })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Next" })).toHaveCount(0)
+
+  // Previous card returns to the first card of the subject.
+  await page.getByRole("button", { name: "Previous card" }).click()
+  await expect(page.getByText("Alpha one front")).toBeVisible()
+  await page.getByRole("button", { name: "Reveal" }).click()
+  await page.getByRole("button", { name: "Next" }).click()
+
+  // Complete the subject's last card → advances to the next subject.
+  await expect(page.getByText("Alpha two front")).toBeVisible()
+  await page.getByRole("button", { name: "Reveal" }).click()
+  await page.getByRole("button", { name: /^3/ }).click()
+  await expect(page.getByText("Beta front")).toBeVisible()
+
+  // Previous from the first card of a subject traverses to the previous
+  // subject's last card.
+  await expect(page.getByRole("button", { name: "Previous card" })).toBeEnabled()
+  await page.getByRole("button", { name: "Previous card" }).click()
+  await expect(page.getByText("Alpha two front")).toBeVisible()
+
+  // Restart jumps back to the first card of the first subject after confirmation.
+  await page.getByRole("button", { name: "Restart" }).click()
+  await expect(page.getByRole("heading", { name: "Restart this deck?" })).toBeVisible()
+  await page.getByRole("dialog").getByRole("button", { name: "Restart" }).click()
+  await expect(page.getByText("Alpha one front")).toBeVisible()
+})
+
 test("deck completion percent updates after a review", async ({ page }) => {
   const email = `e2e-completion-${Date.now()}@test.local`
   const password = "passw0rd!"

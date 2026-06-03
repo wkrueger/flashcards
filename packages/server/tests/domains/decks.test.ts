@@ -205,4 +205,19 @@ describe("decks domain", () => {
     expect(stats[0]!.cardMinutes).toBe(0)
     expect(stats[0]!.cardCount).toBe(0)
   })
+
+  describe("sequential flag", () => {
+    it("defaults to false and can be toggled via update", async () => {
+      const userId = await makeUser()
+      const caller = callerFor(userId)
+      const deck = await caller.decks.create({ name: "Seq" })
+
+      const fresh = await caller.decks.get({ id: deck.id })
+      expect(fresh.sequentialEnabled).toBe(false)
+
+      await caller.decks.update({ id: deck.id, sequentialEnabled: true })
+      const updated = await caller.decks.get({ id: deck.id })
+      expect(updated.sequentialEnabled).toBe(true)
+    })
+  })
 })
