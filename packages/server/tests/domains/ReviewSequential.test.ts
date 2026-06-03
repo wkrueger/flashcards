@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 import { prisma } from "../../src/infra/db.js"
-import { subjectKeyFor } from "../../src/domains/subjects/subjects.service.js"
-import { hashFront } from "../../src/domains/cards/cards.service.js"
+import { subjectKeyFor } from "../../src/domains/Subjects/subjectsService.js"
+import { hashFront } from "../../src/domains/Cards/cardsService.js"
 
 beforeEach(resetDomain)
 

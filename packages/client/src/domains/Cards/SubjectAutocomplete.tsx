@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { trpc } from "../../infra/trpc"
-import { Input } from "../../ui/input"
-import { Popover, PopoverAnchor, PopoverContent } from "../../ui/popover"
+import { Input } from "../../ui/Input"
+import { Popover, PopoverAnchor, PopoverContent } from "../../ui/Popover"
 
 export function SubjectAutocomplete({
   deckId,

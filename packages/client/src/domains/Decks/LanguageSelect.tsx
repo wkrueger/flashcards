@@ -1,5 +1,5 @@
 import { trpc } from "../../infra/trpc"
-import { NativeSelect } from "../../ui/native-select"
+import { NativeSelect } from "../../ui/NativeSelect"
 
 interface Props {
   value: string

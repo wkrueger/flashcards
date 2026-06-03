@@ -1,12 +1,12 @@
 import { router } from "../infra/trpc.js"
-import { ankiImportRouter } from "./anki-import/anki-import.router.js"
-import { cardTemplateRouter } from "./card-template/card-template.router.js"
-import { cardsRouter } from "./cards/cards.router.js"
-import { deckSpreadsheetRouter } from "./deck-spreadsheet/deck-spreadsheet.router.js"
-import { decksRouter } from "./decks/decks.router.js"
-import { languagesRouter } from "./languages/languages.router.js"
-import { reviewRouter } from "./review/review.router.js"
-import { subjectsRouter } from "./subjects/subjects.router.js"
+import { ankiImportRouter } from "./AnkiImport/ankiImportRouter.js"
+import { cardTemplateRouter } from "./CardTemplate/cardTemplateRouter.js"
+import { cardsRouter } from "./Cards/cardsRouter.js"
+import { deckSpreadsheetRouter } from "./DeckSpreadsheet/deckSpreadsheetRouter.js"
+import { decksRouter } from "./Decks/decksRouter.js"
+import { languagesRouter } from "./Languages/languagesRouter.js"
+import { reviewRouter } from "./Review/reviewRouter.js"
+import { subjectsRouter } from "./Subjects/subjectsRouter.js"
 
 export const appRouter = router({
   ankiImport: ankiImportRouter,

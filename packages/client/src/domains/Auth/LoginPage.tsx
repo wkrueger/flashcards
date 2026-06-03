@@ -6,11 +6,11 @@ import {
   invalidateSessionCache,
   sendVerificationEmail,
   signIn,
-} from "../../infra/auth-client"
-import { Button } from "../../ui/button"
-import { Card, CardContent } from "../../ui/card"
-import { Input } from "../../ui/input"
-import { Label } from "../../ui/label"
+} from "../../infra/authClient"
+import { Button } from "../../ui/Button"
+import { Card, CardContent } from "../../ui/Card"
+import { Input } from "../../ui/Input"
+import { Label } from "../../ui/Label"
 import { AppTitle } from "../../components/AppTitle"
 import { GoogleIcon } from "../../components/GoogleIcon"
 

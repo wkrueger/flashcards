@@ -6,10 +6,10 @@ import {
   WorkerJobType,
   type PrismaClient,
 } from "../../../generated/prisma/client.js"
-import { DeckSpreadsheetError } from "../deck-spreadsheet.shared.js"
+import { DeckSpreadsheetError } from "../deckSpreadsheetShared.js"
 import type { SpreadsheetImportStatusView } from "@cards/shared"
-import { applySpreadsheetRows } from "./import-rows.js"
-import { markDeckCompletionStale } from "../../decks/deck-completion.service.js"
+import { applySpreadsheetRows } from "./importRows.js"
+import { markDeckCompletionStale } from "../../Decks/deckCompletionService.js"
 import { cleanupStaleSpreadsheetImports as cleanupStaleSpreadsheetImportsForStorage } from "./storage.js"
 import {
   CARD_HEADERS,

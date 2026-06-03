@@ -4,9 +4,9 @@ import { Plus } from "lucide-react"
 import type { AnkiImportListItemView } from "@cards/shared"
 import { trpc } from "../../infra/trpc"
 import { PageHeader } from "../../components/AppShell"
-import { Button, buttonVariants } from "../../ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog"
-import { cn } from "../../lib/utils"
+import { Button, buttonVariants } from "../../ui/Button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/Dialog"
+import { cn } from "../../Lib/Utils"
 
 const STATUS_LABEL: Record<AnkiImportListItemView["status"], string> = {
   UPLOADED: "Uploaded",

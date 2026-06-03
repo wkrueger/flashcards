@@ -1,5 +1,5 @@
 import { PrismaClient } from "../generated/prisma/client.js"
-import { createPrismaAdapter } from "./prisma-adapter.js"
+import { createPrismaAdapter } from "./prismaAdapter.js"
 
 declare global {
   // eslint-disable-next-line no-var

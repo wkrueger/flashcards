@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 import { prisma } from "../../src/infra/db.js"
-import { pickNextCard } from "../../src/domains/review/review.service.js"
+import { pickNextCard } from "../../src/domains/Review/reviewService.js"
 import {
   SUBJECT_RANDOM_KEY_RANGE,
   subjectKeyFor,
-} from "../../src/domains/subjects/subjects.service.js"
+} from "../../src/domains/Subjects/subjectsService.js"
 import { COOLDOWN_MS } from "@cards/shared"
-import { tagOwnershipFor } from "../../src/domains/cards/cards.service.js"
+import { tagOwnershipFor } from "../../src/domains/Cards/cardsService.js"
 
 async function seedSubjects(
   userId: string,

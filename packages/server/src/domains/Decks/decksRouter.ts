@@ -3,12 +3,12 @@ import { createDeckInput, idInput, updateDeckInput } from "@cards/shared"
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc.js"
 import { protectedProcedure, router } from "../../infra/trpc.js"
-import { randomSubjectKey } from "../subjects/subjects.service.js"
+import { randomSubjectKey } from "../Subjects/subjectsService.js"
 import {
   COMPLETION_STALE_MS,
   completionPercent,
   recomputeDeckCompletion,
-} from "./deck-completion.service.js"
+} from "./deckCompletionService.js"
 
 dayjs.extend(utc)
 

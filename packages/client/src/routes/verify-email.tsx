@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { VerifyEmailPage } from "../domains/auth/verify-email.page"
+import { VerifyEmailPage } from "../domains/Auth/VerifyEmailPage"
 
 type Search = { error?: string }
 

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { ResetPasswordPage } from "../domains/auth/reset-password.page"
+import { ResetPasswordPage } from "../domains/Auth/ResetPasswordPage"
 
 type Search = { token?: string; error?: string }
 

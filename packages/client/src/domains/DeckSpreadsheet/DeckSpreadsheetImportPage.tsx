@@ -3,8 +3,8 @@ import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
 import { FileSpreadsheet, Upload } from "lucide-react"
 import { PageHeader } from "../../components/AppShell"
 import { trpc } from "../../infra/trpc"
-import { Button } from "../../ui/button"
-import { Label } from "../../ui/label"
+import { Button } from "../../ui/Button"
+import { Label } from "../../ui/Label"
 
 export function DeckSpreadsheetImportPage() {
   const { deckId } = useParams({ from: "/(app)/decks/$deckId/import" })

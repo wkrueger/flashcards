@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute, useRouter } from "@tanstack/react-router"
 import { useEffect } from "react"
-import { useSession } from "../../infra/auth-client"
+import { useSession } from "../../infra/authClient"
 
 export const Route = createFileRoute("/(app)")({
   component: AppLayout,

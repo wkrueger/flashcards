@@ -1,5 +1,5 @@
 import { Flame } from "lucide-react"
-import { Card, CardContent } from "../../../ui/card"
+import { Card, CardContent } from "../../../ui/Card"
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 

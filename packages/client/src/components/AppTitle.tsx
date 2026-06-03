@@ -1,4 +1,4 @@
-import { cn } from "../lib/utils"
+import { cn } from "../Lib/Utils"
 
 export function AppTitle({ className }: { className?: string }) {
   return (

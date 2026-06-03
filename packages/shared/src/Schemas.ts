@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { FIXATION_LEVELS } from "./fixation.js"
+import { FIXATION_LEVELS } from "./Fixation.js"
 
 export const fixationLevelSchema = z.enum(FIXATION_LEVELS)
 

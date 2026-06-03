@@ -11,24 +11,24 @@ import multipart from "@fastify/multipart"
 import { fastifyTRPCPlugin } from "@trpc/server/adapters/fastify"
 import { auth } from "./infra/auth.js"
 import { createContext } from "./infra/trpc.js"
-import { appRouter } from "./domains/_app.router.js"
+import { appRouter } from "./domains/_appRouter.js"
 import { prisma } from "./infra/db.js"
 import {
   ANKI_IMPORT_UPLOAD_MAX_BYTES,
   handleAnkiImportUpload,
-} from "./domains/anki-import/anki-import.service.js"
+} from "./domains/AnkiImport/ankiImportService.js"
 import { SpreadsheetImportStatus } from "./generated/prisma/client.js"
 import { getSessionFromRawHeaders } from "./infra/auth.js"
 import {
   buildDeckSpreadsheetExport,
   enqueueDeckSpreadsheetImportJob,
-} from "./domains/deck-spreadsheet/deck-spreadsheet.service/index.js"
+} from "./domains/DeckSpreadsheet/deckSpreadsheetService/index.js"
 import {
   DECK_SPREADSHEET_UPLOAD_DIR,
   DECK_SPREADSHEET_UPLOAD_MAX_BYTES,
   DeckSpreadsheetError,
   deleteFileIfExists,
-} from "./domains/deck-spreadsheet/deck-spreadsheet.shared.js"
+} from "./domains/DeckSpreadsheet/deckSpreadsheetShared.js"
 
 const port = Number(process.env.SERVER_PORT ?? 3001)
 const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:5173"

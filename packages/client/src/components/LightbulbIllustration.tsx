@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react"
-import { cn } from "../lib/utils"
+import { cn } from "../Lib/Utils"
 
 export function LightbulbIllustration({
   className,

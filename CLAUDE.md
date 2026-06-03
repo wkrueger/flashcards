@@ -15,29 +15,40 @@ Mobile-first vocabulary flashcards app with spaced-repetition cooldowns. Multi-u
 ```
 packages/
 ├── shared/                          # cross-cutting only — zod schemas, fixation cooldowns
-│   └── src/{fixation.ts, schemas.ts, index.ts}
+│   └── src/{Fixation.ts, Schemas.ts, index.ts}
 ├── server/
 │   ├── prisma/{schema.prisma, seed.ts, migrations/, dev.db}
 │   ├── src/
 │   │   ├── main.ts                  # Fastify bootstrap, /api/auth/* + /trpc + /health
-│   │   ├── infra/{db.ts, auth.ts, trpc.ts}
+│   │   ├── infra/{db.ts, auth.ts, trpc.ts, rateLimit.ts}
 │   │   ├── domains/                 # GROUPED BY DOMAIN, not by layer
-│   │   │   ├── languages/languages.router.ts
-│   │   │   ├── decks/decks.router.ts
-│   │   │   ├── subjects/{subjects.router.ts, subjects.service.ts}
-│   │   │   ├── cards/{cards.router.ts, cards.service.ts}
-│   │   │   ├── review/{review.router.ts, review.service.ts}
-│   │   │   └── _app.router.ts       # merges domain routers; exports AppRouter type
+│   │   │   ├── Languages/languagesRouter.ts
+│   │   │   ├── Decks/{decksRouter.ts, deckCompletionService.ts}
+│   │   │   ├── Subjects/{subjectsRouter.ts, subjectsService.ts}
+│   │   │   ├── Cards/{cardsRouter.ts, cardsService.ts}
+│   │   │   ├── Review/{reviewRouter.ts, reviewService.ts, reviewSequential.ts}
+│   │   │   ├── AnkiImport/{ankiImportRouter.ts, ankiImportService.ts, ankiImportArchive.ts, ankiImportMapping.ts, ankiImportShared.ts, ankiImportUpload.ts}
+│   │   │   ├── CardTemplate/{cardTemplateRouter.ts, cardTemplateService.ts}
+│   │   │   ├── DeckSpreadsheet/{deckSpreadsheetRouter.ts, deckSpreadsheetShared.ts, deckSpreadsheetService/}
+│   │   │   └── _appRouter.ts        # merges domain routers; exports AppRouter type
 │   │   └── generated/prisma/        # Prisma client output (gitignored)
-│   └── tests/{setup.ts, helpers.ts, domains/*.test.ts}
+│   └── tests/{setup.ts, helpers.ts, domains/*.test.ts, auth/*.test.ts}
 └── client/
     ├── public/                      # favicon.svg + PWA icons + manifest.webmanifest
     ├── src/
     │   ├── main.tsx, routeTree.gen.ts (auto), styles.css
-    │   ├── infra/{trpc.ts, auth-client.ts, theme.tsx}
-    │   ├── ui/                      # shadcn primitives (button, input, card, etc.)
+    │   ├── infra/{trpc.ts, authClient.ts, theme.tsx}
+    │   ├── ui/                      # shadcn primitives (Button, Input, Card, etc.)
+    │   ├── Lib/Utils.ts             # cn() helper
     │   ├── components/              # cross-domain (AppShell, MarkdownView)
-    │   ├── domains/                 # auth, decks, cards, review — pages + sub-components
+    │   ├── domains/                 # Auth, Decks, Cards, Review — pages + sub-components
+    │   │   ├── Auth/{LoginPage.tsx, SignupPage.tsx, ForgotPasswordPage.tsx, ResetPasswordPage.tsx, VerifyEmailPage.tsx}
+    │   │   ├── Cards/{CardEditPage.tsx, CardNewPage.tsx, CardTemplateGeneratePage.tsx, CardForm.tsx, CardFrontPrefix.ts, ...}
+    │   │   ├── Decks/{DeckListPage.tsx, DeckDetailPage/, LanguageSelect.tsx}
+    │   │   ├── Review/{ReviewPage.tsx, ReviewSequentialPage.tsx, SpeechRecognitionCard.tsx}
+    │   │   ├── Subjects/SubjectCardsPage.tsx
+    │   │   ├── AnkiImport/{AnkiImportListPage.tsx, AnkiImportProcessPage.tsx, AnkiImportUploadPage.tsx}
+    │   │   └── DeckSpreadsheet/DeckSpreadsheetImportPage.tsx
     │   └── routes/                  # thin file-based route shells → import domain pages
     └── e2e/happy-path.spec.ts
 ```
@@ -46,15 +57,15 @@ packages/
 
 ## Domain rules
 
-- **Fixation level** is a **string** ("1".."5") on `Subject.fixationLevel`, deliberately, so future levels can be added without a column-type migration. Validation uses `z.enum(["1","2","3","4","5"])` at the API edge. Cooldowns: 1=2min, 2=10min, 3=12h, 4=2d, 5=1w. Constants and helpers in `packages/shared/src/fixation.ts` (`COOLDOWN_MS`, `COOLDOWN_LABEL`, `FIXATION_EMOJI`, `nextCooldownAt`, `buttonsForPrevious`).
-- **Pickup algorithm** (`pickNextCard` in `review.service.ts`):
+- **Fixation level** is a **string** ("1".."5") on `Subject.fixationLevel`, deliberately, so future levels can be added without a column-type migration. Validation uses `z.enum(["1","2","3","4","5"])` at the API edge. Cooldowns: 1=2min, 2=10min, 3=12h, 4=2d, 5=1w. Constants and helpers in `packages/shared/src/Fixation.ts` (`COOLDOWN_MS`, `COOLDOWN_LABEL`, `FIXATION_EMOJI`, `nextCooldownAt`, `buttonsForPrevious`).
+- **Pickup algorithm** (`pickNextCard` in `reviewService.ts`):
   1. Filter user's subjects by `cooldownAt <= now()` (normal mode) OR all subjects (free mode), optionally constrained to a deckId via `cards: { some: { deckId } }`.
   2. Take the oldest 30% by `cooldownAt`: `Math.max(1, ceil(count * 0.3))`.
   3. Random pick from that slice.
   4. Within the chosen subject, the card with the oldest `lastSeenAt` (nulls first).
   5. Return `{ card, dueCount }`. Normal mode → `dueCount = candidates.length`; free mode runs an extra count of due-only subjects so the UI can hint when nothing is technically due.
 - **Two review modes**: `normal` (only due) and `free` (ignore cooldown). When normal returns no card, the UI shows an empty state offering free review. Even in free mode, `review.complete` updates stats and resets cooldown.
-- **Cooldown buttons after reveal** (4 buttons): if the previous fixation was "4" or "5", show `2..5`; otherwise `1..4`. Colored red→green, with face emojis (1😖 2😕 3🙂 4😀 5😎) — see `LEVEL_COLOR` and `FIXATION_EMOJI` in `review.page.tsx`.
+- **Cooldown buttons after reveal** (4 buttons): if the previous fixation was "4" or "5", show `2..5`; otherwise `1..4`. Colored red→green, with face emojis (1😖 2😕 3🙂 4😀 5😎) — see `LEVEL_COLOR` and `FIXATION_EMOJI` in `ReviewPage.tsx`.
 - **Subjects are upserted by `(userId, subjectText)`** transparently when a card is created — no separate subject UI. Autocomplete via `subjects.autocomplete` (startsWith).
 - **Card uniqueness**: `(subjectId, frontHash)` where `frontHash = sha256(front)`. Surfaced as tRPC `CONFLICT`.
 - **Per-user scoping** is enforced in every router by filtering on `userId` (or via deck/card → deck → user joins). Tests cover this.
@@ -69,7 +80,7 @@ packages/
 - **Cancel/back buttons** in card create/edit use `router.history.back()` (with a fallback to `/decks/$deckId`) so they preserve navigation context. The review-page back button explicitly returns to deck-detail (review pushes new state on each card; history.back would reopen the previous card).
 - **Theme**: green-tinted palette in `styles.css` via shadcn-style HSL CSS vars; dark/light toggle in `infra/theme.tsx` via `next-themes`-style provider on `html.dark`. Tailwind config defines `borderColor.DEFAULT: hsl(var(--border))` so bare `border` utilities don't fall back to currentColor.
 - **Markdown rendering**: `MarkdownView` uses `react-markdown` with `prose-lg`, custom `<p>` (text-lg) and `<strong>` (bold + underlined, primary color).
-- **Cross-package type import**: client imports `AppRouter` via `import type { AppRouter } from "server/router"`. The `server` package exposes this via its `exports` field (`./router` → `src/domains/_app.router.ts`).
+- **Cross-package type import**: client imports `AppRouter` via `import type { AppRouter } from "server/router"`. The `server` package exposes this via its `exports` field (`./router` → `src/domains/_appRouter.ts`).
 
 ## Server specifics
 
@@ -107,7 +118,13 @@ These are durable preferences for this project — apply them on every change.
 
 ### Domain-first source layout
 
-Group source files by **business domain** (`domains/decks/`, `domains/cards/`, `domains/review/`, `domains/auth/`), not by technical layer. Each domain folder holds its router/service/schema (server) or page/sub-components (client). Cross-cutting plumbing (db, auth, trpc init, theme provider, generic UI primitives) lives under `infra/` or `ui/`. Don't introduce top-level `routers/`, `services/`, or `components/` buckets that span domains.
+Group source files by **business domain** (`domains/Decks/`, `domains/Cards/`, `domains/Review/`, `domains/Auth/`), not by technical layer. Each domain folder holds its router/service/schema (server) or page/sub-components (client). Cross-cutting plumbing (db, auth, trpc init, theme provider, generic UI primitives) lives under `infra/` or `ui/`. Don't introduce top-level `routers/`, `services/`, or `components/` buckets that span domains.
+
+### File and directory naming
+
+File and directory names are CamelCase, matching the main exported symbol with its case: PascalCase for component/class exports (`LoginPage.tsx`, `Button.tsx`), lowerCamel otherwise (`decksRouter.ts`). The old role suffix is merged into the name, not dotted: a service file becomes `cardsService.ts`, a router `decksRouter.ts` (the word is dropped when the name already carries it). Domain/feature directories are PascalCase (`Decks/`, `AnkiImport/`).
+
+Exceptions kept as-is: TanStack route files under `routes/` (names map to URLs), structural roots (`ui/`, `infra/`, `components/`, `tests/`, ...), test/spec/config files whose suffix the runner globs (`*.test.ts`, `*.spec.ts`, `*.config.ts`), and mandated names (`index.*`, `main.*`, `__root.tsx`, `_appRouter.ts`).
 
 ### Function ordering
 

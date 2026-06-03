@@ -10,12 +10,12 @@ import {
 } from "@cards/shared/fixation"
 import { trpc } from "../../infra/trpc"
 import { PageHeader } from "../../components/AppShell"
-import { Button, buttonVariants } from "../../ui/button"
-import { Card, CardContent } from "../../ui/card"
+import { Button, buttonVariants } from "../../ui/Button"
+import { Card, CardContent } from "../../ui/Card"
 import { MarkdownView } from "../../components/MarkdownView"
-import { cn } from "../../lib/utils"
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog"
-import { displayFrontWithGeneratedTagPrefix } from "../cards/card-front-prefix"
+import { cn } from "../../Lib/Utils"
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../../ui/Dialog"
+import { displayFrontWithGeneratedTagPrefix } from "../Cards/CardFrontPrefix"
 
 const LEVEL_COLOR: Record<FixationLevel, string> = {
   "1": "bg-red-500 hover:bg-red-600 text-white",

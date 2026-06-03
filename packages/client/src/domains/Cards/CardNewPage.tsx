@@ -1,6 +1,6 @@
 import { useNavigate, useParams, useRouter } from "@tanstack/react-router"
 import { trpc } from "../../infra/trpc"
-import { CardForm } from "./card-form"
+import { CardForm } from "./CardForm"
 import { PageHeader } from "../../components/AppShell"
 
 export function CardNewPage() {

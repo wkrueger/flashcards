@@ -6,8 +6,8 @@ import {
   reviewSequentialInput,
 } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
-import { advanceCard, completeReview, pickNextCard } from "./review.service.js"
-import { sequentialCard } from "./review.sequential.js"
+import { advanceCard, completeReview, pickNextCard } from "./reviewService.js"
+import { sequentialCard } from "./reviewSequential.js"
 
 export const reviewRouter = router({
   next: protectedProcedure.input(reviewNextInput).query(async ({ ctx, input }) => {

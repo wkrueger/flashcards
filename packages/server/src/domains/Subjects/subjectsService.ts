@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto"
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js"
-import { markDeckCompletionStale } from "../decks/deck-completion.service.js"
+import { markDeckCompletionStale } from "../Decks/deckCompletionService.js"
 
 export const SUBJECT_RANDOM_KEY_RANGE = 2_147_483_647
 

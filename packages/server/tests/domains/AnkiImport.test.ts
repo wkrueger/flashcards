@@ -19,7 +19,7 @@ import { prisma } from "../../src/infra/db.js"
 import {
   runAnalyzeAnkiImportJob,
   runImportAnkiImportJob,
-} from "../../src/domains/anki-import/anki-import.service.js"
+} from "../../src/domains/AnkiImport/ankiImportService.js"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 
 const FIELD_SEPARATOR = "\u001f"

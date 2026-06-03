@@ -4,12 +4,12 @@ import { useEffect, useState } from "react"
 import { MenuItem, PageHeader } from "../../components/AppShell"
 import { LightbulbIllustration } from "../../components/LightbulbIllustration"
 import { trpc } from "../../infra/trpc"
-import { Button } from "../../ui/button"
-import { Card, CardContent } from "../../ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../ui/dialog"
-import { Input } from "../../ui/input"
-import { Label } from "../../ui/label"
-import { LanguageSelect } from "./language-select"
+import { Button } from "../../ui/Button"
+import { Card, CardContent } from "../../ui/Card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../ui/Dialog"
+import { Input } from "../../ui/Input"
+import { Label } from "../../ui/Label"
+import { LanguageSelect } from "./LanguageSelect"
 
 export function DeckListPage() {
   const utils = trpc.useUtils()

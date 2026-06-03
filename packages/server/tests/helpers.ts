@@ -2,7 +2,7 @@ import { rm } from "node:fs/promises"
 import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { prisma } from "../src/infra/db.js"
-import { appRouter } from "../src/domains/_app.router.js"
+import { appRouter } from "../src/domains/_appRouter.js"
 import type { Context } from "../src/infra/trpc.js"
 
 export async function makeUser(label = "user") {

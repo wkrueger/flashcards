@@ -1,8 +1,8 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react"
-import { Button } from "../../ui/button"
-import { Card, CardContent } from "../../ui/card"
-import { Label } from "../../ui/label"
-import { SubjectAutocomplete } from "./subject-autocomplete"
+import { Button } from "../../ui/Button"
+import { Card, CardContent } from "../../ui/Card"
+import { Label } from "../../ui/Label"
+import { SubjectAutocomplete } from "./SubjectAutocomplete"
 
 export interface CardFormValues {
   subjectText: string

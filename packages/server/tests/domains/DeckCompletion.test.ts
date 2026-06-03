@@ -6,9 +6,9 @@ import {
   markDeckCompletionStale,
   pointsFor,
   recomputeDeckCompletion,
-} from "../../src/domains/decks/deck-completion.service.js"
-import { subjectKeyFor } from "../../src/domains/subjects/subjects.service.js"
-import { completeReview } from "../../src/domains/review/review.service.js"
+} from "../../src/domains/Decks/deckCompletionService.js"
+import { subjectKeyFor } from "../../src/domains/Subjects/subjectsService.js"
+import { completeReview } from "../../src/domains/Review/reviewService.js"
 
 async function makeDeck(userId: string, name = "Deck") {
   return prisma.deck.create({ data: { name, userId } })

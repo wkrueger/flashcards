@@ -2,8 +2,8 @@ import { TRPCError } from "@trpc/server"
 import { cardTemplateGeneratePreviewInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { createOpenAIStructuredResponse } from "../../infra/openai.js"
-import { rateLimit } from "../../infra/rate-limit.js"
-import { cardTemplatePreviewOutput, tagsForCardTemplateVariant } from "./card-template.service.js"
+import { rateLimit } from "../../infra/rateLimit.js"
+import { cardTemplatePreviewOutput, tagsForCardTemplateVariant } from "./cardTemplateService.js"
 import fs from "node:fs"
 
 const _germanExtraPrompt =

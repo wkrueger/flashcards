@@ -6,7 +6,7 @@ import { TRPCClientError } from "@trpc/client"
 import { toast } from "./infra/toast"
 import { trpc, trpcClient } from "./infra/trpc"
 import { ThemeProvider } from "./infra/theme"
-import { getSessionCached } from "./infra/auth-client"
+import { getSessionCached } from "./infra/authClient"
 import { routeTree } from "./routeTree.gen"
 import "./styles.css"
 

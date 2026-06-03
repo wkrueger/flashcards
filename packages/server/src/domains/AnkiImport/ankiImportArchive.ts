@@ -11,7 +11,7 @@ import {
   type AnkiArchiveData,
   type AnkiArchiveRow,
   type AnkiModelDefinition,
-} from "./anki-import.shared.js"
+} from "./ankiImportShared.js"
 
 async function extractCollectionDatabase(archivePath: string, tempDirectory: string) {
   const archive = new AdmZip(archivePath)

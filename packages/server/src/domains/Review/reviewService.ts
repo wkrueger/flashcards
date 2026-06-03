@@ -3,11 +3,8 @@ import { Prisma } from "../../generated/prisma/client.js"
 import { COOLDOWN_MS, fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc.js"
-import {
-  deleteEmptySubjectsForDeck,
-  randomSubjectKeyFromRng,
-} from "../subjects/subjects.service.js"
-import { pointsFor, recomputeDeckCompletion } from "../decks/deck-completion.service.js"
+import { deleteEmptySubjectsForDeck, randomSubjectKeyFromRng } from "../Subjects/subjectsService.js"
+import { pointsFor, recomputeDeckCompletion } from "../Decks/deckCompletionService.js"
 
 dayjs.extend(utc)
 

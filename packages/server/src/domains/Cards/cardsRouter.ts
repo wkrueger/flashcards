@@ -2,8 +2,8 @@ import { TRPCError } from "@trpc/server"
 import { Prisma } from "../../generated/prisma/client.js"
 import { createCardInput, idInput, updateCardInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
-import { deleteSubjectIfEmpty, upsertSubjectByText } from "../subjects/subjects.service.js"
-import { hashFront, normalizeCardTags, tagOwnershipFor } from "./cards.service.js"
+import { deleteSubjectIfEmpty, upsertSubjectByText } from "../Subjects/subjectsService.js"
+import { hashFront, normalizeCardTags, tagOwnershipFor } from "./cardsService.js"
 
 type Db = import("../../generated/prisma/client.js").PrismaClient
 

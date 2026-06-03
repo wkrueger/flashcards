@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
-import { authClient, googleSsoEnabled, signUp } from "../../infra/auth-client"
-import { Button } from "../../ui/button"
-import { Input } from "../../ui/input"
-import { Label } from "../../ui/label"
+import { authClient, googleSsoEnabled, signUp } from "../../infra/authClient"
+import { Button } from "../../ui/Button"
+import { Input } from "../../ui/Input"
+import { Label } from "../../ui/Label"
 import { GoogleIcon } from "../../components/GoogleIcon"
 
 export function SignupPage() {

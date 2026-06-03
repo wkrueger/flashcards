@@ -18,7 +18,7 @@ import {
   type HandleAnkiImportUploadInput,
   type UploadLimitResult,
   type UploadWriteResult,
-} from "./anki-import.shared.js"
+} from "./ankiImportShared.js"
 
 const ALLOWED_APKG_MIME_TYPES = new Set([
   "application/octet-stream",

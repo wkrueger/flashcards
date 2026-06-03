@@ -1,8 +1,8 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
 import { CircleStop, Mic, RotateCcw } from "lucide-react"
-import { Button } from "../../ui/button"
-import { Card, CardContent } from "../../ui/card"
-import { cn } from "../../lib/utils"
+import { Button } from "../../ui/Button"
+import { Card, CardContent } from "../../ui/Card"
+import { cn } from "../../Lib/Utils"
 
 type SpeechRecognitionState = "idle" | "recording" | "stopped" | "unsupported"
 

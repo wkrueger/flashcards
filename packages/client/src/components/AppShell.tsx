@@ -2,11 +2,11 @@ import { useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { ArrowLeft, Moon, Sun, LogOut, MoreVertical } from "lucide-react"
 import { useTheme } from "../infra/theme"
-import { Button } from "../ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover"
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
-import { invalidateSessionCache, signOut, useSession } from "../infra/auth-client"
-import { cn } from "../lib/utils"
+import { Button } from "../ui/Button"
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover"
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog"
+import { invalidateSessionCache, signOut, useSession } from "../infra/authClient"
+import { cn } from "../Lib/Utils"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (

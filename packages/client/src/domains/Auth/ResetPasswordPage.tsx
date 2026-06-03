@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { resetPassword } from "../../infra/auth-client"
-import { Button } from "../../ui/button"
-import { Input } from "../../ui/input"
-import { Label } from "../../ui/label"
+import { resetPassword } from "../../infra/authClient"
+import { Button } from "../../ui/Button"
+import { Input } from "../../ui/Input"
+import { Label } from "../../ui/Label"
 
 export function ResetPasswordPage() {
   const navigate = useNavigate()

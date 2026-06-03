@@ -1,7 +1,7 @@
 import { Prisma } from "../../../generated/prisma/client.js"
-import { hashFront, SYSTEM_TAG_OWNER_KEY } from "../../cards/cards.service.js"
-import { randomSubjectKey, subjectKeyFor } from "../../subjects/subjects.service.js"
-import type { SpreadsheetImportResult } from "../deck-spreadsheet.shared.js"
+import { hashFront, SYSTEM_TAG_OWNER_KEY } from "../../Cards/cardsService.js"
+import { randomSubjectKey, subjectKeyFor } from "../../Subjects/subjectsService.js"
+import type { SpreadsheetImportResult } from "../deckSpreadsheetShared.js"
 import { assertNoDuplicateTagNames, type SpreadsheetRow } from "./workbook.js"
 
 export async function applySpreadsheetRows(

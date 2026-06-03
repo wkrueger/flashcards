@@ -1,5 +1,5 @@
 import { PrismaClient } from "../src/generated/prisma/client.js"
-import { createPrismaAdapter } from "../src/infra/prisma-adapter.js"
+import { createPrismaAdapter } from "../src/infra/prismaAdapter.js"
 
 const prisma = new PrismaClient({ adapter: createPrismaAdapter() })
 

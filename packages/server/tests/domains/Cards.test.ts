@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { TRPCError } from "@trpc/server"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 import { prisma } from "../../src/infra/db.js"
-import { SYSTEM_TAG_OWNER_KEY } from "../../src/domains/cards/cards.service.js"
+import { SYSTEM_TAG_OWNER_KEY } from "../../src/domains/Cards/cardsService.js"
 
 describe("cards domain", () => {
   beforeEach(async () => {

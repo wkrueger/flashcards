@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 import { prisma } from "../../src/infra/db.js"
-import { __resetRateLimitForTests } from "../../src/infra/rate-limit.js"
+import { __resetRateLimitForTests } from "../../src/infra/rateLimit.js"
 
 const originalApiKey = process.env.OPENAI_API_KEY
 const originalModel = process.env.OPENAI_MODEL

@@ -1,5 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/react-router"
-import { ReviewPage } from "../../domains/review/review.page"
+import { ReviewPage } from "../../domains/Review/ReviewPage"
 
 function SubjectReviewRoute() {
   const { subjectId } = useParams({ from: "/(app)/decks/$deckId/review/subjects/$subjectId" })

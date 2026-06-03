@@ -6,7 +6,7 @@ import {
   DECK_SPREADSHEET_UPLOAD_DIR,
   SPREADSHEET_IMPORT_CLEANUP_AGE_MS,
   deleteFileIfExists,
-} from "../deck-spreadsheet.shared.js"
+} from "../deckSpreadsheetShared.js"
 
 export async function cleanupStaleSpreadsheetImports(prisma: PrismaClient) {
   const cutoff = new Date(Date.now() - SPREADSHEET_IMPORT_CLEANUP_AGE_MS)

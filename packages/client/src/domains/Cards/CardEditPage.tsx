@@ -1,10 +1,10 @@
 import { Link, useNavigate, useParams, useRouter, useSearch } from "@tanstack/react-router"
 import { Layers, Trash2 } from "lucide-react"
 import { trpc } from "../../infra/trpc"
-import { CardForm } from "./card-form"
+import { CardForm } from "./CardForm"
 import { MenuItem, PageHeader } from "../../components/AppShell"
-import { buttonVariants } from "../../ui/button"
-import { cn } from "../../lib/utils"
+import { buttonVariants } from "../../ui/Button"
+import { cn } from "../../Lib/Utils"
 
 export function CardEditPage() {
   const { deckId, cardId } = useParams({

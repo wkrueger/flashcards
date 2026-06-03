@@ -11,7 +11,7 @@ import {
   previewCardTypeMapping,
   saveImportConfiguration,
   startImportProcess,
-} from "./anki-import.service.js"
+} from "./ankiImportService.js"
 
 export const ankiImportRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {

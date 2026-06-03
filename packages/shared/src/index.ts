@@ -1,2 +1,2 @@
-export * from "./fixation.js"
-export * from "./schemas.js"
+export * from "./Fixation.js"
+export * from "./Schemas.js"

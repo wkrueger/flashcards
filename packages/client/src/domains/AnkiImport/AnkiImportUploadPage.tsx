@@ -2,9 +2,9 @@ import { useRef, useState } from "react"
 import { Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { Upload, FileArchive, List } from "lucide-react"
 import { PageHeader } from "../../components/AppShell"
-import { Button, buttonVariants } from "../../ui/button"
-import { Label } from "../../ui/label"
-import { cn } from "../../lib/utils"
+import { Button, buttonVariants } from "../../ui/Button"
+import { Label } from "../../ui/Label"
+import { cn } from "../../Lib/Utils"
 
 async function uploadAnkiFile(file: File) {
   const formData = new FormData()

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { cn } from "../../../lib/utils"
-import { Popover, PopoverContent, PopoverTrigger } from "../../../ui/popover"
+import { cn } from "../../../Lib/Utils"
+import { Popover, PopoverContent, PopoverTrigger } from "../../../ui/Popover"
 
 type MarkerId = "due" | "unseen" | "24h" | "48h"
 

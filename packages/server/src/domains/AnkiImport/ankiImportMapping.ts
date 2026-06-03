@@ -1,13 +1,13 @@
 import type { AnkiCardMapping, ImportPlugin } from "@cards/shared"
-import { hashFront } from "../cards/cards.service.js"
-import { subjectKeyFor } from "../subjects/subjects.service.js"
+import { hashFront } from "../Cards/cardsService.js"
+import { subjectKeyFor } from "../Subjects/subjectsService.js"
 import {
   parseJsonArray,
   stripMediaAndMarkup,
   type AnkiArchiveData,
   type MappedImportRow,
   type StoredCardType,
-} from "./anki-import.shared.js"
+} from "./ankiImportShared.js"
 
 type HighlightRange = {
   start: number

@@ -5,15 +5,15 @@ import type {
   AnkiImportPreviewCard,
   PreviewCardTypeMappingInput,
 } from "@cards/shared"
-import { randomSubjectKey } from "../subjects/subjects.service.js"
+import { randomSubjectKey } from "../Subjects/subjectsService.js"
 import {
   ImportCardTypeKind,
   ImportProcessStatus as PrismaImportProcessStatus,
   WorkerJobType,
   type PrismaClient,
 } from "../../generated/prisma/client.js"
-import { readAnkiArchiveData, mapPreviewCard } from "./anki-import.archive.js"
-import { applyPluginsToContent, collectMappedRows } from "./anki-import.mapping.js"
+import { readAnkiArchiveData, mapPreviewCard } from "./ankiImportArchive.js"
+import { applyPluginsToContent, collectMappedRows } from "./ankiImportMapping.js"
 import {
   deleteFileIfExists,
   getErrorStatusCode,
@@ -22,12 +22,12 @@ import {
   stripMediaAndMarkup,
   type DbClient,
   type SaveConfigurationInput,
-} from "./anki-import.shared.js"
+} from "./ankiImportShared.js"
 import {
   ANKI_IMPORT_UPLOAD_MAX_BYTES,
   handleAnkiImportUpload,
   isSupportedApkgUpload,
-} from "./anki-import.upload.js"
+} from "./ankiImportUpload.js"
 
 export {
   ANKI_IMPORT_UPLOAD_MAX_BYTES,

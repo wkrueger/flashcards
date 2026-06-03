@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { CardEditPage } from "../../domains/cards/card-edit.page"
+import { CardEditPage } from "../../domains/Cards/CardEditPage"
 
 type Search = {
   returnToReviewCard?: boolean

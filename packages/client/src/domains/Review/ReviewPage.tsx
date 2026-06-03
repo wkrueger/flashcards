@@ -21,16 +21,16 @@ const LEVEL_COLOR: Record<FixationLevel, string> = {
 const NEW_SUBJECT_EMOJI_WINDOW_MS = 12 * 60 * 60 * 1000
 import { trpc } from "../../infra/trpc"
 import { PageHeader } from "../../components/AppShell"
-import { Button, buttonVariants } from "../../ui/button"
-import { Card, CardContent } from "../../ui/card"
+import { Button, buttonVariants } from "../../ui/Button"
+import { Card, CardContent } from "../../ui/Card"
 import { MarkdownView } from "../../components/MarkdownView"
-import { cn } from "../../lib/utils"
+import { cn } from "../../Lib/Utils"
 import {
   displayFrontWithGeneratedTagPrefix,
   displayWithGeneratedTagPrefix,
-} from "../cards/card-front-prefix"
-import { SpeechRecognitionCard, type SpeechRecognitionCardHandle } from "./speech-recognition-card"
-import { ReviewSequentialPage } from "./review-sequential.page"
+} from "../Cards/CardFrontPrefix"
+import { SpeechRecognitionCard, type SpeechRecognitionCardHandle } from "./SpeechRecognitionCard"
+import { ReviewSequentialPage } from "./ReviewSequentialPage"
 
 export function ReviewPage({
   mode,

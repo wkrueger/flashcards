@@ -9,14 +9,14 @@ import type {
 } from "@cards/shared"
 import { trpc } from "../../infra/trpc"
 import { MenuItem, PageHeader } from "../../components/AppShell"
-import { Button, buttonVariants } from "../../ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
-import { CheckboxCard } from "../../ui/checkbox"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/dialog"
-import { Input } from "../../ui/input"
-import { Label } from "../../ui/label"
-import { NativeSelect } from "../../ui/native-select"
-import { cn } from "../../lib/utils"
+import { Button, buttonVariants } from "../../ui/Button"
+import { Card, CardContent, CardHeader, CardTitle } from "../../ui/Card"
+import { CheckboxCard } from "../../ui/Checkbox"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../ui/Dialog"
+import { Input } from "../../ui/Input"
+import { Label } from "../../ui/Label"
+import { NativeSelect } from "../../ui/NativeSelect"
+import { cn } from "../../Lib/Utils"
 
 type CardMappingRow = { frontField: string; backField: string }
 

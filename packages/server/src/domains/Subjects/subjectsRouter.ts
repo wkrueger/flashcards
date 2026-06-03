@@ -7,8 +7,8 @@ import {
   subjectAutocompleteInput,
 } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
-import { normalizeSubjectText, subjectKeyFor } from "./subjects.service.js"
-import { markDeckCompletionStale } from "../decks/deck-completion.service.js"
+import { normalizeSubjectText, subjectKeyFor } from "./subjectsService.js"
+import { markDeckCompletionStale } from "../Decks/deckCompletionService.js"
 
 const subjectCardInclude = Prisma.validator<Prisma.CardInclude>()({
   cardTags: { include: { tag: true } },

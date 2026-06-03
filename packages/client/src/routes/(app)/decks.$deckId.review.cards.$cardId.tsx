@@ -1,5 +1,5 @@
 import { createFileRoute, useParams, useSearch } from "@tanstack/react-router"
-import { ReviewPage } from "../../domains/review/review.page"
+import { ReviewPage } from "../../domains/Review/ReviewPage"
 
 type Search = {
   mode: "normal" | "free"

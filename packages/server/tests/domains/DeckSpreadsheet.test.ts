@@ -5,13 +5,13 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { WorkerJobStatus, WorkerJobType } from "../../src/generated/prisma/client.js"
 import { prisma } from "../../src/infra/db.js"
 import { runNextWorkerJob } from "../../src/infra/worker.js"
-import { hashFront, SYSTEM_TAG_OWNER_KEY } from "../../src/domains/cards/cards.service.js"
+import { hashFront, SYSTEM_TAG_OWNER_KEY } from "../../src/domains/Cards/cardsService.js"
 import {
   buildDeckSpreadsheetExport,
   cleanupStaleSpreadsheetImports,
-} from "../../src/domains/deck-spreadsheet/deck-spreadsheet.service/index.js"
-import { DECK_SPREADSHEET_UPLOAD_DIR } from "../../src/domains/deck-spreadsheet/deck-spreadsheet.shared.js"
-import { subjectKeyFor } from "../../src/domains/subjects/subjects.service.js"
+} from "../../src/domains/DeckSpreadsheet/deckSpreadsheetService/index.js"
+import { DECK_SPREADSHEET_UPLOAD_DIR } from "../../src/domains/DeckSpreadsheet/deckSpreadsheetShared.js"
+import { subjectKeyFor } from "../../src/domains/Subjects/subjectsService.js"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 
 async function createUserTag(userId: string, name: string) {

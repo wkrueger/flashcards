@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { Link } from "@tanstack/react-router"
-import { requestPasswordReset } from "../../infra/auth-client"
-import { Button } from "../../ui/button"
-import { Input } from "../../ui/input"
-import { Label } from "../../ui/label"
+import { requestPasswordReset } from "../../infra/authClient"
+import { Button } from "../../ui/Button"
+import { Input } from "../../ui/Input"
+import { Label } from "../../ui/Label"
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("")

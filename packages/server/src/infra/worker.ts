@@ -8,11 +8,11 @@ import {
   handleAnkiImportWorkerJobError,
   runAnalyzeAnkiImportJob,
   runImportAnkiImportJob,
-} from "../domains/anki-import/anki-import.service.js"
+} from "../domains/AnkiImport/ankiImportService.js"
 import {
   handleDeckSpreadsheetImportWorkerJobError,
   runDeckSpreadsheetImportJob,
-} from "../domains/deck-spreadsheet/deck-spreadsheet.service/index.js"
+} from "../domains/DeckSpreadsheet/deckSpreadsheetService/index.js"
 
 const WORKER_POLL_INTERVAL_MS = 1_000
 
