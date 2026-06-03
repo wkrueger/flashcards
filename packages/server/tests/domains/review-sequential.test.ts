@@ -156,6 +156,71 @@ describe("review.sequential", () => {
     expect(res.card?.id).toBe(a1.id)
   })
 
+  it("traverses across null-order subjects with identical createdAt (id tiebreak)", async () => {
+    const userId = await makeUser()
+    const deck = await prisma.deck.create({ data: { name: "D", userId, sequentialEnabled: true } })
+    const sharedCreatedAt = new Date("2026-01-01T00:00:00.000Z")
+    // cuid ids are time-ordered, so "a" < "b" lexicographically is not guaranteed;
+    // create A then B and rely on their generated ids for the tiebreak.
+    const sA = await prisma.subject.create({
+      data: {
+        deckId: deck.id,
+        userId,
+        subject: "A",
+        subjectKey: subjectKeyFor("A"),
+        randomKey: 1,
+        createdAt: sharedCreatedAt,
+      },
+    })
+    const sB = await prisma.subject.create({
+      data: {
+        deckId: deck.id,
+        userId,
+        subject: "B",
+        subjectKey: subjectKeyFor("B"),
+        randomKey: 2,
+        createdAt: sharedCreatedAt,
+      },
+    })
+    const a1 = await prisma.card.create({
+      data: {
+        deckId: deck.id,
+        subjectId: sA.id,
+        front: "a1",
+        frontHash: hashFront("a1"),
+        back: "b",
+      },
+    })
+    const b1 = await prisma.card.create({
+      data: {
+        deckId: deck.id,
+        subjectId: sB.id,
+        front: "b1",
+        frontHash: hashFront("b1"),
+        back: "b",
+      },
+    })
+    const caller = callerFor(userId)
+    // forward order is deterministic by id
+    const first = await caller.review.sequential({ deckId: deck.id, move: "first" })
+    const second = await caller.review.sequential({
+      deckId: deck.id,
+      cardId: first.card!.id,
+      move: "next",
+    })
+    const firstCard = first.card!.id
+    const secondCard = second.card!.id
+    expect(new Set([firstCard, secondCard])).toEqual(new Set([a1.id, b1.id]))
+    // the second card reports hasPrev and prev returns to the first card
+    expect(second.hasPrev).toBe(true)
+    const back = await caller.review.sequential({
+      deckId: deck.id,
+      cardId: secondCard,
+      move: "prev",
+    })
+    expect(back.card?.id).toBe(firstCard)
+  })
+
   it("scopes to the owner", async () => {
     const owner = await makeUser("owner")
     const other = await makeUser("other")

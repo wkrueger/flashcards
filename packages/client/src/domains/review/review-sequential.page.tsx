@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { ArrowLeft, ArrowRight, Pencil, RotateCcw } from "lucide-react"
 import {
@@ -30,53 +30,55 @@ export function ReviewSequentialPage() {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
   const navigate = useNavigate()
   const utils = trpc.useUtils()
-  const [cardId, setCardId] = useState<string | undefined>(undefined)
-  const [move, setMove] = useState<"resume" | "next" | "prev" | "first" | "current">("resume")
+  const [result, setResult] = useState<Awaited<
+    ReturnType<typeof utils.review.sequential.fetch>
+  > | null>(null)
+  const [ready, setReady] = useState(false)
+  const [navigating, setNavigating] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const [restartOpen, setRestartOpen] = useState(false)
 
-  const query = trpc.review.sequential.useQuery(
-    { deckId, cardId, move },
-    { refetchOnWindowFocus: false, staleTime: 0 }
+  // Navigation is imperative: each move fetches the target card and replaces the
+  // displayed result. This keeps a single source of truth (no query-key churn)
+  // so "first" always lands on the first card and prev/next traverse subjects.
+  const go = useCallback(
+    async (move: "resume" | "next" | "prev" | "first", cardId?: string) => {
+      setNavigating(true)
+      try {
+        const res = await utils.review.sequential.fetch({ deckId, cardId, move }, { staleTime: 0 })
+        setResult(res)
+        setRevealed(false)
+        setReady(true)
+      } finally {
+        setNavigating(false)
+      }
+    },
+    [deckId, utils]
   )
 
-  const data = query.data
-  const card = data?.card ?? null
-
-  // Once a move resolves to a card, anchor on it (move → "current") so an
-  // identity refetch returns the same card instead of advancing again.
   useEffect(() => {
-    if (card && move !== "current") {
-      setCardId(card.id)
-      setMove("current")
-    }
-  }, [card, move])
+    go("resume")
+  }, [go])
 
-  useEffect(() => {
-    setRevealed(false)
-  }, [card?.id])
-
-  const goTo = (nextMove: "next" | "prev" | "first") => {
-    setMove(nextMove)
-  }
+  const card = result?.card ?? null
 
   const advance = trpc.review.advance.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       utils.decks.get.invalidate({ id: deckId })
-      goTo("next")
+      go("next", variables.cardId)
     },
   })
 
   const complete = trpc.review.complete.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       utils.decks.get.invalidate({ id: deckId })
       utils.decks.upcomingDueCounts.invalidate({ id: deckId })
       utils.decks.reviewStats.invalidate({ id: deckId })
-      goTo("next")
+      go("next", variables.cardId)
     },
   })
 
-  if (query.isLoading) return <p></p>
+  if (!ready) return <p></p>
 
   if (!card) {
     return (
@@ -84,7 +86,7 @@ export function ReviewSequentialPage() {
         <h1 className="text-xl font-semibold">Reached the end</h1>
         <p className="text-sm text-muted-foreground">You have gone through every card.</p>
         <div className="flex flex-col gap-2">
-          <Button onClick={() => goTo("first")}>Restart</Button>
+          <Button onClick={() => go("first")}>Restart</Button>
           <button
             type="button"
             className={cn(buttonVariants({ variant: "outline" }))}
@@ -102,7 +104,7 @@ export function ReviewSequentialPage() {
     : "1"
   const options = buttonsForPrevious(prev)
   const promptSource = displayFrontWithGeneratedTagPrefix(card.front, card.tags)
-  const pending = advance.isPending || complete.isPending
+  const pending = navigating || advance.isPending || complete.isPending
 
   return (
     <div className="flex flex-1 flex-col gap-3">
@@ -115,8 +117,8 @@ export function ReviewSequentialPage() {
               variant="ghost"
               size="icon"
               aria-label="Previous card"
-              disabled={!data?.hasPrev || pending}
-              onClick={() => goTo("prev")}
+              disabled={!result?.hasPrev || pending}
+              onClick={() => go("prev", card.id)}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -161,7 +163,7 @@ export function ReviewSequentialPage() {
               <MarkdownView source={card.back} />
             </CardContent>
           </Card>
-          {data?.isLastInSubject ? (
+          {result?.isLastInSubject ? (
             <div className="mt-auto grid grid-cols-4 gap-2 animate-reveal">
               {options.map((lvl: FixationLevel) => (
                 <button
@@ -215,7 +217,7 @@ export function ReviewSequentialPage() {
               className="flex-1"
               onClick={() => {
                 setRestartOpen(false)
-                goTo("first")
+                go("first")
               }}
             >
               Restart

@@ -199,8 +199,14 @@ export function DeckDetailPage() {
                   type="checkbox"
                   checked={sequentialEnabled}
                   onChange={(e) => setSequentialEnabled(e.target.checked)}
-                  className="h-4 w-4"
+                  className="peer sr-only"
                 />
+                <span
+                  aria-hidden="true"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+                >
+                  <Check className="h-4 w-4" />
+                </span>
               </label>
             )}
             <MenuItem

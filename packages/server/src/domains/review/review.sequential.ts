@@ -2,13 +2,17 @@ import type { PrismaClient } from "../../generated/prisma/client.js"
 import { Prisma } from "../../generated/prisma/client.js"
 import type { SequentialMove } from "@cards/shared"
 
+// `id` is the final tiebreak so the ordering is total even when `order` is null
+// and `createdAt` ties (e.g. subjects backfilled at the same migration time).
 const cardOrderBy: Prisma.CardOrderByWithRelationInput[] = [
   { order: { sort: "asc", nulls: "last" } },
   { createdAt: "asc" },
+  { id: "asc" },
 ]
 const subjectOrderBy: Prisma.SubjectOrderByWithRelationInput[] = [
   { order: { sort: "asc", nulls: "last" } },
   { createdAt: "asc" },
+  { id: "asc" },
 ]
 
 export interface SequentialResult {
@@ -169,44 +173,56 @@ async function findAdjacentSubject(
 ): Promise<SubjectCursor | null> {
   const base = { userId, deckId }
   const select = { id: true, order: true, createdAt: true }
+  const o = current.order
+  const c = current.createdAt
+  const i = current.id
 
   if (direction === "next") {
-    if (current.order !== null) {
+    if (o !== null) {
       const greater = await prisma.subject.findFirst({
         where: {
           ...base,
           OR: [
-            { order: { gt: current.order } },
-            { order: current.order, createdAt: { gt: current.createdAt } },
+            { order: { gt: o } },
+            { order: o, createdAt: { gt: c } },
+            { order: o, createdAt: c, id: { gt: i } },
           ],
         },
-        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }, { id: "asc" }],
         select,
       })
       if (greater) return greater
       return prisma.subject.findFirst({
         where: { ...base, order: null },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
         select,
       })
     }
     return prisma.subject.findFirst({
-      where: { ...base, order: null, createdAt: { gt: current.createdAt } },
-      orderBy: { createdAt: "asc" },
+      where: {
+        ...base,
+        order: null,
+        OR: [{ createdAt: { gt: c } }, { createdAt: c, id: { gt: i } }],
+      },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select,
     })
   }
 
-  if (current.order === null) {
+  if (o === null) {
     const lesserNull = await prisma.subject.findFirst({
-      where: { ...base, order: null, createdAt: { lt: current.createdAt } },
-      orderBy: { createdAt: "desc" },
+      where: {
+        ...base,
+        order: null,
+        OR: [{ createdAt: { lt: c } }, { createdAt: c, id: { lt: i } }],
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select,
     })
     if (lesserNull) return lesserNull
     return prisma.subject.findFirst({
       where: { ...base, order: { not: null } },
-      orderBy: [{ order: "desc" }, { createdAt: "desc" }],
+      orderBy: [{ order: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       select,
     })
   }
@@ -214,11 +230,12 @@ async function findAdjacentSubject(
     where: {
       ...base,
       OR: [
-        { order: { lt: current.order } },
-        { order: current.order, createdAt: { lt: current.createdAt } },
+        { order: { lt: o } },
+        { order: o, createdAt: { lt: c } },
+        { order: o, createdAt: c, id: { lt: i } },
       ],
     },
-    orderBy: [{ order: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ order: "desc" }, { createdAt: "desc" }, { id: "desc" }],
     select,
   })
 }
@@ -231,7 +248,7 @@ async function edgeCardOfSubject(
   const orderBy: Prisma.CardOrderByWithRelationInput[] =
     edge === "first"
       ? cardOrderBy
-      : [{ order: { sort: "desc", nulls: "first" } }, { createdAt: "desc" }]
+      : [{ order: { sort: "desc", nulls: "first" } }, { createdAt: "desc" }, { id: "desc" }]
   const card = await prisma.card.findFirst({ where: { subjectId }, orderBy, select: { id: true } })
   return card?.id ?? null
 }

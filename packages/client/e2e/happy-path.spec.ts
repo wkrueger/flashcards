@@ -278,6 +278,9 @@ test("sequential deck walks cards in order with Next, Prev, and Restart", async 
     await page.getByRole("textbox", { name: "Front" }).fill(front)
     await page.getByRole("textbox", { name: "Back" }).fill(back)
     await page.getByRole("button", { name: "Create" }).click()
+    // Wait until the form closes (back on deck detail) before reopening the menu,
+    // otherwise the next menu-open can race with navigation.
+    await expect(page.getByRole("textbox", { name: "Subject" })).toBeHidden()
   }
 
   await addCard("Alpha", "Alpha one front", "Alpha one back")
@@ -286,10 +289,12 @@ test("sequential deck walks cards in order with Next, Prev, and Restart", async 
 
   await expect(page.getByTestId("deck-subject-stats")).toContainText("2 subjects, 3 cards")
 
-  // Enable sequential deck via the Options submenu.
+  // Enable sequential deck via the Options submenu (the checkbox is visually
+  // hidden shadcn-style, so toggle it via its label).
   await page.getByRole("button", { name: "Menu" }).click()
   await page.getByRole("button", { name: "Options" }).click()
-  await page.getByRole("checkbox", { name: "Sequential deck" }).check()
+  await page.getByText("Sequential deck", { exact: true }).click()
+  await expect(page.getByRole("checkbox", { name: "Sequential deck" })).toBeChecked()
   await page.keyboard.press("Escape")
 
   // Sequential decks show a single "Review" button.
@@ -320,7 +325,13 @@ test("sequential deck walks cards in order with Next, Prev, and Restart", async 
   await page.getByRole("button", { name: /^3/ }).click()
   await expect(page.getByText("Beta front")).toBeVisible()
 
-  // Restart jumps back to the first card after confirmation.
+  // Previous from the first card of a subject traverses to the previous
+  // subject's last card.
+  await expect(page.getByRole("button", { name: "Previous card" })).toBeEnabled()
+  await page.getByRole("button", { name: "Previous card" }).click()
+  await expect(page.getByText("Alpha two front")).toBeVisible()
+
+  // Restart jumps back to the first card of the first subject after confirmation.
   await page.getByRole("button", { name: "Restart" }).click()
   await expect(page.getByRole("heading", { name: "Restart this deck?" })).toBeVisible()
   await page.getByRole("dialog").getByRole("button", { name: "Restart" }).click()
