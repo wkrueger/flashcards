@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { ArrowLeft, ArrowRight, Pencil, RotateCcw } from "lucide-react"
 import {
@@ -30,13 +30,19 @@ export function ReviewSequentialPage() {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
   const navigate = useNavigate()
   const utils = trpc.useUtils()
-  const [result, setResult] = useState<Awaited<
-    ReturnType<typeof utils.review.sequential.fetch>
-  > | null>(null)
+  type SeqResult = Awaited<ReturnType<typeof utils.review.sequential.fetch>>
+  const [result, setResult] = useState<SeqResult | null>(null)
   const [ready, setReady] = useState(false)
   const [navigating, setNavigating] = useState(false)
   const [revealed, setRevealed] = useState(false)
   const [restartOpen, setRestartOpen] = useState(false)
+
+  // Forward prefetch: while a card is shown, fetch its "next" in the background
+  // so advancing is instant. Keyed by the card it was computed from; consumed
+  // once on the matching "next" move. Backward moves intentionally not cached.
+  const prefetchedNext = useRef<{ forCardId: string; promise: Promise<SeqResult | null> } | null>(
+    null
+  )
 
   // Navigation is imperative: each move fetches the target card and replaces the
   // displayed result. This keeps a single source of truth (no query-key churn)
@@ -45,7 +51,15 @@ export function ReviewSequentialPage() {
     async (move: "resume" | "next" | "prev" | "first", cardId?: string) => {
       setNavigating(true)
       try {
-        const res = await utils.review.sequential.fetch({ deckId, cardId, move }, { staleTime: 0 })
+        const pf = prefetchedNext.current
+        prefetchedNext.current = null
+        let res: SeqResult | null = null
+        if (move === "next" && cardId && pf && pf.forCardId === cardId) {
+          res = await pf.promise
+        }
+        if (!res) {
+          res = await utils.review.sequential.fetch({ deckId, cardId, move }, { staleTime: 0 })
+        }
         setResult(res)
         setRevealed(false)
         setReady(true)
@@ -56,11 +70,27 @@ export function ReviewSequentialPage() {
     [deckId, utils]
   )
 
+  const prefetchNext = useCallback(
+    (cardId: string) => {
+      prefetchedNext.current = {
+        forCardId: cardId,
+        promise: utils.review.sequential
+          .fetch({ deckId, cardId, move: "next" }, { staleTime: 30_000 })
+          .catch(() => null),
+      }
+    },
+    [deckId, utils]
+  )
+
   useEffect(() => {
     go("resume")
   }, [go])
 
   const card = result?.card ?? null
+
+  useEffect(() => {
+    if (card?.id) prefetchNext(card.id)
+  }, [card?.id, prefetchNext])
 
   const advance = trpc.review.advance.useMutation({
     onSuccess: (_data, variables) => {
