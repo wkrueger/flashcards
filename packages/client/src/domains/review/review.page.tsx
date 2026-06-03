@@ -246,7 +246,7 @@ export function ReviewPage({
     ) : null
 
   return (
-    <div className="flex flex-1 flex-col gap-3">
+    <div className="flex flex-1 flex-col gap-3 pb-3">
       <PageHeader
         subtitle={subtitle}
         onBack={() => navigate({ to: "/decks/$deckId", params: { deckId } })}
