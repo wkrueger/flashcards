@@ -1,7 +1,13 @@
 import { TRPCError } from "@trpc/server"
-import { reviewCompleteInput, reviewNextInput } from "@cards/shared"
+import {
+  reviewAdvanceInput,
+  reviewCompleteInput,
+  reviewNextInput,
+  reviewSequentialInput,
+} from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
-import { completeReview, pickNextCard } from "./review.service.js"
+import { advanceCard, completeReview, pickNextCard } from "./review.service.js"
+import { sequentialCard } from "./review.sequential.js"
 
 export const reviewRouter = router({
   next: protectedProcedure.input(reviewNextInput).query(async ({ ctx, input }) => {
@@ -26,6 +32,40 @@ export const reviewRouter = router({
       if (
         err instanceof Error &&
         (err as NodeJS.ErrnoException & { code?: string }).code === "CARD_NOT_FOUND"
+      ) {
+        throw new TRPCError({ code: "NOT_FOUND" })
+      }
+      throw err
+    }
+  }),
+
+  advance: protectedProcedure.input(reviewAdvanceInput).mutation(async ({ ctx, input }) => {
+    try {
+      return await advanceCard(ctx.prisma, ctx.user.id, input.cardId)
+    } catch (err) {
+      if (
+        err instanceof Error &&
+        (err as NodeJS.ErrnoException & { code?: string }).code === "CARD_NOT_FOUND"
+      ) {
+        throw new TRPCError({ code: "NOT_FOUND" })
+      }
+      throw err
+    }
+  }),
+
+  sequential: protectedProcedure.input(reviewSequentialInput).query(async ({ ctx, input }) => {
+    try {
+      return await sequentialCard({
+        prisma: ctx.prisma,
+        userId: ctx.user.id,
+        deckId: input.deckId,
+        cardId: input.cardId,
+        move: input.move,
+      })
+    } catch (err) {
+      if (
+        err instanceof Error &&
+        (err as NodeJS.ErrnoException & { code?: string }).code === "DECK_NOT_FOUND"
       ) {
         throw new TRPCError({ code: "NOT_FOUND" })
       }

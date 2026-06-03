@@ -30,8 +30,10 @@ async function writeWorkbook(
   rows: Array<{
     id?: string
     subjectName?: string
+    subjectOrder?: number | string
     front?: string
     back?: string
+    cardOrder?: number | string
     tags?: string
   }>
 ) {
@@ -43,13 +45,15 @@ async function writeWorkbook(
   meta.addRow(["key", "value"])
   meta.addRow(["deckId", deckId])
   const card = workbook.addWorksheet("Card")
-  card.addRow(["id", "subjectName", "front", "back", "tags"])
+  card.addRow(["id", "subjectName", "subjectOrder", "front", "back", "cardOrder", "tags"])
   for (const row of rows) {
     card.addRow([
       row.id ?? "",
       row.subjectName ?? "",
+      row.subjectOrder ?? "",
       row.front ?? "",
       row.back ?? "",
+      row.cardOrder ?? "",
       row.tags ?? "",
     ])
   }
@@ -121,7 +125,7 @@ describe("deck spreadsheet import/export", () => {
     expect(cardSheet.getCell("A1").text).toBe("id")
     expect(cardSheet.getCell("A2").text).toBe(card.id)
     expect(cardSheet.getCell("B2").text).toBe("Haus")
-    expect(cardSheet.getCell("E2").text).toBe("Noun")
+    expect(cardSheet.getCell("G2").text).toBe("Noun")
   })
 
   it("updates, creates, deletes, and cleans up empty subjects from a spreadsheet import", async () => {
@@ -364,5 +368,66 @@ describe("deck spreadsheet import/export", () => {
     ).resolves.toBeNull()
     await expect(stat(storagePath)).rejects.toThrow()
     await expect(stat(orphanPath)).rejects.toThrow()
+  })
+
+  describe("order columns", () => {
+    it("imports card and subject order, first subject appearance wins", async () => {
+      const userId = await makeUser()
+      const deck = await prisma.deck.create({ data: { name: "D", userId } })
+      const storagePath = await writeWorkbook(deck.id, [
+        { subjectName: "S", subjectOrder: 10, front: "f1", back: "b1", cardOrder: 2 },
+        { subjectName: "S", subjectOrder: 99, front: "f2", back: "b2", cardOrder: 1 },
+      ])
+      await queueSpreadsheetImport({ userId, deckId: deck.id, storagePath })
+      expect(await runNextWorkerJob(prisma)).toBe(true)
+
+      const subject = await prisma.subject.findFirstOrThrow({ where: { deckId: deck.id } })
+      expect(subject.order).toBe(10)
+      const cards = await prisma.card.findMany({
+        where: { deckId: deck.id },
+        orderBy: { front: "asc" },
+        select: { front: true, order: true },
+      })
+      expect(cards).toEqual([
+        { front: "f1", order: 2 },
+        { front: "f2", order: 1 },
+      ])
+    })
+
+    it("export includes subjectOrder and cardOrder columns", async () => {
+      const userId = await makeUser()
+      const deck = await prisma.deck.create({ data: { name: "D", userId } })
+      const subject = await prisma.subject.create({
+        data: {
+          deckId: deck.id,
+          userId,
+          subject: "S",
+          subjectKey: subjectKeyFor("S"),
+          randomKey: 1,
+          order: 3,
+        },
+      })
+      await prisma.card.create({
+        data: {
+          deckId: deck.id,
+          subjectId: subject.id,
+          front: "f",
+          frontHash: hashFront("f"),
+          back: "b",
+          order: 7,
+        },
+      })
+      const { buffer } = await buildDeckSpreadsheetExport(prisma, userId, deck.id)
+      const wb = new ExcelJS.Workbook()
+      await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+      const sheet = wb.getWorksheet("Card")!
+      const header = sheet.getRow(1).values as string[]
+      expect(header).toContain("subjectOrder")
+      expect(header).toContain("cardOrder")
+      const colOf = (name: string) => header.indexOf(name)
+      const dataRow = sheet.getRow(2)
+      expect(dataRow.getCell(colOf("subjectOrder")).text).toBe("3")
+      expect(dataRow.getCell(colOf("cardOrder")).text).toBe("7")
+    })
   })
 })

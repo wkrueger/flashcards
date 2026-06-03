@@ -18,6 +18,7 @@ export const createDeckInput = z.object({
   defaultBackLanguageId: languageId.nullish(),
   speechRecognitionEnabled: z.boolean().optional(),
   inverseReviewEnabled: z.boolean().optional(),
+  sequentialEnabled: z.boolean().optional(),
 })
 
 export const updateDeckInput = z.object({
@@ -27,6 +28,7 @@ export const updateDeckInput = z.object({
   defaultBackLanguageId: languageId.nullish(),
   speechRecognitionEnabled: z.boolean().optional(),
   inverseReviewEnabled: z.boolean().optional(),
+  sequentialEnabled: z.boolean().optional(),
 })
 
 export const idInput = z.object({ id })
@@ -89,6 +91,22 @@ export const reviewCompleteInput = z
     message: "chosenLevel is required when not in inverse mode.",
     path: ["chosenLevel"],
   })
+
+export const sequentialMoveSchema = z.enum(["resume", "next", "prev", "first", "current"])
+export type SequentialMove = z.infer<typeof sequentialMoveSchema>
+
+export const reviewSequentialInput = z.object({
+  deckId: id,
+  cardId: id.optional(),
+  move: sequentialMoveSchema,
+})
+
+export const reviewAdvanceInput = z.object({ cardId: id })
+
+export const reorderCardInput = z.object({
+  cardId: id,
+  direction: z.enum(["up", "down"]),
+})
 
 export const importProcessStatusSchema = z.enum([
   "UPLOADED",

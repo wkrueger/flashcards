@@ -1,6 +1,11 @@
 import { TRPCError } from "@trpc/server"
 import { Prisma } from "../../generated/prisma/client.js"
-import { idInput, renameSubjectInput, subjectAutocompleteInput } from "@cards/shared"
+import {
+  idInput,
+  renameSubjectInput,
+  reorderCardInput,
+  subjectAutocompleteInput,
+} from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { normalizeSubjectText, subjectKeyFor } from "./subjects.service.js"
 import { markDeckCompletionStale } from "../decks/deck-completion.service.js"
@@ -42,7 +47,7 @@ export const subjectsRouter = router({
       where: { id: input.id, userId: ctx.user.id },
       include: {
         cards: {
-          orderBy: { createdAt: "desc" },
+          orderBy: [{ order: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
           include: subjectCardInclude,
         },
       },
@@ -95,6 +100,33 @@ export const subjectsRouter = router({
     if (!subject) throw new TRPCError({ code: "NOT_FOUND" })
     await ctx.prisma.subject.delete({ where: { id: subject.id } })
     await markDeckCompletionStale(ctx.prisma, subject.deckId)
+    return { ok: true }
+  }),
+
+  reorderCard: protectedProcedure.input(reorderCardInput).mutation(async ({ ctx, input }) => {
+    const card = await ctx.prisma.card.findFirst({
+      where: { id: input.cardId, deck: { userId: ctx.user.id } },
+      select: { id: true, subjectId: true },
+    })
+    if (!card) throw new TRPCError({ code: "NOT_FOUND" })
+
+    const cards = await ctx.prisma.card.findMany({
+      where: { subjectId: card.subjectId },
+      orderBy: [{ order: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
+      select: { id: true },
+    })
+    const idx = cards.findIndex((c) => c.id === card.id)
+    const swapIdx = input.direction === "up" ? idx - 1 : idx + 1
+    if (swapIdx < 0 || swapIdx >= cards.length) return { ok: true }
+
+    const reordered = [...cards]
+    const tmp = reordered[idx]!
+    reordered[idx] = reordered[swapIdx]!
+    reordered[swapIdx] = tmp
+
+    await ctx.prisma.$transaction(
+      reordered.map((c, i) => ctx.prisma.card.update({ where: { id: c.id }, data: { order: i } }))
+    )
     return { ok: true }
   }),
 })

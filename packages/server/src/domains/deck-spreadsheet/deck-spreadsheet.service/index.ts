@@ -28,9 +28,9 @@ export async function buildDeckSpreadsheetExport(
   const deck = await assertOwnDeck(prisma, userId, deckId)
   const cards = await prisma.card.findMany({
     where: { deckId },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ order: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
     include: {
-      subject: { select: { subject: true } },
+      subject: { select: { subject: true, order: true } },
       cardTags: { include: { tag: { select: { id: true, name: true } } } },
     },
   })
@@ -52,15 +52,25 @@ export async function buildDeckSpreadsheetExport(
     cardSheet.addRow([
       card.id,
       card.subject.subject,
+      card.subject.order ?? "",
       card.front,
       card.back,
+      card.order ?? "",
       card.cardTags
         .map((cardTag) => cardTag.tag.name)
         .sort()
         .join(", "),
     ])
   }
-  cardSheet.columns = [{ width: 28 }, { width: 24 }, { width: 48 }, { width: 48 }, { width: 28 }]
+  cardSheet.columns = [
+    { width: 28 },
+    { width: 24 },
+    { width: 12 },
+    { width: 48 },
+    { width: 48 },
+    { width: 12 },
+    { width: 28 },
+  ]
 
   const buffer = await workbook.xlsx.writeBuffer()
   const safeDeckName = deck.name.replaceAll(/[^a-z0-9_-]+/gi, "-").replaceAll(/^-|-$/g, "")

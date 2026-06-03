@@ -17,7 +17,7 @@ By default `sequentialEnabled` is false and nothing changes.
   popover, inline-expanding within the popover (no native submenu). Holds the
   Sequential deck checkbox. Speech/Inverse toggles stay at page bottom.
 - **Cooldowns**: fixation buttons write cooldown/fixation/stats exactly as today.
-  The sequential picker *ignores* cooldown when choosing the next card — it always
+  The sequential picker _ignores_ cooldown when choosing the next card — it always
   walks the full sequence. Because cooldowns are still written, stats keep working
   and switching back to non-sequential mode behaves normally.
 - **Restart**: pure navigation to the first card. Writes nothing.
@@ -25,7 +25,7 @@ By default `sequentialEnabled` is false and nothing changes.
   due/free split). Non-sequential decks unchanged.
 - **No inverse review** in the sequential branch.
 - **Global ordering flip accepted**: `subjects.get` cards change from `createdAt
-  desc` to `(order, createdAt) asc`. Minor visual change to non-sequential subject
+desc` to `(order, createdAt) asc`. Minor visual change to non-sequential subject
   pages — accepted.
 
 ## Schema (`packages/server/prisma/schema.prisma`)
@@ -73,7 +73,7 @@ Approach: **punctual queries** (no whole-deck scan). Sequence is subjects by
   then its first card (next) or last card (prev). The helper handles the null
   boundary explicitly:
   - next, current.order != null → smallest tuple `(order > o) OR (order = o AND
-    createdAt > c)`; if none, first null-order subject by `createdAt`.
+createdAt > c)`; if none, first null-order subject by `createdAt`.
   - next, current.order == null → next null-order subject with `createdAt >` (min).
   - prev, current.order == null → prev null-order subject with `createdAt <` (max);
     if none, last non-null subject.
@@ -156,5 +156,5 @@ split.
 
 ## Out of scope
 
-- UI to reorder *subjects* (only via correct insertion order or XLS import).
+- UI to reorder _subjects_ (only via correct insertion order or XLS import).
 - Reordering across subjects in the subject-detail page.

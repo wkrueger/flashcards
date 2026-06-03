@@ -1,6 +1,6 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "@tanstack/react-router"
-import { Check, Pencil, RefreshCw, Trash2, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Check, Pencil, RefreshCw, Trash2, X } from "lucide-react"
 import { trpc } from "../../infra/trpc"
 import { cn } from "../../lib/utils"
 import { Button } from "../../ui/button"
@@ -90,6 +90,13 @@ export function SubjectCardsPage() {
       utils.decks.list.invalidate()
       utils.decks.get.invalidate({ id: deckId })
       utils.review.next.invalidate()
+    },
+  })
+
+  const reorderCard = trpc.subjects.reorderCard.useMutation({
+    onSuccess: () => {
+      utils.subjects.get.invalidate({ id: subjectId })
+      utils.review.sequential.invalidate()
     },
   })
 
@@ -195,12 +202,17 @@ export function SubjectCardsPage() {
         <p className="text-sm text-muted-foreground">No cards in this subject.</p>
       ) : (
         <ul className="space-y-3">
-          {cards.map((card) => (
+          {cards.map((card, index) => (
             <li key={card.id}>
               <SubjectCardItem
                 card={card}
                 isRegenerating={regeneratingId === card.id}
                 actionsDisabled={actionsDisabled}
+                sequential={Boolean(deck.data?.sequentialEnabled)}
+                canMoveUp={index > 0}
+                canMoveDown={index < cards.length - 1}
+                onMoveUp={() => reorderCard.mutate({ cardId: card.id, direction: "up" })}
+                onMoveDown={() => reorderCard.mutate({ cardId: card.id, direction: "down" })}
                 onRegenerate={() => regenerate(card)}
                 onRemove={() => removeCard(card)}
                 onSave={(front, back) => saveCard(card, front, back)}
@@ -295,6 +307,11 @@ function SubjectCardItem({
   card,
   isRegenerating,
   actionsDisabled,
+  sequential,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
   onRegenerate,
   onRemove,
   onSave,
@@ -302,6 +319,11 @@ function SubjectCardItem({
   card: SubjectCardData
   isRegenerating: boolean
   actionsDisabled: boolean
+  sequential: boolean
+  canMoveUp: boolean
+  canMoveDown: boolean
+  onMoveUp: () => void
+  onMoveDown: () => void
   onRegenerate: () => void
   onRemove: () => void
   onSave: (front: string, back: string) => Promise<void>
@@ -421,6 +443,28 @@ function SubjectCardItem({
                   >
                     <RefreshCw className={cn("h-4 w-4", isRegenerating && "animate-spin")} />
                   </Button>
+                )}
+                {sequential && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Move card up"
+                      disabled={actionsDisabled || !canMoveUp}
+                      onClick={onMoveUp}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Move card down"
+                      disabled={actionsDisabled || !canMoveDown}
+                      onClick={onMoveDown}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
                 <Button
                   variant="ghost"
