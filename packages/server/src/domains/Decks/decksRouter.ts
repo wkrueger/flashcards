@@ -37,13 +37,24 @@ export const decksRouter = router({
     })
     const dueCounts = await Promise.all(
       decks.map((d) =>
-        ctx.prisma.subject.count({
-          where: {
-            userId: ctx.user.id,
-            deckId: d.id,
-            cooldownAt: { lte: now },
-          },
-        })
+        // Sequential decks progress through unseen subjects in order, so the
+        // "to do" count is the number of subjects not yet seen rather than the
+        // number whose cooldown has elapsed.
+        d.sequentialEnabled
+          ? ctx.prisma.subject.count({
+              where: {
+                userId: ctx.user.id,
+                deckId: d.id,
+                firstSeenAt: null,
+              },
+            })
+          : ctx.prisma.subject.count({
+              where: {
+                userId: ctx.user.id,
+                deckId: d.id,
+                cooldownAt: { lte: now },
+              },
+            })
       )
     )
     return decks.map((d, i) => ({
@@ -219,6 +230,22 @@ export const decksRouter = router({
       select: { id: true, subject: true },
     })
     return [...first, ...second]
+  }),
+
+  // Sequential decks show their subjects in study order (the same ordering the
+  // sequential review walks). Mirrors the subject ordering in reviewSequential.
+  orderedSubjects: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
+    const deck = await ctx.prisma.deck.findFirst({
+      where: { id: input.id, userId: ctx.user.id },
+      select: { id: true },
+    })
+    if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
+    return ctx.prisma.subject.findMany({
+      where: { userId: ctx.user.id, deckId: input.id },
+      orderBy: [{ order: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }, { id: "asc" }],
+      take: SAMPLE_SUBJECT_LIMIT,
+      select: { id: true, subject: true },
+    })
   }),
 
   reviewStats: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {

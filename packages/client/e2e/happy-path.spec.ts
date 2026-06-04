@@ -89,7 +89,7 @@ test("signup → deck → card → review → free review → edit → logout", 
   if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
   await studyLanguageSelect.selectOption(deutschLanguageId)
   await page.getByRole("button", { name: "Create" }).click()
-  await page.getByRole("link", { name: /German A1/ }).click()
+  await page.getByRole("button", { name: /German A1/ }).click()
   await expect(page.getByRole("checkbox", { name: /Speech recognition/ })).toBeChecked()
 
   await page.getByRole("button", { name: "Menu" }).click()
@@ -210,25 +210,30 @@ test("review edit exits return to the same card", async ({ page }) => {
   if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
   await studyLanguageSelect.selectOption(deutschLanguageId)
   await page.getByRole("button", { name: "Create" }).click()
-  await page.getByRole("link", { name: /German Review Edit/ }).click()
+  await page.getByRole("button", { name: /German Review Edit/ }).click()
 
-  await page.getByRole("button", { name: "Menu" }).click()
-  await page.getByRole("button", { name: "Add card" }).click()
-  await page.getByRole("textbox", { name: "Subject" }).fill("Alpha")
-  await page.getByRole("textbox", { name: "Front" }).fill("Alpha front.")
-  await page.getByRole("textbox", { name: "Back" }).fill("Alpha back.")
-  await page.getByRole("button", { name: "Create" }).click()
+  const addCard = async (subject: string, front: string, back: string) => {
+    await page.getByRole("button", { name: "Menu" }).click()
+    await page.getByRole("button", { name: "Add card" }).click()
+    await page.getByRole("textbox", { name: "Subject" }).fill(subject)
+    await page.getByRole("textbox", { name: "Front" }).fill(front)
+    await page.getByRole("textbox", { name: "Back" }).fill(back)
+    await page.getByRole("button", { name: "Create" }).click()
+    // Wait until the form closes (back on deck detail) before reopening the menu,
+    // otherwise the next menu-open can race with navigation.
+    await expect(page.getByRole("textbox", { name: "Subject" })).toBeHidden()
+  }
 
-  await page.getByRole("button", { name: "Menu" }).click()
-  await page.getByRole("button", { name: "Add card" }).click()
-  await page.getByRole("textbox", { name: "Subject" }).fill("Beta")
-  await page.getByRole("textbox", { name: "Front" }).fill("Beta front.")
-  await page.getByRole("textbox", { name: "Back" }).fill("Beta back.")
-  await page.getByRole("button", { name: "Create" }).click()
+  await addCard("Alpha", "Alpha front.", "Alpha back.")
+  await addCard("Beta", "Beta front.", "Beta back.")
 
   await expect(page.getByTestId("deck-subject-stats")).toContainText("2 subjects, 2 cards")
   await page.getByRole("link", { name: /Review 2 due/ }).click()
 
+  // Wait for a card to actually render before the instant visibility check below,
+  // otherwise isVisible() resolves false before the front mounts and picks the
+  // wrong branch.
+  await expect(page.getByRole("button", { name: "Reveal" })).toBeVisible()
   const alphaVisible = await page.getByText("Alpha front.").isVisible()
   const currentFront = alphaVisible ? "Alpha front." : "Beta front."
   const updatedBack = alphaVisible ? "Alpha back updated." : "Beta back updated."
@@ -269,7 +274,7 @@ test("sequential deck walks cards in order with Next, Prev, and Restart", async 
   await page.getByRole("button", { name: "New deck" }).click()
   await page.getByPlaceholder("e.g. German A1").fill("German Sequential")
   await page.getByRole("button", { name: "Create" }).click()
-  await page.getByRole("link", { name: /German Sequential/ }).click()
+  await page.getByRole("button", { name: /German Sequential/ }).click()
 
   const addCard = async (subject: string, front: string, back: string) => {
     await page.getByRole("button", { name: "Menu" }).click()
@@ -377,7 +382,7 @@ test("deck completion percent updates after a review", async ({ page }) => {
   if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
   await studyLanguageSelect.selectOption(deutschLanguageId)
   await page.getByRole("button", { name: "Create" }).click()
-  await page.getByRole("link", { name: /German Completion/ }).click()
+  await page.getByRole("button", { name: /German Completion/ }).click()
   const deckUrl = page.url()
 
   await page.getByRole("button", { name: "Menu" }).click()

@@ -8,307 +8,301 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as MarkdownTestRouteImport } from './routes/markdown-test'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as appRouteRouteImport } from './routes/(app)/route'
-import { Route as appIndexRouteImport } from './routes/(app)/index'
-import { Route as appImportsAnkiRouteImport } from './routes/(app)/imports.anki'
-import { Route as appDecksDeckIdRouteImport } from './routes/(app)/decks.$deckId'
-import { Route as appImportsAnkiIndexRouteImport } from './routes/(app)/imports.anki.index'
-import { Route as appDecksDeckIdIndexRouteImport } from './routes/(app)/decks.$deckId.index'
-import { Route as appImportsAnkiNewRouteImport } from './routes/(app)/imports.anki.new'
-import { Route as appImportsAnkiProcessIdRouteImport } from './routes/(app)/imports.anki.$processId'
-import { Route as appDecksDeckIdReviewRouteImport } from './routes/(app)/decks.$deckId.review'
-import { Route as appDecksDeckIdImportRouteImport } from './routes/(app)/decks.$deckId.import'
-import { Route as appDecksDeckIdReviewIndexRouteImport } from './routes/(app)/decks.$deckId.review.index'
-import { Route as appDecksDeckIdSubjectsSubjectIdRouteImport } from './routes/(app)/decks.$deckId.subjects.$subjectId'
-import { Route as appDecksDeckIdReviewFreeRouteImport } from './routes/(app)/decks.$deckId.review.free'
-import { Route as appDecksDeckIdCardsNewRouteImport } from './routes/(app)/decks.$deckId.cards.new'
-import { Route as appDecksDeckIdCardsGenerateRouteImport } from './routes/(app)/decks.$deckId.cards.generate'
-import { Route as appDecksDeckIdReviewSubjectsSubjectIdRouteImport } from './routes/(app)/decks.$deckId.review.subjects.$subjectId'
-import { Route as appDecksDeckIdReviewCardsCardIdRouteImport } from './routes/(app)/decks.$deckId.review.cards.$cardId'
-import { Route as appDecksDeckIdCardsCardIdEditRouteImport } from './routes/(app)/decks.$deckId.cards.$cardId.edit'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as VerifyEmailRouteImport } from "./routes/verify-email"
+import { Route as SignupRouteImport } from "./routes/signup"
+import { Route as ResetPasswordRouteImport } from "./routes/reset-password"
+import { Route as MarkdownTestRouteImport } from "./routes/markdown-test"
+import { Route as LoginRouteImport } from "./routes/login"
+import { Route as ForgotPasswordRouteImport } from "./routes/forgot-password"
+import { Route as appRouteRouteImport } from "./routes/(app)/route"
+import { Route as appIndexRouteImport } from "./routes/(app)/index"
+import { Route as appImportsAnkiRouteImport } from "./routes/(app)/imports.anki"
+import { Route as appDecksDeckIdRouteImport } from "./routes/(app)/decks.$deckId"
+import { Route as appImportsAnkiIndexRouteImport } from "./routes/(app)/imports.anki.index"
+import { Route as appDecksDeckIdIndexRouteImport } from "./routes/(app)/decks.$deckId.index"
+import { Route as appImportsAnkiNewRouteImport } from "./routes/(app)/imports.anki.new"
+import { Route as appImportsAnkiProcessIdRouteImport } from "./routes/(app)/imports.anki.$processId"
+import { Route as appDecksDeckIdReviewRouteImport } from "./routes/(app)/decks.$deckId.review"
+import { Route as appDecksDeckIdImportRouteImport } from "./routes/(app)/decks.$deckId.import"
+import { Route as appDecksDeckIdReviewIndexRouteImport } from "./routes/(app)/decks.$deckId.review.index"
+import { Route as appDecksDeckIdSubjectsSubjectIdRouteImport } from "./routes/(app)/decks.$deckId.subjects.$subjectId"
+import { Route as appDecksDeckIdReviewFreeRouteImport } from "./routes/(app)/decks.$deckId.review.free"
+import { Route as appDecksDeckIdCardsNewRouteImport } from "./routes/(app)/decks.$deckId.cards.new"
+import { Route as appDecksDeckIdCardsGenerateRouteImport } from "./routes/(app)/decks.$deckId.cards.generate"
+import { Route as appDecksDeckIdReviewSubjectsSubjectIdRouteImport } from "./routes/(app)/decks.$deckId.review.subjects.$subjectId"
+import { Route as appDecksDeckIdReviewCardsCardIdRouteImport } from "./routes/(app)/decks.$deckId.review.cards.$cardId"
+import { Route as appDecksDeckIdCardsCardIdEditRouteImport } from "./routes/(app)/decks.$deckId.cards.$cardId.edit"
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
-  id: '/verify-email',
-  path: '/verify-email',
+  id: "/verify-email",
+  path: "/verify-email",
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
+  id: "/signup",
+  path: "/signup",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
+  id: "/reset-password",
+  path: "/reset-password",
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarkdownTestRoute = MarkdownTestRouteImport.update({
-  id: '/markdown-test',
-  path: '/markdown-test',
+  id: "/markdown-test",
+  path: "/markdown-test",
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
+  id: "/forgot-password",
+  path: "/forgot-password",
   getParentRoute: () => rootRouteImport,
 } as any)
 const appRouteRoute = appRouteRouteImport.update({
-  id: '/(app)',
+  id: "/(app)",
   getParentRoute: () => rootRouteImport,
 } as any)
 const appIndexRoute = appIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => appRouteRoute,
 } as any)
 const appImportsAnkiRoute = appImportsAnkiRouteImport.update({
-  id: '/imports/anki',
-  path: '/imports/anki',
+  id: "/imports/anki",
+  path: "/imports/anki",
   getParentRoute: () => appRouteRoute,
 } as any)
 const appDecksDeckIdRoute = appDecksDeckIdRouteImport.update({
-  id: '/decks/$deckId',
-  path: '/decks/$deckId',
+  id: "/decks/$deckId",
+  path: "/decks/$deckId",
   getParentRoute: () => appRouteRoute,
 } as any)
 const appImportsAnkiIndexRoute = appImportsAnkiIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => appImportsAnkiRoute,
 } as any)
 const appDecksDeckIdIndexRoute = appDecksDeckIdIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => appDecksDeckIdRoute,
 } as any)
 const appImportsAnkiNewRoute = appImportsAnkiNewRouteImport.update({
-  id: '/new',
-  path: '/new',
+  id: "/new",
+  path: "/new",
   getParentRoute: () => appImportsAnkiRoute,
 } as any)
 const appImportsAnkiProcessIdRoute = appImportsAnkiProcessIdRouteImport.update({
-  id: '/$processId',
-  path: '/$processId',
+  id: "/$processId",
+  path: "/$processId",
   getParentRoute: () => appImportsAnkiRoute,
 } as any)
 const appDecksDeckIdReviewRoute = appDecksDeckIdReviewRouteImport.update({
-  id: '/review',
-  path: '/review',
+  id: "/review",
+  path: "/review",
   getParentRoute: () => appDecksDeckIdRoute,
 } as any)
 const appDecksDeckIdImportRoute = appDecksDeckIdImportRouteImport.update({
-  id: '/import',
-  path: '/import',
+  id: "/import",
+  path: "/import",
   getParentRoute: () => appDecksDeckIdRoute,
 } as any)
-const appDecksDeckIdReviewIndexRoute =
-  appDecksDeckIdReviewIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => appDecksDeckIdReviewRoute,
-  } as any)
-const appDecksDeckIdSubjectsSubjectIdRoute =
-  appDecksDeckIdSubjectsSubjectIdRouteImport.update({
-    id: '/subjects/$subjectId',
-    path: '/subjects/$subjectId',
-    getParentRoute: () => appDecksDeckIdRoute,
-  } as any)
-const appDecksDeckIdReviewFreeRoute =
-  appDecksDeckIdReviewFreeRouteImport.update({
-    id: '/free',
-    path: '/free',
-    getParentRoute: () => appDecksDeckIdReviewRoute,
-  } as any)
+const appDecksDeckIdReviewIndexRoute = appDecksDeckIdReviewIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => appDecksDeckIdReviewRoute,
+} as any)
+const appDecksDeckIdSubjectsSubjectIdRoute = appDecksDeckIdSubjectsSubjectIdRouteImport.update({
+  id: "/subjects/$subjectId",
+  path: "/subjects/$subjectId",
+  getParentRoute: () => appDecksDeckIdRoute,
+} as any)
+const appDecksDeckIdReviewFreeRoute = appDecksDeckIdReviewFreeRouteImport.update({
+  id: "/free",
+  path: "/free",
+  getParentRoute: () => appDecksDeckIdReviewRoute,
+} as any)
 const appDecksDeckIdCardsNewRoute = appDecksDeckIdCardsNewRouteImport.update({
-  id: '/cards/new',
-  path: '/cards/new',
+  id: "/cards/new",
+  path: "/cards/new",
   getParentRoute: () => appDecksDeckIdRoute,
 } as any)
-const appDecksDeckIdCardsGenerateRoute =
-  appDecksDeckIdCardsGenerateRouteImport.update({
-    id: '/cards/generate',
-    path: '/cards/generate',
-    getParentRoute: () => appDecksDeckIdRoute,
-  } as any)
+const appDecksDeckIdCardsGenerateRoute = appDecksDeckIdCardsGenerateRouteImport.update({
+  id: "/cards/generate",
+  path: "/cards/generate",
+  getParentRoute: () => appDecksDeckIdRoute,
+} as any)
 const appDecksDeckIdReviewSubjectsSubjectIdRoute =
   appDecksDeckIdReviewSubjectsSubjectIdRouteImport.update({
-    id: '/subjects/$subjectId',
-    path: '/subjects/$subjectId',
+    id: "/subjects/$subjectId",
+    path: "/subjects/$subjectId",
     getParentRoute: () => appDecksDeckIdReviewRoute,
   } as any)
-const appDecksDeckIdReviewCardsCardIdRoute =
-  appDecksDeckIdReviewCardsCardIdRouteImport.update({
-    id: '/cards/$cardId',
-    path: '/cards/$cardId',
-    getParentRoute: () => appDecksDeckIdReviewRoute,
-  } as any)
-const appDecksDeckIdCardsCardIdEditRoute =
-  appDecksDeckIdCardsCardIdEditRouteImport.update({
-    id: '/cards/$cardId/edit',
-    path: '/cards/$cardId/edit',
-    getParentRoute: () => appDecksDeckIdRoute,
-  } as any)
+const appDecksDeckIdReviewCardsCardIdRoute = appDecksDeckIdReviewCardsCardIdRouteImport.update({
+  id: "/cards/$cardId",
+  path: "/cards/$cardId",
+  getParentRoute: () => appDecksDeckIdReviewRoute,
+} as any)
+const appDecksDeckIdCardsCardIdEditRoute = appDecksDeckIdCardsCardIdEditRouteImport.update({
+  id: "/cards/$cardId/edit",
+  path: "/cards/$cardId/edit",
+  getParentRoute: () => appDecksDeckIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/markdown-test': typeof MarkdownTestRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/': typeof appIndexRoute
-  '/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
-  '/imports/anki': typeof appImportsAnkiRouteWithChildren
-  '/decks/$deckId/import': typeof appDecksDeckIdImportRoute
-  '/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
-  '/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
-  '/imports/anki/new': typeof appImportsAnkiNewRoute
-  '/decks/$deckId/': typeof appDecksDeckIdIndexRoute
-  '/imports/anki/': typeof appImportsAnkiIndexRoute
-  '/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
-  '/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
-  '/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
-  '/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
-  '/decks/$deckId/review/': typeof appDecksDeckIdReviewIndexRoute
-  '/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
-  '/decks/$deckId/review/cards/$cardId': typeof appDecksDeckIdReviewCardsCardIdRoute
-  '/decks/$deckId/review/subjects/$subjectId': typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
+  "/forgot-password": typeof ForgotPasswordRoute
+  "/login": typeof LoginRoute
+  "/markdown-test": typeof MarkdownTestRoute
+  "/reset-password": typeof ResetPasswordRoute
+  "/signup": typeof SignupRoute
+  "/verify-email": typeof VerifyEmailRoute
+  "/": typeof appIndexRoute
+  "/decks/$deckId": typeof appDecksDeckIdRouteWithChildren
+  "/imports/anki": typeof appImportsAnkiRouteWithChildren
+  "/decks/$deckId/import": typeof appDecksDeckIdImportRoute
+  "/decks/$deckId/review": typeof appDecksDeckIdReviewRouteWithChildren
+  "/imports/anki/$processId": typeof appImportsAnkiProcessIdRoute
+  "/imports/anki/new": typeof appImportsAnkiNewRoute
+  "/decks/$deckId/": typeof appDecksDeckIdIndexRoute
+  "/imports/anki/": typeof appImportsAnkiIndexRoute
+  "/decks/$deckId/cards/generate": typeof appDecksDeckIdCardsGenerateRoute
+  "/decks/$deckId/cards/new": typeof appDecksDeckIdCardsNewRoute
+  "/decks/$deckId/review/free": typeof appDecksDeckIdReviewFreeRoute
+  "/decks/$deckId/subjects/$subjectId": typeof appDecksDeckIdSubjectsSubjectIdRoute
+  "/decks/$deckId/review/": typeof appDecksDeckIdReviewIndexRoute
+  "/decks/$deckId/cards/$cardId/edit": typeof appDecksDeckIdCardsCardIdEditRoute
+  "/decks/$deckId/review/cards/$cardId": typeof appDecksDeckIdReviewCardsCardIdRoute
+  "/decks/$deckId/review/subjects/$subjectId": typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
 }
 export interface FileRoutesByTo {
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/markdown-test': typeof MarkdownTestRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/': typeof appIndexRoute
-  '/decks/$deckId/import': typeof appDecksDeckIdImportRoute
-  '/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
-  '/imports/anki/new': typeof appImportsAnkiNewRoute
-  '/decks/$deckId': typeof appDecksDeckIdIndexRoute
-  '/imports/anki': typeof appImportsAnkiIndexRoute
-  '/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
-  '/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
-  '/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
-  '/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
-  '/decks/$deckId/review': typeof appDecksDeckIdReviewIndexRoute
-  '/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
-  '/decks/$deckId/review/cards/$cardId': typeof appDecksDeckIdReviewCardsCardIdRoute
-  '/decks/$deckId/review/subjects/$subjectId': typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
+  "/forgot-password": typeof ForgotPasswordRoute
+  "/login": typeof LoginRoute
+  "/markdown-test": typeof MarkdownTestRoute
+  "/reset-password": typeof ResetPasswordRoute
+  "/signup": typeof SignupRoute
+  "/verify-email": typeof VerifyEmailRoute
+  "/": typeof appIndexRoute
+  "/decks/$deckId/import": typeof appDecksDeckIdImportRoute
+  "/imports/anki/$processId": typeof appImportsAnkiProcessIdRoute
+  "/imports/anki/new": typeof appImportsAnkiNewRoute
+  "/decks/$deckId": typeof appDecksDeckIdIndexRoute
+  "/imports/anki": typeof appImportsAnkiIndexRoute
+  "/decks/$deckId/cards/generate": typeof appDecksDeckIdCardsGenerateRoute
+  "/decks/$deckId/cards/new": typeof appDecksDeckIdCardsNewRoute
+  "/decks/$deckId/review/free": typeof appDecksDeckIdReviewFreeRoute
+  "/decks/$deckId/subjects/$subjectId": typeof appDecksDeckIdSubjectsSubjectIdRoute
+  "/decks/$deckId/review": typeof appDecksDeckIdReviewIndexRoute
+  "/decks/$deckId/cards/$cardId/edit": typeof appDecksDeckIdCardsCardIdEditRoute
+  "/decks/$deckId/review/cards/$cardId": typeof appDecksDeckIdReviewCardsCardIdRoute
+  "/decks/$deckId/review/subjects/$subjectId": typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/(app)': typeof appRouteRouteWithChildren
-  '/forgot-password': typeof ForgotPasswordRoute
-  '/login': typeof LoginRoute
-  '/markdown-test': typeof MarkdownTestRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/signup': typeof SignupRoute
-  '/verify-email': typeof VerifyEmailRoute
-  '/(app)/': typeof appIndexRoute
-  '/(app)/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
-  '/(app)/imports/anki': typeof appImportsAnkiRouteWithChildren
-  '/(app)/decks/$deckId/import': typeof appDecksDeckIdImportRoute
-  '/(app)/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
-  '/(app)/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
-  '/(app)/imports/anki/new': typeof appImportsAnkiNewRoute
-  '/(app)/decks/$deckId/': typeof appDecksDeckIdIndexRoute
-  '/(app)/imports/anki/': typeof appImportsAnkiIndexRoute
-  '/(app)/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
-  '/(app)/decks/$deckId/cards/new': typeof appDecksDeckIdCardsNewRoute
-  '/(app)/decks/$deckId/review/free': typeof appDecksDeckIdReviewFreeRoute
-  '/(app)/decks/$deckId/subjects/$subjectId': typeof appDecksDeckIdSubjectsSubjectIdRoute
-  '/(app)/decks/$deckId/review/': typeof appDecksDeckIdReviewIndexRoute
-  '/(app)/decks/$deckId/cards/$cardId/edit': typeof appDecksDeckIdCardsCardIdEditRoute
-  '/(app)/decks/$deckId/review/cards/$cardId': typeof appDecksDeckIdReviewCardsCardIdRoute
-  '/(app)/decks/$deckId/review/subjects/$subjectId': typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
+  "/(app)": typeof appRouteRouteWithChildren
+  "/forgot-password": typeof ForgotPasswordRoute
+  "/login": typeof LoginRoute
+  "/markdown-test": typeof MarkdownTestRoute
+  "/reset-password": typeof ResetPasswordRoute
+  "/signup": typeof SignupRoute
+  "/verify-email": typeof VerifyEmailRoute
+  "/(app)/": typeof appIndexRoute
+  "/(app)/decks/$deckId": typeof appDecksDeckIdRouteWithChildren
+  "/(app)/imports/anki": typeof appImportsAnkiRouteWithChildren
+  "/(app)/decks/$deckId/import": typeof appDecksDeckIdImportRoute
+  "/(app)/decks/$deckId/review": typeof appDecksDeckIdReviewRouteWithChildren
+  "/(app)/imports/anki/$processId": typeof appImportsAnkiProcessIdRoute
+  "/(app)/imports/anki/new": typeof appImportsAnkiNewRoute
+  "/(app)/decks/$deckId/": typeof appDecksDeckIdIndexRoute
+  "/(app)/imports/anki/": typeof appImportsAnkiIndexRoute
+  "/(app)/decks/$deckId/cards/generate": typeof appDecksDeckIdCardsGenerateRoute
+  "/(app)/decks/$deckId/cards/new": typeof appDecksDeckIdCardsNewRoute
+  "/(app)/decks/$deckId/review/free": typeof appDecksDeckIdReviewFreeRoute
+  "/(app)/decks/$deckId/subjects/$subjectId": typeof appDecksDeckIdSubjectsSubjectIdRoute
+  "/(app)/decks/$deckId/review/": typeof appDecksDeckIdReviewIndexRoute
+  "/(app)/decks/$deckId/cards/$cardId/edit": typeof appDecksDeckIdCardsCardIdEditRoute
+  "/(app)/decks/$deckId/review/cards/$cardId": typeof appDecksDeckIdReviewCardsCardIdRoute
+  "/(app)/decks/$deckId/review/subjects/$subjectId": typeof appDecksDeckIdReviewSubjectsSubjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/forgot-password'
-    | '/login'
-    | '/markdown-test'
-    | '/reset-password'
-    | '/signup'
-    | '/verify-email'
-    | '/'
-    | '/decks/$deckId'
-    | '/imports/anki'
-    | '/decks/$deckId/import'
-    | '/decks/$deckId/review'
-    | '/imports/anki/$processId'
-    | '/imports/anki/new'
-    | '/decks/$deckId/'
-    | '/imports/anki/'
-    | '/decks/$deckId/cards/generate'
-    | '/decks/$deckId/cards/new'
-    | '/decks/$deckId/review/free'
-    | '/decks/$deckId/subjects/$subjectId'
-    | '/decks/$deckId/review/'
-    | '/decks/$deckId/cards/$cardId/edit'
-    | '/decks/$deckId/review/cards/$cardId'
-    | '/decks/$deckId/review/subjects/$subjectId'
+    | "/forgot-password"
+    | "/login"
+    | "/markdown-test"
+    | "/reset-password"
+    | "/signup"
+    | "/verify-email"
+    | "/"
+    | "/decks/$deckId"
+    | "/imports/anki"
+    | "/decks/$deckId/import"
+    | "/decks/$deckId/review"
+    | "/imports/anki/$processId"
+    | "/imports/anki/new"
+    | "/decks/$deckId/"
+    | "/imports/anki/"
+    | "/decks/$deckId/cards/generate"
+    | "/decks/$deckId/cards/new"
+    | "/decks/$deckId/review/free"
+    | "/decks/$deckId/subjects/$subjectId"
+    | "/decks/$deckId/review/"
+    | "/decks/$deckId/cards/$cardId/edit"
+    | "/decks/$deckId/review/cards/$cardId"
+    | "/decks/$deckId/review/subjects/$subjectId"
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/forgot-password'
-    | '/login'
-    | '/markdown-test'
-    | '/reset-password'
-    | '/signup'
-    | '/verify-email'
-    | '/'
-    | '/decks/$deckId/import'
-    | '/imports/anki/$processId'
-    | '/imports/anki/new'
-    | '/decks/$deckId'
-    | '/imports/anki'
-    | '/decks/$deckId/cards/generate'
-    | '/decks/$deckId/cards/new'
-    | '/decks/$deckId/review/free'
-    | '/decks/$deckId/subjects/$subjectId'
-    | '/decks/$deckId/review'
-    | '/decks/$deckId/cards/$cardId/edit'
-    | '/decks/$deckId/review/cards/$cardId'
-    | '/decks/$deckId/review/subjects/$subjectId'
+    | "/forgot-password"
+    | "/login"
+    | "/markdown-test"
+    | "/reset-password"
+    | "/signup"
+    | "/verify-email"
+    | "/"
+    | "/decks/$deckId/import"
+    | "/imports/anki/$processId"
+    | "/imports/anki/new"
+    | "/decks/$deckId"
+    | "/imports/anki"
+    | "/decks/$deckId/cards/generate"
+    | "/decks/$deckId/cards/new"
+    | "/decks/$deckId/review/free"
+    | "/decks/$deckId/subjects/$subjectId"
+    | "/decks/$deckId/review"
+    | "/decks/$deckId/cards/$cardId/edit"
+    | "/decks/$deckId/review/cards/$cardId"
+    | "/decks/$deckId/review/subjects/$subjectId"
   id:
-    | '__root__'
-    | '/(app)'
-    | '/forgot-password'
-    | '/login'
-    | '/markdown-test'
-    | '/reset-password'
-    | '/signup'
-    | '/verify-email'
-    | '/(app)/'
-    | '/(app)/decks/$deckId'
-    | '/(app)/imports/anki'
-    | '/(app)/decks/$deckId/import'
-    | '/(app)/decks/$deckId/review'
-    | '/(app)/imports/anki/$processId'
-    | '/(app)/imports/anki/new'
-    | '/(app)/decks/$deckId/'
-    | '/(app)/imports/anki/'
-    | '/(app)/decks/$deckId/cards/generate'
-    | '/(app)/decks/$deckId/cards/new'
-    | '/(app)/decks/$deckId/review/free'
-    | '/(app)/decks/$deckId/subjects/$subjectId'
-    | '/(app)/decks/$deckId/review/'
-    | '/(app)/decks/$deckId/cards/$cardId/edit'
-    | '/(app)/decks/$deckId/review/cards/$cardId'
-    | '/(app)/decks/$deckId/review/subjects/$subjectId'
+    | "__root__"
+    | "/(app)"
+    | "/forgot-password"
+    | "/login"
+    | "/markdown-test"
+    | "/reset-password"
+    | "/signup"
+    | "/verify-email"
+    | "/(app)/"
+    | "/(app)/decks/$deckId"
+    | "/(app)/imports/anki"
+    | "/(app)/decks/$deckId/import"
+    | "/(app)/decks/$deckId/review"
+    | "/(app)/imports/anki/$processId"
+    | "/(app)/imports/anki/new"
+    | "/(app)/decks/$deckId/"
+    | "/(app)/imports/anki/"
+    | "/(app)/decks/$deckId/cards/generate"
+    | "/(app)/decks/$deckId/cards/new"
+    | "/(app)/decks/$deckId/review/free"
+    | "/(app)/decks/$deckId/subjects/$subjectId"
+    | "/(app)/decks/$deckId/review/"
+    | "/(app)/decks/$deckId/cards/$cardId/edit"
+    | "/(app)/decks/$deckId/review/cards/$cardId"
+    | "/(app)/decks/$deckId/review/subjects/$subjectId"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -321,173 +315,173 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/verify-email': {
-      id: '/verify-email'
-      path: '/verify-email'
-      fullPath: '/verify-email'
+    "/verify-email": {
+      id: "/verify-email"
+      path: "/verify-email"
+      fullPath: "/verify-email"
       preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
+    "/signup": {
+      id: "/signup"
+      path: "/signup"
+      fullPath: "/signup"
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
+    "/reset-password": {
+      id: "/reset-password"
+      path: "/reset-password"
+      fullPath: "/reset-password"
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/markdown-test': {
-      id: '/markdown-test'
-      path: '/markdown-test'
-      fullPath: '/markdown-test'
+    "/markdown-test": {
+      id: "/markdown-test"
+      path: "/markdown-test"
+      fullPath: "/markdown-test"
       preLoaderRoute: typeof MarkdownTestRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
+    "/login": {
+      id: "/login"
+      path: "/login"
+      fullPath: "/login"
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
+    "/forgot-password": {
+      id: "/forgot-password"
+      path: "/forgot-password"
+      fullPath: "/forgot-password"
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/(app)': {
-      id: '/(app)'
-      path: ''
-      fullPath: ''
+    "/(app)": {
+      id: "/(app)"
+      path: ""
+      fullPath: ""
       preLoaderRoute: typeof appRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/(app)/': {
-      id: '/(app)/'
-      path: '/'
-      fullPath: '/'
+    "/(app)/": {
+      id: "/(app)/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof appIndexRouteImport
       parentRoute: typeof appRouteRoute
     }
-    '/(app)/imports/anki': {
-      id: '/(app)/imports/anki'
-      path: '/imports/anki'
-      fullPath: '/imports/anki'
+    "/(app)/imports/anki": {
+      id: "/(app)/imports/anki"
+      path: "/imports/anki"
+      fullPath: "/imports/anki"
       preLoaderRoute: typeof appImportsAnkiRouteImport
       parentRoute: typeof appRouteRoute
     }
-    '/(app)/decks/$deckId': {
-      id: '/(app)/decks/$deckId'
-      path: '/decks/$deckId'
-      fullPath: '/decks/$deckId'
+    "/(app)/decks/$deckId": {
+      id: "/(app)/decks/$deckId"
+      path: "/decks/$deckId"
+      fullPath: "/decks/$deckId"
       preLoaderRoute: typeof appDecksDeckIdRouteImport
       parentRoute: typeof appRouteRoute
     }
-    '/(app)/imports/anki/': {
-      id: '/(app)/imports/anki/'
-      path: '/'
-      fullPath: '/imports/anki/'
+    "/(app)/imports/anki/": {
+      id: "/(app)/imports/anki/"
+      path: "/"
+      fullPath: "/imports/anki/"
       preLoaderRoute: typeof appImportsAnkiIndexRouteImport
       parentRoute: typeof appImportsAnkiRoute
     }
-    '/(app)/decks/$deckId/': {
-      id: '/(app)/decks/$deckId/'
-      path: '/'
-      fullPath: '/decks/$deckId/'
+    "/(app)/decks/$deckId/": {
+      id: "/(app)/decks/$deckId/"
+      path: "/"
+      fullPath: "/decks/$deckId/"
       preLoaderRoute: typeof appDecksDeckIdIndexRouteImport
       parentRoute: typeof appDecksDeckIdRoute
     }
-    '/(app)/imports/anki/new': {
-      id: '/(app)/imports/anki/new'
-      path: '/new'
-      fullPath: '/imports/anki/new'
+    "/(app)/imports/anki/new": {
+      id: "/(app)/imports/anki/new"
+      path: "/new"
+      fullPath: "/imports/anki/new"
       preLoaderRoute: typeof appImportsAnkiNewRouteImport
       parentRoute: typeof appImportsAnkiRoute
     }
-    '/(app)/imports/anki/$processId': {
-      id: '/(app)/imports/anki/$processId'
-      path: '/$processId'
-      fullPath: '/imports/anki/$processId'
+    "/(app)/imports/anki/$processId": {
+      id: "/(app)/imports/anki/$processId"
+      path: "/$processId"
+      fullPath: "/imports/anki/$processId"
       preLoaderRoute: typeof appImportsAnkiProcessIdRouteImport
       parentRoute: typeof appImportsAnkiRoute
     }
-    '/(app)/decks/$deckId/review': {
-      id: '/(app)/decks/$deckId/review'
-      path: '/review'
-      fullPath: '/decks/$deckId/review'
+    "/(app)/decks/$deckId/review": {
+      id: "/(app)/decks/$deckId/review"
+      path: "/review"
+      fullPath: "/decks/$deckId/review"
       preLoaderRoute: typeof appDecksDeckIdReviewRouteImport
       parentRoute: typeof appDecksDeckIdRoute
     }
-    '/(app)/decks/$deckId/import': {
-      id: '/(app)/decks/$deckId/import'
-      path: '/import'
-      fullPath: '/decks/$deckId/import'
+    "/(app)/decks/$deckId/import": {
+      id: "/(app)/decks/$deckId/import"
+      path: "/import"
+      fullPath: "/decks/$deckId/import"
       preLoaderRoute: typeof appDecksDeckIdImportRouteImport
       parentRoute: typeof appDecksDeckIdRoute
     }
-    '/(app)/decks/$deckId/review/': {
-      id: '/(app)/decks/$deckId/review/'
-      path: '/'
-      fullPath: '/decks/$deckId/review/'
+    "/(app)/decks/$deckId/review/": {
+      id: "/(app)/decks/$deckId/review/"
+      path: "/"
+      fullPath: "/decks/$deckId/review/"
       preLoaderRoute: typeof appDecksDeckIdReviewIndexRouteImport
       parentRoute: typeof appDecksDeckIdReviewRoute
     }
-    '/(app)/decks/$deckId/subjects/$subjectId': {
-      id: '/(app)/decks/$deckId/subjects/$subjectId'
-      path: '/subjects/$subjectId'
-      fullPath: '/decks/$deckId/subjects/$subjectId'
+    "/(app)/decks/$deckId/subjects/$subjectId": {
+      id: "/(app)/decks/$deckId/subjects/$subjectId"
+      path: "/subjects/$subjectId"
+      fullPath: "/decks/$deckId/subjects/$subjectId"
       preLoaderRoute: typeof appDecksDeckIdSubjectsSubjectIdRouteImport
       parentRoute: typeof appDecksDeckIdRoute
     }
-    '/(app)/decks/$deckId/review/free': {
-      id: '/(app)/decks/$deckId/review/free'
-      path: '/free'
-      fullPath: '/decks/$deckId/review/free'
+    "/(app)/decks/$deckId/review/free": {
+      id: "/(app)/decks/$deckId/review/free"
+      path: "/free"
+      fullPath: "/decks/$deckId/review/free"
       preLoaderRoute: typeof appDecksDeckIdReviewFreeRouteImport
       parentRoute: typeof appDecksDeckIdReviewRoute
     }
-    '/(app)/decks/$deckId/cards/new': {
-      id: '/(app)/decks/$deckId/cards/new'
-      path: '/cards/new'
-      fullPath: '/decks/$deckId/cards/new'
+    "/(app)/decks/$deckId/cards/new": {
+      id: "/(app)/decks/$deckId/cards/new"
+      path: "/cards/new"
+      fullPath: "/decks/$deckId/cards/new"
       preLoaderRoute: typeof appDecksDeckIdCardsNewRouteImport
       parentRoute: typeof appDecksDeckIdRoute
     }
-    '/(app)/decks/$deckId/cards/generate': {
-      id: '/(app)/decks/$deckId/cards/generate'
-      path: '/cards/generate'
-      fullPath: '/decks/$deckId/cards/generate'
+    "/(app)/decks/$deckId/cards/generate": {
+      id: "/(app)/decks/$deckId/cards/generate"
+      path: "/cards/generate"
+      fullPath: "/decks/$deckId/cards/generate"
       preLoaderRoute: typeof appDecksDeckIdCardsGenerateRouteImport
       parentRoute: typeof appDecksDeckIdRoute
     }
-    '/(app)/decks/$deckId/review/subjects/$subjectId': {
-      id: '/(app)/decks/$deckId/review/subjects/$subjectId'
-      path: '/subjects/$subjectId'
-      fullPath: '/decks/$deckId/review/subjects/$subjectId'
+    "/(app)/decks/$deckId/review/subjects/$subjectId": {
+      id: "/(app)/decks/$deckId/review/subjects/$subjectId"
+      path: "/subjects/$subjectId"
+      fullPath: "/decks/$deckId/review/subjects/$subjectId"
       preLoaderRoute: typeof appDecksDeckIdReviewSubjectsSubjectIdRouteImport
       parentRoute: typeof appDecksDeckIdReviewRoute
     }
-    '/(app)/decks/$deckId/review/cards/$cardId': {
-      id: '/(app)/decks/$deckId/review/cards/$cardId'
-      path: '/cards/$cardId'
-      fullPath: '/decks/$deckId/review/cards/$cardId'
+    "/(app)/decks/$deckId/review/cards/$cardId": {
+      id: "/(app)/decks/$deckId/review/cards/$cardId"
+      path: "/cards/$cardId"
+      fullPath: "/decks/$deckId/review/cards/$cardId"
       preLoaderRoute: typeof appDecksDeckIdReviewCardsCardIdRouteImport
       parentRoute: typeof appDecksDeckIdReviewRoute
     }
-    '/(app)/decks/$deckId/cards/$cardId/edit': {
-      id: '/(app)/decks/$deckId/cards/$cardId/edit'
-      path: '/cards/$cardId/edit'
-      fullPath: '/decks/$deckId/cards/$cardId/edit'
+    "/(app)/decks/$deckId/cards/$cardId/edit": {
+      id: "/(app)/decks/$deckId/cards/$cardId/edit"
+      path: "/cards/$cardId/edit"
+      fullPath: "/decks/$deckId/cards/$cardId/edit"
       preLoaderRoute: typeof appDecksDeckIdCardsCardIdEditRouteImport
       parentRoute: typeof appDecksDeckIdRoute
     }
@@ -505,12 +499,12 @@ const appDecksDeckIdReviewRouteChildren: appDecksDeckIdReviewRouteChildren = {
   appDecksDeckIdReviewFreeRoute: appDecksDeckIdReviewFreeRoute,
   appDecksDeckIdReviewIndexRoute: appDecksDeckIdReviewIndexRoute,
   appDecksDeckIdReviewCardsCardIdRoute: appDecksDeckIdReviewCardsCardIdRoute,
-  appDecksDeckIdReviewSubjectsSubjectIdRoute:
-    appDecksDeckIdReviewSubjectsSubjectIdRoute,
+  appDecksDeckIdReviewSubjectsSubjectIdRoute: appDecksDeckIdReviewSubjectsSubjectIdRoute,
 }
 
-const appDecksDeckIdReviewRouteWithChildren =
-  appDecksDeckIdReviewRoute._addFileChildren(appDecksDeckIdReviewRouteChildren)
+const appDecksDeckIdReviewRouteWithChildren = appDecksDeckIdReviewRoute._addFileChildren(
+  appDecksDeckIdReviewRouteChildren
+)
 
 interface appDecksDeckIdRouteChildren {
   appDecksDeckIdImportRoute: typeof appDecksDeckIdImportRoute
@@ -533,7 +527,7 @@ const appDecksDeckIdRouteChildren: appDecksDeckIdRouteChildren = {
 }
 
 const appDecksDeckIdRouteWithChildren = appDecksDeckIdRoute._addFileChildren(
-  appDecksDeckIdRouteChildren,
+  appDecksDeckIdRouteChildren
 )
 
 interface appImportsAnkiRouteChildren {
@@ -549,7 +543,7 @@ const appImportsAnkiRouteChildren: appImportsAnkiRouteChildren = {
 }
 
 const appImportsAnkiRouteWithChildren = appImportsAnkiRoute._addFileChildren(
-  appImportsAnkiRouteChildren,
+  appImportsAnkiRouteChildren
 )
 
 interface appRouteRouteChildren {
@@ -564,9 +558,7 @@ const appRouteRouteChildren: appRouteRouteChildren = {
   appImportsAnkiRoute: appImportsAnkiRouteWithChildren,
 }
 
-const appRouteRouteWithChildren = appRouteRoute._addFileChildren(
-  appRouteRouteChildren,
-)
+const appRouteRouteWithChildren = appRouteRoute._addFileChildren(appRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   appRouteRoute: appRouteRouteWithChildren,
