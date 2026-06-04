@@ -29,7 +29,16 @@ export function DeckDetailPage() {
   const utils = trpc.useUtils()
   const deck = trpc.decks.get.useQuery({ id: deckId })
   const upcoming = trpc.decks.upcomingDueCounts.useQuery({ id: deckId })
-  const randomSubjects = trpc.decks.randomSubjects.useQuery({ id: deckId })
+  const isSequential = deck.data?.sequentialEnabled ?? false
+  const randomSubjects = trpc.decks.randomSubjects.useQuery(
+    { id: deckId },
+    { enabled: deck.data != null && !isSequential }
+  )
+  const orderedSubjects = trpc.decks.orderedSubjects.useQuery(
+    { id: deckId },
+    { enabled: isSequential }
+  )
+  const subjects = isSequential ? orderedSubjects.data : randomSubjects.data
   const reviewStats = trpc.decks.reviewStats.useQuery({ id: deckId })
   const dueCount = deck.data ? deck.data.wordCount - deck.data.cooldownCount : 0
 
@@ -373,13 +382,13 @@ export function DeckDetailPage() {
 
           {reviewStats.data && <ReviewStatsChart data={reviewStats.data} />}
 
-          {randomSubjects.data && randomSubjects.data.length > 0 && (
+          {subjects && subjects.length > 0 && (
             <div className="space-y-2">
               <h3 className="text-xs font-semibold uppercase text-muted-foreground">
-                Sample words
+                {isSequential ? "Subjects" : "Sample words"}
               </h3>
               <div className="grid grid-cols-2 gap-2">
-                {randomSubjects.data.map((s) => (
+                {subjects.map((s) => (
                   <Link
                     key={s.id}
                     to="/decks/$deckId/review/subjects/$subjectId"
@@ -393,61 +402,63 @@ export function DeckDetailPage() {
             </div>
           )}
 
-          <div className="mt-auto space-y-2 pt-4">
-            <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
-              <input
-                type="checkbox"
-                checked={speechRecognitionEnabled}
-                onChange={(e) => setSpeechRecognitionEnabled(e.target.checked)}
-                className="peer sr-only"
-              />
-              <span
-                aria-hidden="true"
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
-              >
-                <Check className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 space-y-1">
-                <div className="flex items-center gap-1 text-sm font-medium">
-                  <span>Speech recognition</span>
-                  {updateReviewSettings.isPending &&
-                    updateReviewSettings.variables?.speechRecognitionEnabled !== undefined && (
-                      <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
-                    )}
+          {!isSequential && (
+            <div className="mt-auto space-y-2 pt-4">
+              <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
+                <input
+                  type="checkbox"
+                  checked={speechRecognitionEnabled}
+                  onChange={(e) => setSpeechRecognitionEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <span
+                  aria-hidden="true"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+                >
+                  <Check className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-1 text-sm font-medium">
+                    <span>Speech recognition</span>
+                    {updateReviewSettings.isPending &&
+                      updateReviewSettings.variables?.speechRecognitionEnabled !== undefined && (
+                        <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
+                      )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Practice speaking the answer during review.
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Practice speaking the answer during review.
-                </p>
-              </div>
-            </label>
+              </label>
 
-            <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
-              <input
-                type="checkbox"
-                checked={inverseReviewEnabled}
-                onChange={(e) => setInverseReviewEnabled(e.target.checked)}
-                className="peer sr-only"
-              />
-              <span
-                aria-hidden="true"
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
-              >
-                <Check className="h-4 w-4" />
-              </span>
-              <div className="min-w-0 space-y-1">
-                <div className="flex items-center gap-1 text-sm font-medium">
-                  <span>Allow inverse mode</span>
-                  {updateReviewSettings.isPending &&
-                    updateReviewSettings.variables?.inverseReviewEnabled !== undefined && (
-                      <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
-                    )}
+              <label className="flex cursor-pointer items-center gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40">
+                <input
+                  type="checkbox"
+                  checked={inverseReviewEnabled}
+                  onChange={(e) => setInverseReviewEnabled(e.target.checked)}
+                  className="peer sr-only"
+                />
+                <span
+                  aria-hidden="true"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+                >
+                  <Check className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 space-y-1">
+                  <div className="flex items-center gap-1 text-sm font-medium">
+                    <span>Allow inverse mode</span>
+                    {updateReviewSettings.isPending &&
+                      updateReviewSettings.variables?.inverseReviewEnabled !== undefined && (
+                        <LoaderCircle className="h-3 w-3 animate-spin text-muted-foreground" />
+                      )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Occasionally review these cards back-to-front.
+                  </p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Occasionally review these cards back-to-front.
-                </p>
-              </div>
-            </label>
-          </div>
+              </label>
+            </div>
+          )}
         </>
       )}
     </div>

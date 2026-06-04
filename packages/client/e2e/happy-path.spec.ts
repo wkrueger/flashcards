@@ -233,26 +233,28 @@ test("review edit exits return to the same card", async ({ page }) => {
   await page.getByRole("button", { name: "Create" }).click()
   await page.getByRole("button", { name: /German Review Edit/ }).click()
 
-  await page.getByRole("button", { name: "Menu" }).click()
-  await page.getByRole("button", { name: "Add card" }).click()
-  await page.getByRole("textbox", { name: "Subject" }).fill("Alpha")
-  await page.getByRole("textbox", { name: "Front" }).fill("Alpha front.")
-  await page.getByRole("textbox", { name: "Back" }).fill("Alpha back.")
-  await page.getByRole("button", { name: "Create" }).click()
-  // Wait for the form to close (back on deck detail) before reopening the menu,
-  // otherwise the next menu-open can race with navigation.
-  await expect(page.getByRole("textbox", { name: "Subject" })).toBeHidden()
+  const addCard = async (subject: string, front: string, back: string) => {
+    await page.getByRole("button", { name: "Menu" }).click()
+    await page.getByRole("button", { name: "Add card" }).click()
+    await page.getByRole("textbox", { name: "Subject" }).fill(subject)
+    await page.getByRole("textbox", { name: "Front" }).fill(front)
+    await page.getByRole("textbox", { name: "Back" }).fill(back)
+    await page.getByRole("button", { name: "Create" }).click()
+    // Wait until the form closes (back on deck detail) before reopening the menu,
+    // otherwise the next menu-open can race with navigation.
+    await expect(page.getByRole("textbox", { name: "Subject" })).toBeHidden()
+  }
 
-  await page.getByRole("button", { name: "Menu" }).click()
-  await page.getByRole("button", { name: "Add card" }).click()
-  await page.getByRole("textbox", { name: "Subject" }).fill("Beta")
-  await page.getByRole("textbox", { name: "Front" }).fill("Beta front.")
-  await page.getByRole("textbox", { name: "Back" }).fill("Beta back.")
-  await page.getByRole("button", { name: "Create" }).click()
+  await addCard("Alpha", "Alpha front.", "Alpha back.")
+  await addCard("Beta", "Beta front.", "Beta back.")
 
   await expect(page.getByTestId("deck-subject-stats")).toContainText("2 subjects, 2 cards")
   await page.getByRole("link", { name: /Review 2 due/ }).click()
 
+  // Wait for a card to actually render before the instant visibility check below,
+  // otherwise isVisible() resolves false before the front mounts and picks the
+  // wrong branch.
+  await expect(page.getByRole("button", { name: "Reveal" })).toBeVisible()
   const alphaVisible = await page.getByText("Alpha front.").isVisible()
   const currentFront = alphaVisible ? "Alpha front." : "Beta front."
   const updatedBack = alphaVisible ? "Alpha back updated." : "Beta back updated."

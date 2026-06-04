@@ -178,6 +178,71 @@ describe("decks domain", () => {
     expect(aSample.map((s) => s.subject)).toEqual(["x"])
   })
 
+  it("orderedSubjects returns subjects in study order", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const deck = await trpc.decks.create({ name: "d" })
+    for (const text of ["gamma", "alpha", "beta"]) {
+      await trpc.cards.create({ deckId: deck.id, subjectText: text, front: `f-${text}`, back: "b" })
+    }
+    // Assign an explicit study order opposite to creation order.
+    const subjects = await prisma.subject.findMany({ where: { deckId: deck.id } })
+    const orderByText = new Map([
+      ["alpha", 0],
+      ["beta", 1],
+      ["gamma", 2],
+    ])
+    for (const s of subjects) {
+      await prisma.subject.update({
+        where: { id: s.id },
+        data: { order: orderByText.get(s.subject) },
+      })
+    }
+
+    const ordered = await trpc.decks.orderedSubjects({ id: deck.id })
+    expect(ordered.map((s) => s.subject)).toEqual(["alpha", "beta", "gamma"])
+  })
+
+  it("list dueCount counts unseen subjects for sequential decks", async () => {
+    const u = await makeUser("u")
+    const trpc = callerFor(u)
+    const seq = await trpc.decks.create({ name: "seq", sequentialEnabled: true })
+    const normal = await trpc.decks.create({ name: "normal" })
+    const now = new Date()
+    for (const deckId of [seq.id, normal.id]) {
+      for (let i = 0; i < 3; i++) {
+        await trpc.cards.create({
+          deckId,
+          subjectText: `${deckId}-s${i}`,
+          front: `f-${deckId}-${i}`,
+          back: "b",
+        })
+      }
+    }
+    // Mark one subject in each deck as seen, and put every subject far in the future
+    // so cooldown would normally yield zero "due".
+    const subjects = await prisma.subject.findMany()
+    for (const s of subjects) {
+      await prisma.subject.update({
+        where: { id: s.id },
+        data: { cooldownAt: new Date(now.getTime() + DAY_MS) },
+      })
+    }
+    const seqSubjects = await prisma.subject.findMany({ where: { deckId: seq.id } })
+    await prisma.subject.update({
+      where: { id: seqSubjects[0]!.id },
+      data: { firstSeenAt: now },
+    })
+
+    const list = await trpc.decks.list()
+    const seqEntry = list.find((d) => d.id === seq.id)!
+    const normalEntry = list.find((d) => d.id === normal.id)!
+    // Sequential: 3 subjects, 1 seen → 2 unseen "to do".
+    expect(seqEntry.dueCount).toBe(2)
+    // Normal: cooldown in the future → nothing due.
+    expect(normalEntry.dueCount).toBe(0)
+  })
+
   it("reviewStats returns 7 sequential days, filling missing days with zero", async () => {
     const u = await makeUser("u")
     const trpc = callerFor(u)
