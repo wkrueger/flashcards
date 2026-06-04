@@ -92,21 +92,40 @@ export function ReviewSequentialPage() {
     if (card?.id) prefetchNext(card.id)
   }, [card?.id, prefetchNext])
 
+  // The mutations run in the background (fire-and-forget). Sequential "next" is
+  // determined purely by static card/subject ordering, never by lastSeenAt or
+  // cooldown, so the prefetched next card is valid before advance/complete
+  // finishes. Navigating immediately (not from onSuccess) removes the mutation
+  // round-trip from the perceived load time. onSuccess only refreshes deck stats.
   const advance = trpc.review.advance.useMutation({
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       utils.decks.get.invalidate({ id: deckId })
-      go("next", variables.cardId)
     },
   })
 
   const complete = trpc.review.complete.useMutation({
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       utils.decks.get.invalidate({ id: deckId })
       utils.decks.upcomingDueCounts.invalidate({ id: deckId })
       utils.decks.reviewStats.invalidate({ id: deckId })
-      go("next", variables.cardId)
     },
   })
+
+  const advanceNext = useCallback(
+    (cardId: string) => {
+      advance.mutate({ cardId })
+      go("next", cardId)
+    },
+    [advance, go]
+  )
+
+  const completeNext = useCallback(
+    (cardId: string, chosenLevel: FixationLevel) => {
+      complete.mutate({ cardId, chosenLevel })
+      go("next", cardId)
+    },
+    [complete, go]
+  )
 
   if (!ready) return <p></p>
 
@@ -134,7 +153,9 @@ export function ReviewSequentialPage() {
     : "1"
   const options = buttonsForPrevious(prev)
   const promptSource = displayFrontWithGeneratedTagPrefix(card.front, card.tags)
-  const pending = navigating || advance.isPending || complete.isPending
+  // Only gate on navigation. Mutations run in the background; gating on their
+  // isPending would re-block consecutive fast advances.
+  const pending = navigating
 
   return (
     <div className="flex flex-1 flex-col gap-3">
@@ -200,7 +221,7 @@ export function ReviewSequentialPage() {
                   key={lvl}
                   type="button"
                   disabled={pending}
-                  onClick={() => complete.mutate({ cardId: card.id, chosenLevel: lvl })}
+                  onClick={() => completeNext(card.id, lvl)}
                   aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
                   className={cn(
                     "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
@@ -216,7 +237,7 @@ export function ReviewSequentialPage() {
             <Button
               className="mt-auto w-full animate-reveal gap-1.5"
               disabled={pending}
-              onClick={() => advance.mutate({ cardId: card.id })}
+              onClick={() => advanceNext(card.id)}
             >
               <span>Next</span>
               <ArrowRight className="h-4 w-4" />

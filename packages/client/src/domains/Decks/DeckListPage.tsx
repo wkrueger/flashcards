@@ -108,7 +108,7 @@ export function DeckListPage() {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     // Touch: press-and-hold to start dragging; moving within the hold scrolls instead.
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   )
   const sameLanguage = !!frontLanguageId && !!backLanguageId && frontLanguageId === backLanguageId
   const activeDeck = items.find((d) => d.id === activeId) ?? null
