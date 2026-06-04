@@ -48,7 +48,7 @@ export function ReviewSequentialPage() {
   // displayed result. This keeps a single source of truth (no query-key churn)
   // so "first" always lands on the first card and prev/next traverse subjects.
   const go = useCallback(
-    async (move: "resume" | "next" | "prev" | "first", cardId?: string) => {
+    async (move: "resume" | "next" | "prev" | "first" | "subjectFirst", cardId?: string) => {
       setNavigating(true)
       try {
         const pf = prefetchedNext.current
@@ -123,6 +123,16 @@ export function ReviewSequentialPage() {
     (cardId: string, chosenLevel: FixationLevel) => {
       complete.mutate({ cardId, chosenLevel })
       go("next", cardId)
+    },
+    [complete, go]
+  )
+
+  // "Repeat" replaces the level-1 button: same level-1 update, but jumps back to
+  // the first card of the subject to study it again instead of advancing.
+  const repeatSubject = useCallback(
+    (cardId: string) => {
+      complete.mutate({ cardId, chosenLevel: "1" })
+      go("subjectFirst", cardId)
     },
     [complete, go]
   )
@@ -216,22 +226,39 @@ export function ReviewSequentialPage() {
           </Card>
           {result?.isLastInSubject ? (
             <div className="mt-auto grid grid-cols-4 gap-2 animate-reveal">
-              {options.map((lvl: FixationLevel) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  disabled={pending}
-                  onClick={() => completeNext(card.id, lvl)}
-                  aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
-                  className={cn(
-                    "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
-                    LEVEL_COLOR[lvl]
-                  )}
-                >
-                  <span className="text-3xl leading-none">{FIXATION_EMOJI[lvl]}</span>
-                  <span className="text-sm opacity-90">{COOLDOWN_LABEL[lvl]}</span>
-                </button>
-              ))}
+              {options.map((lvl: FixationLevel) =>
+                lvl === "1" ? (
+                  <button
+                    key={lvl}
+                    type="button"
+                    disabled={pending}
+                    onClick={() => repeatSubject(card.id)}
+                    aria-label="Repeat subject from first card"
+                    className={cn(
+                      "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
+                      LEVEL_COLOR["1"]
+                    )}
+                  >
+                    <RotateCcw className="h-7 w-7" />
+                    <span className="text-sm opacity-90">Repeat</span>
+                  </button>
+                ) : (
+                  <button
+                    key={lvl}
+                    type="button"
+                    disabled={pending}
+                    onClick={() => completeNext(card.id, lvl)}
+                    aria-label={`${lvl} - ${COOLDOWN_LABEL[lvl]}`}
+                    className={cn(
+                      "flex h-20 flex-col items-center justify-center gap-1 rounded-md font-medium transition-colors disabled:opacity-50",
+                      LEVEL_COLOR[lvl]
+                    )}
+                  >
+                    <span className="text-3xl leading-none">{FIXATION_EMOJI[lvl]}</span>
+                    <span className="text-sm opacity-90">{COOLDOWN_LABEL[lvl]}</span>
+                  </button>
+                )
+              )}
             </div>
           ) : (
             <Button

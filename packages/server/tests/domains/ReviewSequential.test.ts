@@ -156,6 +156,17 @@ describe("review.sequential", () => {
     expect(res.card?.id).toBe(a1.id)
   })
 
+  it("subjectFirst returns to the first card of the current card's subject", async () => {
+    const userId = await makeUser()
+    const { deck, a1, a2 } = await seed(userId)
+    const res = await callerFor(userId).review.sequential({
+      deckId: deck.id,
+      cardId: a2.id,
+      move: "subjectFirst",
+    })
+    expect(res.card?.id).toBe(a1.id)
+  })
+
   it("traverses across null-order subjects with identical createdAt (id tiebreak)", async () => {
     const userId = await makeUser()
     const deck = await prisma.deck.create({ data: { name: "D", userId, sequentialEnabled: true } })

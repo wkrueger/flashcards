@@ -57,6 +57,10 @@ export async function sequentialCard(args: {
     targetId = await resumeCardId(prisma, userId, deckId)
   } else if (move === "current") {
     targetId = cardId ?? (await firstCardId(prisma, userId, deckId))
+  } else if (move === "subjectFirst") {
+    targetId = cardId
+      ? await subjectFirstCardId(prisma, userId, deckId, cardId)
+      : await firstCardId(prisma, userId, deckId)
   } else if (cardId) {
     targetId = await neighborCardId(prisma, userId, deckId, cardId, move)
   } else {
@@ -251,6 +255,20 @@ async function edgeCardOfSubject(
       : [{ order: { sort: "desc", nulls: "first" } }, { createdAt: "desc" }, { id: "desc" }]
   const card = await prisma.card.findFirst({ where: { subjectId }, orderBy, select: { id: true } })
   return card?.id ?? null
+}
+
+async function subjectFirstCardId(
+  prisma: PrismaClient,
+  userId: string,
+  deckId: string,
+  cardId: string
+) {
+  const current = await prisma.card.findFirst({
+    where: { id: cardId, deckId, deck: { userId } },
+    select: { subjectId: true },
+  })
+  if (!current) return null
+  return edgeCardOfSubject(prisma, current.subjectId, "first")
 }
 
 async function firstCardId(prisma: PrismaClient, userId: string, deckId: string) {

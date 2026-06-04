@@ -96,7 +96,14 @@ export const reviewCompleteInput = z
     path: ["chosenLevel"],
   })
 
-export const sequentialMoveSchema = z.enum(["resume", "next", "prev", "first", "current"])
+export const sequentialMoveSchema = z.enum([
+  "resume",
+  "next",
+  "prev",
+  "first",
+  "current",
+  "subjectFirst",
+])
 export type SequentialMove = z.infer<typeof sequentialMoveSchema>
 
 export const reviewSequentialInput = z.object({
