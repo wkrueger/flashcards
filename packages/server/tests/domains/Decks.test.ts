@@ -220,4 +220,29 @@ describe("decks domain", () => {
       expect(updated.sequentialEnabled).toBe(true)
     })
   })
+
+  describe("reorder", () => {
+    it("persists order and list returns decks in new order", async () => {
+      const u = await makeUser("u")
+      const caller = callerFor(u)
+      const a = await caller.decks.create({ name: "Alpha" })
+      const b = await caller.decks.create({ name: "Beta" })
+      const c = await caller.decks.create({ name: "Gamma" })
+
+      await caller.decks.reorder({ ids: [c.id, a.id, b.id] })
+
+      const list = await caller.decks.list()
+      expect(list.map((d) => d.id)).toEqual([c.id, a.id, b.id])
+    })
+
+    it("rejects IDs belonging to another user", async () => {
+      const u1 = await makeUser("u1")
+      const u2 = await makeUser("u2")
+      const deck = await callerFor(u1).decks.create({ name: "Secret" })
+
+      await expect(callerFor(u2).decks.reorder({ ids: [deck.id] })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+      })
+    })
+  })
 })

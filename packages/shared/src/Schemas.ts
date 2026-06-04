@@ -31,6 +31,10 @@ export const updateDeckInput = z.object({
   sequentialEnabled: z.boolean().optional(),
 })
 
+export const reorderDecksInput = z.object({
+  ids: z.array(z.string().min(1).max(64)).min(1),
+})
+
 export const idInput = z.object({ id })
 
 export const subjectAutocompleteInput = z.object({

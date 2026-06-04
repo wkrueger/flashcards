@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { createDeckInput, idInput, updateDeckInput } from "@cards/shared"
+import { createDeckInput, idInput, reorderDecksInput, updateDeckInput } from "@cards/shared"
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc.js"
 import { protectedProcedure, router } from "../../infra/trpc.js"
@@ -33,7 +33,7 @@ export const decksRouter = router({
     const now = new Date()
     const decks = await ctx.prisma.deck.findMany({
       where: { userId: ctx.user.id },
-      orderBy: { name: "asc" },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     })
     const dueCounts = await Promise.all(
       decks.map((d) =>
@@ -246,6 +246,20 @@ export const decksRouter = router({
         cardCount: entry?.cardCount ?? 0,
       }
     })
+  }),
+
+  reorder: protectedProcedure.input(reorderDecksInput).mutation(async ({ ctx, input }) => {
+    const owned = await ctx.prisma.deck.findMany({
+      where: { id: { in: input.ids }, userId: ctx.user.id },
+      select: { id: true },
+    })
+    if (owned.length !== input.ids.length) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid deck IDs." })
+    }
+    await ctx.prisma.$transaction(
+      input.ids.map((id, i) => ctx.prisma.deck.update({ where: { id }, data: { sortOrder: i } }))
+    )
+    return { ok: true }
   }),
 
   delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {

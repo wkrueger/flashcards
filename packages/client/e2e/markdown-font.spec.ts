@@ -19,7 +19,10 @@ test("markdown elements have consistent font size", async ({ page }) => {
       tdStrong: size(q("td strong")),
       blockquote: size(bq),
       blockquoteColor: bq ? window.getComputedStyle(bq).color : null,
-      pColor: (() => { const p = q("p"); return p ? window.getComputedStyle(p).color : null })(),
+      pColor: (() => {
+        const p = q("p")
+        return p ? window.getComputedStyle(p).color : null
+      })(),
     }
   })
 
@@ -37,5 +40,7 @@ test("markdown elements have consistent font size", async ({ page }) => {
   }
 
   // blockquote visually distinct from paragraph
-  expect(sizes.blockquoteColor, "blockquote color should differ from paragraph").not.toBe(sizes.pColor)
+  expect(sizes.blockquoteColor, "blockquote color should differ from paragraph").not.toBe(
+    sizes.pColor
+  )
 })

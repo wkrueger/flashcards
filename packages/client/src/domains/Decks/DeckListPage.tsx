@@ -1,3 +1,21 @@
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core"
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { FileDown, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -11,10 +29,55 @@ import { Input } from "../../ui/Input"
 import { Label } from "../../ui/Label"
 import { LanguageSelect } from "./LanguageSelect"
 
+type DeckItem = { id: string; name: string; dueCount: number }
+
+const cardClass =
+  "flex min-h-[88px] items-center justify-between rounded-md border bg-card px-4 py-4 text-sm"
+
+function DeckCardBody({ deck }: { deck: DeckItem }) {
+  return (
+    <>
+      <span className="min-w-0 flex-1 font-medium">{deck.name}</span>
+      <span className="ml-3 shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+        {deck.dueCount} to do
+      </span>
+    </>
+  )
+}
+
+function SortableDeckItem({ deck }: { deck: DeckItem }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: deck.id,
+  })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : undefined,
+  }
+
+  return (
+    <li ref={setNodeRef} style={style}>
+      <Link
+        to="/decks/$deckId"
+        params={{ deckId: deck.id }}
+        onContextMenu={(e) => e.preventDefault()}
+        className={`${cardClass} cursor-grab select-none transition duration-150 [-webkit-touch-callout:none] hover:bg-accent active:cursor-grabbing active:bg-[hsl(var(--accent-strong))] active:opacity-80`}
+        {...attributes}
+        {...listeners}
+      >
+        <DeckCardBody deck={deck} />
+      </Link>
+    </li>
+  )
+}
+
 export function DeckListPage() {
   const utils = trpc.useUtils()
   const navigate = useNavigate()
-  const decks = trpc.decks.list.useQuery()
+  const decksQuery = trpc.decks.list.useQuery()
+  const reorder = trpc.decks.reorder.useMutation({
+    onError: () => utils.decks.list.invalidate(),
+  })
   const create = trpc.decks.create.useMutation({
     onSuccess: () => {
       utils.decks.list.invalidate()
@@ -24,6 +87,8 @@ export function DeckListPage() {
       setOpen(false)
     },
   })
+  const [items, setItems] = useState<DeckItem[]>([])
+  const [activeId, setActiveId] = useState<string | null>(null)
   const [name, setName] = useState("")
   const [frontLanguageId, setFrontLanguageId] = useState("")
   const [backLanguageId, setBackLanguageId] = useState("")
@@ -31,12 +96,48 @@ export function DeckListPage() {
   const [showLoader, setShowLoader] = useState(false)
 
   useEffect(() => {
-    if (!decks.isLoading) return
+    if (decksQuery.data) setItems(decksQuery.data)
+  }, [decksQuery.data])
+
+  useEffect(() => {
+    if (!decksQuery.isLoading) return
     const id = setTimeout(() => setShowLoader(true), 1500)
     return () => clearTimeout(id)
-  }, [decks.isLoading])
+  }, [decksQuery.isLoading])
 
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    // Touch: press-and-hold to start dragging; moving within the hold scrolls instead.
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  )
   const sameLanguage = !!frontLanguageId && !!backLanguageId && frontLanguageId === backLanguageId
+  const activeDeck = items.find((d) => d.id === activeId) ?? null
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id))
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null)
+    // The browser fires a click after the drag's pointerup. Swallow that one
+    // click at the document capture phase so it never reaches the TanStack Link.
+    const suppressClick = (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    document.addEventListener("click", suppressClick, { capture: true, once: true })
+    setTimeout(() => document.removeEventListener("click", suppressClick, { capture: true }), 250)
+
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setItems((prev) => {
+      const oldIndex = prev.findIndex((d) => d.id === active.id)
+      const newIndex = prev.findIndex((d) => d.id === over.id)
+      const next = arrayMove(prev, oldIndex, newIndex)
+      reorder.mutate({ ids: next.map((d) => d.id) })
+      return next
+    })
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-4">
@@ -124,7 +225,7 @@ export function DeckListPage() {
         }
       />
 
-      {decks.isLoading ? (
+      {decksQuery.isLoading ? (
         showLoader && (
           <div className="flex items-center justify-center gap-1.5 py-8">
             <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.3s]" />
@@ -132,23 +233,28 @@ export function DeckListPage() {
             <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
           </div>
         )
-      ) : decks.data && decks.data.length > 0 ? (
-        <ul className="animate-reveal space-y-2">
-          {decks.data.map((d) => (
-            <li key={d.id}>
-              <Link
-                to="/decks/$deckId"
-                params={{ deckId: d.id }}
-                className="flex min-h-[88px] items-center justify-between rounded-md border bg-card px-4 py-4 text-sm transition duration-150 hover:bg-accent active:bg-[hsl(var(--accent-strong))] active:opacity-80"
-              >
-                <span className="min-w-0 flex-1 font-medium">{d.name}</span>
-                <span className="ml-3 shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-                  {d.dueCount} to do
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      ) : items.length > 0 ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={items.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+            <ul className="animate-reveal space-y-2">
+              {items.map((d) => (
+                <SortableDeckItem key={d.id} deck={d} />
+              ))}
+            </ul>
+          </SortableContext>
+          <DragOverlay>
+            {activeDeck ? (
+              <div className={`${cardClass} cursor-grabbing shadow-lg`}>
+                <DeckCardBody deck={activeDeck} />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       ) : (
         <p className="animate-reveal text-sm text-muted-foreground">
           No decks yet — create your first one.

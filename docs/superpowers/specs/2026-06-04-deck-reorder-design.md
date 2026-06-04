@@ -60,14 +60,14 @@ Inline component in `DeckListPage.tsx` (extract to `DeckListPage/SortableDeckIte
 
 ## File Locations
 
-| File | Change |
-|---|---|
-| `packages/shared/src/Schemas.ts` | Add `reorderDecksInput` |
-| `packages/shared/src/index.ts` | Export `reorderDecksInput` |
-| `packages/server/prisma/schema.prisma` | Add `sortOrder Int @default(0)` to `Deck` |
-| `packages/server/src/domains/Decks/decksRouter.ts` | Update `list` orderBy; add `reorder` mutation |
-| `packages/client/src/domains/Decks/DeckListPage.tsx` | DnD wiring + `SortableDeckItem` |
-| `packages/client/package.json` | Add `@dnd-kit/core`, `@dnd-kit/sortable` |
+| File                                                 | Change                                        |
+| ---------------------------------------------------- | --------------------------------------------- |
+| `packages/shared/src/Schemas.ts`                     | Add `reorderDecksInput`                       |
+| `packages/shared/src/index.ts`                       | Export `reorderDecksInput`                    |
+| `packages/server/prisma/schema.prisma`               | Add `sortOrder Int @default(0)` to `Deck`     |
+| `packages/server/src/domains/Decks/decksRouter.ts`   | Update `list` orderBy; add `reorder` mutation |
+| `packages/client/src/domains/Decks/DeckListPage.tsx` | DnD wiring + `SortableDeckItem`               |
+| `packages/client/package.json`                       | Add `@dnd-kit/core`, `@dnd-kit/sortable`      |
 
 ## Testing
 
