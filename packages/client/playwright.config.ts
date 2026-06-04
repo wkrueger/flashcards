@@ -26,7 +26,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: `pnpm exec prisma migrate deploy && pnpm exec tsx prisma/seed.ts && pnpm exec tsx src/main.ts`,
+      command: `pnpm exec prisma migrate deploy && pnpm exec tsx prisma/seed.ts && { pnpm exec tsx src/worker/main.ts & } && pnpm exec tsx src/main.ts`,
       cwd: path.resolve(__dirname, "../server"),
       url: `${serverOrigin}/health`,
       reuseExistingServer: false,

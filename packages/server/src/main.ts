@@ -21,7 +21,9 @@ import { SpreadsheetImportStatus } from "./generated/prisma/client.js"
 import { getSessionFromRawHeaders } from "./infra/auth.js"
 import {
   buildDeckSpreadsheetExport,
+  buildDeckSpreadsheetTemplate,
   enqueueDeckSpreadsheetImportJob,
+  inspectPendingImport,
 } from "./domains/DeckSpreadsheet/deckSpreadsheetService/index.js"
 import {
   DECK_SPREADSHEET_UPLOAD_DIR,
@@ -171,6 +173,92 @@ export async function buildServer() {
   })
 
   app.route({
+    method: "GET",
+    url: "/api/decks/spreadsheet/template",
+    async handler(req, reply) {
+      const session = await getSessionFromRawHeaders(req.headers)
+      if (!session?.user) {
+        reply.status(401).send({ message: "Unauthorized." })
+        return
+      }
+
+      const body = await buildDeckSpreadsheetTemplate()
+      reply
+        .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        .header("Content-Disposition", `attachment; filename="${body.filename}"`)
+        .send(body.buffer)
+    },
+  })
+
+  app.route({
+    method: "POST",
+    url: "/api/decks/spreadsheet/import",
+    bodyLimit: DECK_SPREADSHEET_UPLOAD_MAX_BYTES,
+    async handler(req, reply) {
+      const session = await getSessionFromRawHeaders(req.headers)
+      if (!session?.user) {
+        reply.status(401).send({ message: "Unauthorized." })
+        return
+      }
+
+      let spreadsheetImport: Awaited<
+        ReturnType<typeof writeDeckSpreadsheetUploadToStorage>
+      > | null = null
+
+      try {
+        const part = await req.file()
+        if (!part) throw createHttpError(400, "No file was uploaded.")
+        const normalizedMime = (part.mimetype ?? "").toLowerCase()
+        if (
+          !part.filename ||
+          extname(part.filename).toLowerCase() !== ".xlsx" ||
+          (normalizedMime && !spreadsheetUploadMimeTypes.has(normalizedMime))
+        ) {
+          part.file.resume()
+          throw createHttpError(400, "Only .xlsx spreadsheet uploads are supported.")
+        }
+
+        spreadsheetImport = await writeDeckSpreadsheetUploadToStorage(part.file, {
+          deckId: null,
+          userId: session.user.id,
+          filename: basename(part.filename),
+        })
+
+        if (part.file.truncated || spreadsheetImport.fileSize > DECK_SPREADSHEET_UPLOAD_MAX_BYTES) {
+          throw createHttpError(413, "The uploaded file exceeds the 20MB limit.")
+        }
+
+        const result = await inspectPendingImport(prisma, session.user.id, spreadsheetImport.id)
+        spreadsheetImport = null
+
+        reply.status(201).send(result)
+      } catch (error) {
+        await deleteFileIfExists(spreadsheetImport?.storagePath)
+        if (spreadsheetImport) {
+          await prisma.spreadsheetImport.deleteMany({
+            where: { id: spreadsheetImport.id, userId: session.user.id },
+          })
+        }
+
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "FST_REQ_FILE_TOO_LARGE"
+        ) {
+          throw createHttpError(413, "The uploaded file exceeds the 20MB limit.")
+        }
+
+        if (error instanceof DeckSpreadsheetError) {
+          throw createHttpError(error.code === "NOT_FOUND" ? 404 : 400, error.message)
+        }
+
+        throw error
+      }
+    },
+  })
+
+  app.route({
     method: "POST",
     url: "/api/decks/:deckId/spreadsheet/import",
     bodyLimit: DECK_SPREADSHEET_UPLOAD_MAX_BYTES,
@@ -255,7 +343,7 @@ function createHttpError(statusCode: number, message: string): HttpError {
 async function writeDeckSpreadsheetUploadToStorage(
   fileStream: NodeJS.ReadableStream,
   input: {
-    deckId: string
+    deckId: string | null
     userId: string
     filename: string
   }

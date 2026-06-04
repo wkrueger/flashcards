@@ -1,4 +1,25 @@
 import { test, expect } from "@playwright/test"
+import { mkdtempSync } from "node:fs"
+import { tmpdir } from "node:os"
+import path from "node:path"
+import ExcelJS from "exceljs"
+
+async function writeImportFixture(deckName: string) {
+  const workbook = new ExcelJS.Workbook()
+
+  const meta = workbook.addWorksheet("Meta")
+  meta.addRow(["key", "value"])
+  meta.addRow(["name", deckName])
+
+  const card = workbook.addWorksheet("Card")
+  card.addRow(["id", "subjectName", "subjectOrder", "front", "back", "cardOrder", "tags"])
+  card.addRow(["", "Hallo", "", "hello", "hallo", "", ""])
+
+  const dir = mkdtempSync(path.join(tmpdir(), "cards-e2e-"))
+  const filePath = path.join(dir, "import.xlsx")
+  await workbook.xlsx.writeFile(filePath)
+  return filePath
+}
 
 test("signup → deck → card → review → free review → edit → logout", async ({ page }) => {
   const email = `e2e-${Date.now()}@test.local`
@@ -89,7 +110,7 @@ test("signup → deck → card → review → free review → edit → logout", 
   if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
   await studyLanguageSelect.selectOption(deutschLanguageId)
   await page.getByRole("button", { name: "Create" }).click()
-  await page.getByRole("link", { name: /German A1/ }).click()
+  await page.getByRole("button", { name: /German A1/ }).click()
   await expect(page.getByRole("checkbox", { name: /Speech recognition/ })).toBeChecked()
 
   await page.getByRole("button", { name: "Menu" }).click()
@@ -210,7 +231,7 @@ test("review edit exits return to the same card", async ({ page }) => {
   if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
   await studyLanguageSelect.selectOption(deutschLanguageId)
   await page.getByRole("button", { name: "Create" }).click()
-  await page.getByRole("link", { name: /German Review Edit/ }).click()
+  await page.getByRole("button", { name: /German Review Edit/ }).click()
 
   await page.getByRole("button", { name: "Menu" }).click()
   await page.getByRole("button", { name: "Add card" }).click()
@@ -218,6 +239,9 @@ test("review edit exits return to the same card", async ({ page }) => {
   await page.getByRole("textbox", { name: "Front" }).fill("Alpha front.")
   await page.getByRole("textbox", { name: "Back" }).fill("Alpha back.")
   await page.getByRole("button", { name: "Create" }).click()
+  // Wait for the form to close (back on deck detail) before reopening the menu,
+  // otherwise the next menu-open can race with navigation.
+  await expect(page.getByRole("textbox", { name: "Subject" })).toBeHidden()
 
   await page.getByRole("button", { name: "Menu" }).click()
   await page.getByRole("button", { name: "Add card" }).click()
@@ -269,7 +293,7 @@ test("sequential deck walks cards in order with Next, Prev, and Restart", async 
   await page.getByRole("button", { name: "New deck" }).click()
   await page.getByPlaceholder("e.g. German A1").fill("German Sequential")
   await page.getByRole("button", { name: "Create" }).click()
-  await page.getByRole("link", { name: /German Sequential/ }).click()
+  await page.getByRole("button", { name: /German Sequential/ }).click()
 
   const addCard = async (subject: string, front: string, back: string) => {
     await page.getByRole("button", { name: "Menu" }).click()
@@ -377,7 +401,7 @@ test("deck completion percent updates after a review", async ({ page }) => {
   if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
   await studyLanguageSelect.selectOption(deutschLanguageId)
   await page.getByRole("button", { name: "Create" }).click()
-  await page.getByRole("link", { name: /German Completion/ }).click()
+  await page.getByRole("button", { name: /German Completion/ }).click()
   const deckUrl = page.url()
 
   await page.getByRole("button", { name: "Menu" }).click()
@@ -401,4 +425,42 @@ test("deck completion percent updates after a review", async ({ page }) => {
   // Reviewed at fixation 3 -> 0.25 over 1 subject -> 25%.
   await page.goto(deckUrl)
   await expect(page.getByTestId("deck-subject-stats")).toContainText("1 subject, 1 card, 25%")
+})
+
+test("import a new deck from a spreadsheet", async ({ page }) => {
+  const email = `e2e-spreadsheet-${Date.now()}@test.local`
+  const password = "passw0rd!"
+  const deckName = `E2E Imported ${Date.now()}`
+  const fixture = await writeImportFixture(deckName)
+
+  await page.goto("/signup")
+  await page.getByLabel("Name").fill("E2E Spreadsheet")
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Sign up" }).click()
+  await page.getByRole("link", { name: "Back to log in" }).click()
+  await page.getByLabel("Email").fill(email)
+  await page.getByLabel("Password").fill(password)
+  await page.getByRole("button", { name: "Log in" }).click()
+
+  await expect(page.getByRole("heading", { name: "Your decks" })).toBeVisible()
+
+  // Open the deck-list menu and start a spreadsheet import.
+  await page.getByRole("button", { name: "Menu" }).click()
+  await page.getByRole("button", { name: "Import XLS", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Import deck" })).toBeVisible()
+
+  // Choose the fixture, upload it, and let the server inspect the Meta tab.
+  await page.setInputFiles("#spreadsheet-file", fixture)
+  await page.getByRole("button", { name: "Upload spreadsheet" }).click()
+
+  // No existing deck matches -> straight to the new-deck name step.
+  const nameInput = page.getByLabel("New deck name")
+  await expect(nameInput).toBeVisible()
+  await expect(nameInput).toHaveValue(deckName)
+
+  await page.getByRole("button", { name: "Create deck" }).click()
+
+  // The import worker runs in the background; success surfaces "Go to deck".
+  await expect(page.getByRole("button", { name: "Go to deck" })).toBeVisible({ timeout: 15_000 })
 })

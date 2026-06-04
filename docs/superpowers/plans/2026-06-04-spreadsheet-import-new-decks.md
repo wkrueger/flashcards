@@ -4,7 +4,7 @@
 
 **Goal:** Let a user import a whole new deck from a spreadsheet (plus download an empty template), reusing the existing async import worker, while keeping the existing per-deck edit-import unchanged.
 
-**Architecture:** The Meta worksheet grows from a single `deckId` row into a deck-config block (name, languages by name, toggles). A deck-level upload endpoint stores the file and *inspects* it (no deck chosen yet); the client then prompts update-vs-new and a deck name; a tRPC `confirmImport` mutation creates the deck if needed and enqueues the existing worker job. New decks set an `ignoreRowIds` flag so exported row ids from a source deck are treated as fresh cards.
+**Architecture:** The Meta worksheet grows from a single `deckId` row into a deck-config block (name, languages by name, toggles). A deck-level upload endpoint stores the file and _inspects_ it (no deck chosen yet); the client then prompts update-vs-new and a deck name; a tRPC `confirmImport` mutation creates the deck if needed and enqueues the existing worker job. New decks set an `ignoreRowIds` flag so exported row ids from a source deck are treated as fresh cards.
 
 **Tech Stack:** Fastify + tRPC + Prisma + SQLite (server), ExcelJS (xlsx), React 18 + TanStack Router/Query (client), Vitest + Playwright (tests).
 
@@ -41,6 +41,7 @@
 ## Task 1: Schema — nullable deckId + ignoreRowIds
 
 **Files:**
+
 - Modify: `packages/server/prisma/schema.prisma:299-319`
 
 - [ ] **Step 1: Edit the model**
@@ -77,6 +78,7 @@ git commit -m "feat(db): make SpreadsheetImport.deckId nullable, add ignoreRowId
 ## Task 2: Shared schemas + types
 
 **Files:**
+
 - Modify: `packages/shared/src/Schemas.ts` (near `idInput` ~line 38, and `SpreadsheetImportStatusView` ~line 248)
 
 - [ ] **Step 1: Add the confirm input + inspect result type**
@@ -113,7 +115,7 @@ export type DeckSpreadsheetInspectResult = {
 In `export type SpreadsheetImportStatusView`, change:
 
 ```ts
-  deckId: string | null
+deckId: string | null
 ```
 
 - [ ] **Step 3: Typecheck the shared package**
@@ -133,6 +135,7 @@ git commit -m "feat(shared): confirmDeckImportInput + inspect result type"
 ## Task 3: Widen DeckSpreadsheetError code union
 
 **Files:**
+
 - Modify: `packages/server/src/domains/DeckSpreadsheet/deckSpreadsheetShared.ts:14-21`
 
 - [ ] **Step 1: Edit the class**
@@ -167,6 +170,7 @@ git commit -m "feat(server): widen DeckSpreadsheetError codes"
 ## Task 4: workbook.ts — Meta config parser + bool
 
 **Files:**
+
 - Modify: `packages/server/src/domains/DeckSpreadsheet/deckSpreadsheetService/workbook.ts`
 - Test: `packages/server/tests/domains/DeckSpreadsheet.test.ts`
 
@@ -181,36 +185,36 @@ import { readMetaConfig } from "../../src/domains/DeckSpreadsheet/deckSpreadshee
 Test:
 
 ```ts
-  describe("readMetaConfig", () => {
-    it("parses deck config from the Meta tab", async () => {
-      const dir = path.resolve(process.cwd(), DECK_SPREADSHEET_UPLOAD_DIR)
-      await mkdir(dir, { recursive: true })
-      const filePath = path.join(dir, `meta-${Date.now()}-${Math.random()}.xlsx`)
-      const workbook = new ExcelJS.Workbook()
-      const meta = workbook.addWorksheet("Meta")
-      meta.addRow(["key", "value"])
-      meta.addRow(["deckId", "deck-123"])
-      meta.addRow(["name", "German A1"])
-      meta.addRow(["defaultFrontLanguage", "English"])
-      meta.addRow(["defaultBackLanguage", "Deutsch"])
-      meta.addRow(["speechRecognitionEnabled", "false"])
-      meta.addRow(["inverseReviewEnabled", "true"])
-      meta.addRow(["sequentialEnabled", ""])
-      await workbook.xlsx.writeFile(filePath)
+describe("readMetaConfig", () => {
+  it("parses deck config from the Meta tab", async () => {
+    const dir = path.resolve(process.cwd(), DECK_SPREADSHEET_UPLOAD_DIR)
+    await mkdir(dir, { recursive: true })
+    const filePath = path.join(dir, `meta-${Date.now()}-${Math.random()}.xlsx`)
+    const workbook = new ExcelJS.Workbook()
+    const meta = workbook.addWorksheet("Meta")
+    meta.addRow(["key", "value"])
+    meta.addRow(["deckId", "deck-123"])
+    meta.addRow(["name", "German A1"])
+    meta.addRow(["defaultFrontLanguage", "English"])
+    meta.addRow(["defaultBackLanguage", "Deutsch"])
+    meta.addRow(["speechRecognitionEnabled", "false"])
+    meta.addRow(["inverseReviewEnabled", "true"])
+    meta.addRow(["sequentialEnabled", ""])
+    await workbook.xlsx.writeFile(filePath)
 
-      const loaded = new ExcelJS.Workbook()
-      await loaded.xlsx.readFile(filePath)
-      expect(readMetaConfig(loaded)).toEqual({
-        deckId: "deck-123",
-        name: "German A1",
-        defaultFrontLanguage: "English",
-        defaultBackLanguage: "Deutsch",
-        speechRecognitionEnabled: false,
-        inverseReviewEnabled: true,
-        sequentialEnabled: false,
-      })
+    const loaded = new ExcelJS.Workbook()
+    await loaded.xlsx.readFile(filePath)
+    expect(readMetaConfig(loaded)).toEqual({
+      deckId: "deck-123",
+      name: "German A1",
+      defaultFrontLanguage: "English",
+      defaultBackLanguage: "Deutsch",
+      speechRecognitionEnabled: false,
+      inverseReviewEnabled: true,
+      sequentialEnabled: false,
     })
   })
+})
 ```
 
 - [ ] **Step 2: Run it to confirm it fails**
@@ -296,6 +300,7 @@ git commit -m "feat(server): readMetaConfig parses deck config from Meta tab"
 ## Task 5: Export writes Meta config + template builder
 
 **Files:**
+
 - Modify: `packages/server/src/domains/DeckSpreadsheet/deckSpreadsheetService/index.ts:23-81`
 - Test: `packages/server/tests/domains/DeckSpreadsheet.test.ts`
 
@@ -310,42 +315,42 @@ import { buildDeckSpreadsheetTemplate } from "../../src/domains/DeckSpreadsheet/
 Tests:
 
 ```ts
-  it("export writes deck config into the Meta tab", async () => {
-    const userId = await makeUser("alice")
-    const trpc = callerFor(userId)
-    const front = await prisma.language.create({ data: { name: "ExportFront", emoji: "🇬🇧" } })
-    const back = await prisma.language.create({ data: { name: "ExportBack", emoji: "🇩🇪" } })
-    const deck = await trpc.decks.create({
-      name: "Configured",
-      defaultFrontLanguageId: front.id,
-      defaultBackLanguageId: back.id,
-      sequentialEnabled: true,
-    })
-
-    const { buffer } = await buildDeckSpreadsheetExport(prisma, userId, deck.id)
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer as unknown as ArrayBuffer)
-    const config = readMetaConfig(wb)
-    expect(config).toMatchObject({
-      deckId: deck.id,
-      name: "Configured",
-      defaultFrontLanguage: "ExportFront",
-      defaultBackLanguage: "ExportBack",
-      sequentialEnabled: true,
-    })
+it("export writes deck config into the Meta tab", async () => {
+  const userId = await makeUser("alice")
+  const trpc = callerFor(userId)
+  const front = await prisma.language.create({ data: { name: "ExportFront", emoji: "🇬🇧" } })
+  const back = await prisma.language.create({ data: { name: "ExportBack", emoji: "🇩🇪" } })
+  const deck = await trpc.decks.create({
+    name: "Configured",
+    defaultFrontLanguageId: front.id,
+    defaultBackLanguageId: back.id,
+    sequentialEnabled: true,
   })
 
-  it("builds an empty template workbook", async () => {
-    const { filename, buffer } = await buildDeckSpreadsheetTemplate()
-    expect(filename).toBe("deck-template.xlsx")
-    const wb = new ExcelJS.Workbook()
-    await wb.xlsx.load(buffer as unknown as ArrayBuffer)
-    const config = readMetaConfig(wb)
-    expect(config.deckId).toBe("")
-    expect(config.name).toBe("")
-    expect(config.speechRecognitionEnabled).toBe(true)
-    expect(wb.getWorksheet("Card")?.getCell("A1").text).toBe("id")
+  const { buffer } = await buildDeckSpreadsheetExport(prisma, userId, deck.id)
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+  const config = readMetaConfig(wb)
+  expect(config).toMatchObject({
+    deckId: deck.id,
+    name: "Configured",
+    defaultFrontLanguage: "ExportFront",
+    defaultBackLanguage: "ExportBack",
+    sequentialEnabled: true,
   })
+})
+
+it("builds an empty template workbook", async () => {
+  const { filename, buffer } = await buildDeckSpreadsheetTemplate()
+  expect(filename).toBe("deck-template.xlsx")
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+  const config = readMetaConfig(wb)
+  expect(config.deckId).toBe("")
+  expect(config.name).toBe("")
+  expect(config.speechRecognitionEnabled).toBe(true)
+  expect(wb.getWorksheet("Card")?.getCell("A1").text).toBe("id")
+})
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -401,26 +406,26 @@ function addMetaSheet(
 In `buildDeckSpreadsheetExport`, replace the opening `const deck = await assertOwnDeck(...)` line with a richer fetch, and replace the existing 4-line Meta block (`const meta = workbook.addWorksheet("Meta")` … `meta.columns = [...]`) with a single `addMetaSheet` call:
 
 ```ts
-  const deck = await prisma.deck.findFirst({
-    where: { id: deckId, userId },
-    include: {
-      defaultFrontLanguage: { select: { name: true } },
-      defaultBackLanguage: { select: { name: true } },
-    },
-  })
-  if (!deck) throw new DeckSpreadsheetError("Deck not found.", "NOT_FOUND")
+const deck = await prisma.deck.findFirst({
+  where: { id: deckId, userId },
+  include: {
+    defaultFrontLanguage: { select: { name: true } },
+    defaultBackLanguage: { select: { name: true } },
+  },
+})
+if (!deck) throw new DeckSpreadsheetError("Deck not found.", "NOT_FOUND")
 ```
 
 ```ts
-  addMetaSheet(workbook, {
-    deckId: deck.id,
-    name: deck.name,
-    frontLanguage: deck.defaultFrontLanguage?.name ?? "",
-    backLanguage: deck.defaultBackLanguage?.name ?? "",
-    speechRecognitionEnabled: deck.speechRecognitionEnabled,
-    inverseReviewEnabled: deck.inverseReviewEnabled,
-    sequentialEnabled: deck.sequentialEnabled,
-  })
+addMetaSheet(workbook, {
+  deckId: deck.id,
+  name: deck.name,
+  frontLanguage: deck.defaultFrontLanguage?.name ?? "",
+  backLanguage: deck.defaultBackLanguage?.name ?? "",
+  speechRecognitionEnabled: deck.speechRecognitionEnabled,
+  inverseReviewEnabled: deck.inverseReviewEnabled,
+  sequentialEnabled: deck.sequentialEnabled,
+})
 ```
 
 - [ ] **Step 5: Add the template builder**
@@ -477,6 +482,7 @@ git commit -m "feat(server): export writes Meta config; add template builder"
 ## Task 6: importRows — ignoreRowIds flag
 
 **Files:**
+
 - Modify: `packages/server/src/domains/DeckSpreadsheet/deckSpreadsheetService/importRows.ts:7-90`
 - Test: `packages/server/tests/domains/DeckSpreadsheet.test.ts`
 
@@ -491,33 +497,33 @@ import { applySpreadsheetRows } from "../../src/domains/DeckSpreadsheet/deckSpre
 Test (add to the top-level describe):
 
 ```ts
-  it("ignoreRowIds treats every row as a new card", async () => {
-    const userId = await makeUser("alice")
-    const deck = await prisma.deck.create({ data: { name: "Fresh", userId } })
-    const result = await prisma.$transaction((tx) =>
-      applySpreadsheetRows(tx, {
-        userId,
-        deckId: deck.id,
-        ignoreRowIds: true,
-        rows: [
-          {
-            rowNumber: 2,
-            id: "source-deck-card-id",
-            subjectName: "S",
-            subjectOrder: null,
-            front: "f1",
-            back: "b1",
-            cardOrder: null,
-            tagNames: [],
-          },
-        ],
-      })
-    )
-    expect(result).toMatchObject({ rowCount: 1, createdCardCount: 1, updatedCardCount: 0 })
-    const cards = await prisma.card.findMany({ where: { deckId: deck.id } })
-    expect(cards).toHaveLength(1)
-    expect(cards[0].id).not.toBe("source-deck-card-id")
-  })
+it("ignoreRowIds treats every row as a new card", async () => {
+  const userId = await makeUser("alice")
+  const deck = await prisma.deck.create({ data: { name: "Fresh", userId } })
+  const result = await prisma.$transaction((tx) =>
+    applySpreadsheetRows(tx, {
+      userId,
+      deckId: deck.id,
+      ignoreRowIds: true,
+      rows: [
+        {
+          rowNumber: 2,
+          id: "source-deck-card-id",
+          subjectName: "S",
+          subjectOrder: null,
+          front: "f1",
+          back: "b1",
+          cardOrder: null,
+          tagNames: [],
+        },
+      ],
+    })
+  )
+  expect(result).toMatchObject({ rowCount: 1, createdCardCount: 1, updatedCardCount: 0 })
+  const cards = await prisma.card.findMany({ where: { deckId: deck.id } })
+  expect(cards).toHaveLength(1)
+  expect(cards[0].id).not.toBe("source-deck-card-id")
+})
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -541,18 +547,19 @@ In `applySpreadsheetRows`, change the `input` type to include the flag:
 At the very top of the `for (const row of input.rows)` loop body, replace the first lines (down through `const isDelete = ...`) with a `rowId` local and use it everywhere `row.id` was used in this iteration:
 
 ```ts
-    const logPrefix = `Row ${row.rowNumber}:`
-    const rowId = input.ignoreRowIds ? "" : row.id
+const logPrefix = `Row ${row.rowNumber}:`
+const rowId = input.ignoreRowIds ? "" : row.id
 
-    if (rowId && seenIds.has(rowId)) {
-      throw new Error(`${logPrefix} duplicate card id "${rowId}".`)
-    }
-    if (rowId) seenIds.add(rowId)
+if (rowId && seenIds.has(rowId)) {
+  throw new Error(`${logPrefix} duplicate card id "${rowId}".`)
+}
+if (rowId) seenIds.add(rowId)
 
-    const isDelete = !!rowId && !row.front && !row.back
+const isDelete = !!rowId && !row.front && !row.back
 ```
 
 Then within this same iteration, replace the remaining `row.id` references:
+
 - delete branch: `where: { id: rowId, deckId: input.deckId, deck: { userId: input.userId } }`
 - create guard: `if (!rowId) {`
 - update fetch: `where: { id: rowId, deckId: input.deckId, deck: { userId: input.userId } }`
@@ -576,6 +583,7 @@ git commit -m "feat(server): applySpreadsheetRows ignoreRowIds option"
 ## Task 7: Worker guard + inspect + confirm service
 
 **Files:**
+
 - Modify: `packages/server/src/domains/DeckSpreadsheet/deckSpreadsheetService/index.ts` (`runDeckSpreadsheetImportJob` ~153-199; add new exports)
 - Test: `packages/server/tests/domains/DeckSpreadsheet.test.ts`
 
@@ -630,81 +638,81 @@ import {
 Tests (add a nested `describe`):
 
 ```ts
-  describe("new deck import", () => {
-    it("creates a new deck and imports its cards, ignoring source ids", async () => {
-      const userId = await makeUser("alice")
-      const storagePath = await writeConfigWorkbook(
-        { deckId: "old-source-deck", name: "Suggested" },
-        [{ id: "old-source-deck-card", subjectName: "S", front: "f", back: "b" }]
-      )
-      const pending = await createPendingImport(userId, storagePath)
+describe("new deck import", () => {
+  it("creates a new deck and imports its cards, ignoring source ids", async () => {
+    const userId = await makeUser("alice")
+    const storagePath = await writeConfigWorkbook(
+      { deckId: "old-source-deck", name: "Suggested" },
+      [{ id: "old-source-deck-card", subjectName: "S", front: "f", back: "b" }]
+    )
+    const pending = await createPendingImport(userId, storagePath)
 
-      const inspect = await inspectPendingImport(prisma, userId, pending.id)
-      expect(inspect).toMatchObject({ metaDeckId: "old-source-deck", existingDeck: null })
-      expect(inspect.suggestedName).toBe("Suggested")
+    const inspect = await inspectPendingImport(prisma, userId, pending.id)
+    expect(inspect).toMatchObject({ metaDeckId: "old-source-deck", existingDeck: null })
+    expect(inspect.suggestedName).toBe("Suggested")
 
-      const { deckId } = await confirmDeckSpreadsheetImport(prisma, userId, {
+    const { deckId } = await confirmDeckSpreadsheetImport(prisma, userId, {
+      importId: pending.id,
+      mode: "create",
+      name: "Brand New Deck",
+    })
+    expect(await runNextWorkerJob(prisma)).toBe(true)
+
+    const deck = await prisma.deck.findUniqueOrThrow({ where: { id: deckId } })
+    expect(deck.name).toBe("Brand New Deck")
+    const cards = await prisma.card.findMany({ where: { deckId } })
+    expect(cards).toHaveLength(1)
+    expect(cards[0].front).toBe("f")
+  })
+
+  it("returns existingDeck only when the metaDeckId belongs to the user", async () => {
+    const userId = await makeUser("alice")
+    const other = await makeUser("bob")
+    const trpc = callerFor(userId)
+    const mine = await trpc.decks.create({ name: "Mine" })
+    const theirs = await callerFor(other).decks.create({ name: "Theirs" })
+
+    const ownPath = await writeConfigWorkbook({ deckId: mine.id, name: "Mine" }, [])
+    const ownPending = await createPendingImport(userId, ownPath)
+    const ownInspect = await inspectPendingImport(prisma, userId, ownPending.id)
+    expect(ownInspect.existingDeck).toMatchObject({ id: mine.id, name: "Mine" })
+
+    const foreignPath = await writeConfigWorkbook({ deckId: theirs.id, name: "Theirs" }, [])
+    const foreignPending = await createPendingImport(userId, foreignPath)
+    const foreignInspect = await inspectPendingImport(prisma, userId, foreignPending.id)
+    expect(foreignInspect.existingDeck).toBeNull()
+  })
+
+  it("rejects create when the deck name is already taken", async () => {
+    const userId = await makeUser("alice")
+    await callerFor(userId).decks.create({ name: "Dup" })
+    const storagePath = await writeConfigWorkbook({ name: "Dup" }, [])
+    const pending = await createPendingImport(userId, storagePath)
+    await expect(
+      confirmDeckSpreadsheetImport(prisma, userId, {
         importId: pending.id,
         mode: "create",
-        name: "Brand New Deck",
+        name: "Dup",
       })
-      expect(await runNextWorkerJob(prisma)).toBe(true)
-
-      const deck = await prisma.deck.findUniqueOrThrow({ where: { id: deckId } })
-      expect(deck.name).toBe("Brand New Deck")
-      const cards = await prisma.card.findMany({ where: { deckId } })
-      expect(cards).toHaveLength(1)
-      expect(cards[0].front).toBe("f")
-    })
-
-    it("returns existingDeck only when the metaDeckId belongs to the user", async () => {
-      const userId = await makeUser("alice")
-      const other = await makeUser("bob")
-      const trpc = callerFor(userId)
-      const mine = await trpc.decks.create({ name: "Mine" })
-      const theirs = await callerFor(other).decks.create({ name: "Theirs" })
-
-      const ownPath = await writeConfigWorkbook({ deckId: mine.id, name: "Mine" }, [])
-      const ownPending = await createPendingImport(userId, ownPath)
-      const ownInspect = await inspectPendingImport(prisma, userId, ownPending.id)
-      expect(ownInspect.existingDeck).toMatchObject({ id: mine.id, name: "Mine" })
-
-      const foreignPath = await writeConfigWorkbook({ deckId: theirs.id, name: "Theirs" }, [])
-      const foreignPending = await createPendingImport(userId, foreignPath)
-      const foreignInspect = await inspectPendingImport(prisma, userId, foreignPending.id)
-      expect(foreignInspect.existingDeck).toBeNull()
-    })
-
-    it("rejects create when the deck name is already taken", async () => {
-      const userId = await makeUser("alice")
-      await callerFor(userId).decks.create({ name: "Dup" })
-      const storagePath = await writeConfigWorkbook({ name: "Dup" }, [])
-      const pending = await createPendingImport(userId, storagePath)
-      await expect(
-        confirmDeckSpreadsheetImport(prisma, userId, {
-          importId: pending.id,
-          mode: "create",
-          name: "Dup",
-        })
-      ).rejects.toMatchObject({ code: "CONFLICT" })
-    })
-
-    it("rejects create when a Meta language name is unknown", async () => {
-      const userId = await makeUser("alice")
-      const storagePath = await writeConfigWorkbook(
-        { name: "X", defaultFrontLanguage: "Klingon" },
-        []
-      )
-      const pending = await createPendingImport(userId, storagePath)
-      await expect(
-        confirmDeckSpreadsheetImport(prisma, userId, {
-          importId: pending.id,
-          mode: "create",
-          name: "X Deck",
-        })
-      ).rejects.toThrow(/Klingon/)
-    })
+    ).rejects.toMatchObject({ code: "CONFLICT" })
   })
+
+  it("rejects create when a Meta language name is unknown", async () => {
+    const userId = await makeUser("alice")
+    const storagePath = await writeConfigWorkbook(
+      { name: "X", defaultFrontLanguage: "Klingon" },
+      []
+    )
+    const pending = await createPendingImport(userId, storagePath)
+    await expect(
+      confirmDeckSpreadsheetImport(prisma, userId, {
+        importId: pending.id,
+        mode: "create",
+        name: "X Deck",
+      })
+    ).rejects.toThrow(/Klingon/)
+  })
+})
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -717,23 +725,23 @@ Expected: FAIL — `inspectPendingImport` / `confirmDeckSpreadsheetImport` not e
 In `runDeckSpreadsheetImportJob`, replace the block from `const metaDeckId = readMetaDeckId(workbook)` through the `applySpreadsheetRows(...)` call with:
 
 ```ts
-  if (!spreadsheetImport.ignoreRowIds) {
-    const metaDeckId = readMetaDeckId(workbook)
-    if (metaDeckId !== spreadsheetImport.deckId) {
-      throw new Error("Spreadsheet deckId does not match this deck.")
-    }
+if (!spreadsheetImport.ignoreRowIds) {
+  const metaDeckId = readMetaDeckId(workbook)
+  if (metaDeckId !== spreadsheetImport.deckId) {
+    throw new Error("Spreadsheet deckId does not match this deck.")
   }
-  const rows = readCardRows(workbook)
+}
+const rows = readCardRows(workbook)
 
-  const result = await prisma.$transaction(async (tx) => {
-    await assertOwnDeck(tx, spreadsheetImport.userId, spreadsheetImport.deckId!)
-    return applySpreadsheetRows(tx, {
-      userId: spreadsheetImport.userId,
-      deckId: spreadsheetImport.deckId!,
-      rows,
-      ignoreRowIds: spreadsheetImport.ignoreRowIds,
-    })
+const result = await prisma.$transaction(async (tx) => {
+  await assertOwnDeck(tx, spreadsheetImport.userId, spreadsheetImport.deckId!)
+  return applySpreadsheetRows(tx, {
+    userId: spreadsheetImport.userId,
+    deckId: spreadsheetImport.deckId!,
+    rows,
+    ignoreRowIds: spreadsheetImport.ignoreRowIds,
   })
+})
 ```
 
 Then in the trailing `markDeckCompletionStale(prisma, spreadsheetImport.deckId)` call, change it to `spreadsheetImport.deckId!`.
@@ -794,7 +802,8 @@ export async function confirmDeckSpreadsheetImport(
     where: { id: input.importId, userId },
   })
   if (!item) throw new DeckSpreadsheetError("Spreadsheet import not found.", "NOT_FOUND")
-  if (item.workerJobId) throw new DeckSpreadsheetError("This import was already started.", "BAD_REQUEST")
+  if (item.workerJobId)
+    throw new DeckSpreadsheetError("This import was already started.", "BAD_REQUEST")
 
   let config
   try {
@@ -818,7 +827,10 @@ export async function confirmDeckSpreadsheetImport(
     if (existing) {
       throw new DeckSpreadsheetError("A deck with that name already exists.", "CONFLICT")
     }
-    const defaultFrontLanguageId = await resolveLanguageIdByName(prisma, config.defaultFrontLanguage)
+    const defaultFrontLanguageId = await resolveLanguageIdByName(
+      prisma,
+      config.defaultFrontLanguage
+    )
     const defaultBackLanguageId = await resolveLanguageIdByName(prisma, config.defaultBackLanguage)
     const deck = await prisma.deck.create({
       data: {
@@ -890,6 +902,7 @@ git commit -m "feat(server): inspect + confirm import; new-deck worker path"
 ## Task 8: tRPC confirmImport mutation
 
 **Files:**
+
 - Modify: `packages/server/src/domains/DeckSpreadsheet/deckSpreadsheetRouter.ts`
 - Test: `packages/server/tests/domains/DeckSpreadsheet.test.ts`
 
@@ -898,20 +911,20 @@ git commit -m "feat(server): inspect + confirm import; new-deck worker path"
 Add to the `new deck import` describe in the test file:
 
 ```ts
-    it("exposes confirmImport over tRPC and maps conflicts", async () => {
-      const userId = await makeUser("alice")
-      const trpc = callerFor(userId)
-      await trpc.decks.create({ name: "Taken" })
-      const storagePath = await writeConfigWorkbook({ name: "Taken" }, [])
-      const pending = await createPendingImport(userId, storagePath)
-      await expect(
-        trpc.deckSpreadsheet.confirmImport({
-          importId: pending.id,
-          mode: "create",
-          name: "Taken",
-        })
-      ).rejects.toMatchObject({ code: "CONFLICT" })
+it("exposes confirmImport over tRPC and maps conflicts", async () => {
+  const userId = await makeUser("alice")
+  const trpc = callerFor(userId)
+  await trpc.decks.create({ name: "Taken" })
+  const storagePath = await writeConfigWorkbook({ name: "Taken" }, [])
+  const pending = await createPendingImport(userId, storagePath)
+  await expect(
+    trpc.deckSpreadsheet.confirmImport({
+      importId: pending.id,
+      mode: "create",
+      name: "Taken",
     })
+  ).rejects.toMatchObject({ code: "CONFLICT" })
+})
 ```
 
 - [ ] **Step 2: Run to confirm failure**
@@ -976,6 +989,7 @@ git commit -m "feat(server): deckSpreadsheet.confirmImport mutation"
 ## Task 9: HTTP routes — template + deck-level inspect upload
 
 **Files:**
+
 - Modify: `packages/server/src/main.ts` (imports ~21-31; add routes near the existing spreadsheet routes ~171; `writeDeckSpreadsheetUploadToStorage` ~255-292)
 
 - [ ] **Step 1: Extend the service import**
@@ -1013,23 +1027,23 @@ async function writeDeckSpreadsheetUploadToStorage(
 Add immediately after the existing `GET /api/decks/:deckId/spreadsheet/export` route block:
 
 ```ts
-  app.route({
-    method: "GET",
-    url: "/api/decks/spreadsheet/template",
-    async handler(req, reply) {
-      const session = await getSessionFromRawHeaders(req.headers)
-      if (!session?.user) {
-        reply.status(401).send({ message: "Unauthorized." })
-        return
-      }
+app.route({
+  method: "GET",
+  url: "/api/decks/spreadsheet/template",
+  async handler(req, reply) {
+    const session = await getSessionFromRawHeaders(req.headers)
+    if (!session?.user) {
+      reply.status(401).send({ message: "Unauthorized." })
+      return
+    }
 
-      const body = await buildDeckSpreadsheetTemplate()
-      reply
-        .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        .header("Content-Disposition", `attachment; filename="${body.filename}"`)
-        .send(body.buffer)
-    },
-  })
+    const body = await buildDeckSpreadsheetTemplate()
+    reply
+      .header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+      .header("Content-Disposition", `attachment; filename="${body.filename}"`)
+      .send(body.buffer)
+  },
+})
 ```
 
 - [ ] **Step 4: Add the deck-level inspect-upload route**
@@ -1037,73 +1051,72 @@ Add immediately after the existing `GET /api/decks/:deckId/spreadsheet/export` r
 Add after the template route (this is the no-`:deckId` sibling of the existing import route; Fastify gives the static path priority over the parametric one):
 
 ```ts
-  app.route({
-    method: "POST",
-    url: "/api/decks/spreadsheet/import",
-    bodyLimit: DECK_SPREADSHEET_UPLOAD_MAX_BYTES,
-    async handler(req, reply) {
-      const session = await getSessionFromRawHeaders(req.headers)
-      if (!session?.user) {
-        reply.status(401).send({ message: "Unauthorized." })
-        return
+app.route({
+  method: "POST",
+  url: "/api/decks/spreadsheet/import",
+  bodyLimit: DECK_SPREADSHEET_UPLOAD_MAX_BYTES,
+  async handler(req, reply) {
+    const session = await getSessionFromRawHeaders(req.headers)
+    if (!session?.user) {
+      reply.status(401).send({ message: "Unauthorized." })
+      return
+    }
+
+    let spreadsheetImport: Awaited<ReturnType<typeof writeDeckSpreadsheetUploadToStorage>> | null =
+      null
+
+    try {
+      const part = await req.file()
+      if (!part) throw createHttpError(400, "No file was uploaded.")
+      const normalizedMime = (part.mimetype ?? "").toLowerCase()
+      if (
+        !part.filename ||
+        extname(part.filename).toLowerCase() !== ".xlsx" ||
+        (normalizedMime && !spreadsheetUploadMimeTypes.has(normalizedMime))
+      ) {
+        part.file.resume()
+        throw createHttpError(400, "Only .xlsx spreadsheet uploads are supported.")
       }
 
-      let spreadsheetImport: Awaited<
-        ReturnType<typeof writeDeckSpreadsheetUploadToStorage>
-      > | null = null
+      spreadsheetImport = await writeDeckSpreadsheetUploadToStorage(part.file, {
+        deckId: null,
+        userId: session.user.id,
+        filename: basename(part.filename),
+      })
 
-      try {
-        const part = await req.file()
-        if (!part) throw createHttpError(400, "No file was uploaded.")
-        const normalizedMime = (part.mimetype ?? "").toLowerCase()
-        if (
-          !part.filename ||
-          extname(part.filename).toLowerCase() !== ".xlsx" ||
-          (normalizedMime && !spreadsheetUploadMimeTypes.has(normalizedMime))
-        ) {
-          part.file.resume()
-          throw createHttpError(400, "Only .xlsx spreadsheet uploads are supported.")
-        }
+      if (part.file.truncated || spreadsheetImport.fileSize > DECK_SPREADSHEET_UPLOAD_MAX_BYTES) {
+        throw createHttpError(413, "The uploaded file exceeds the 20MB limit.")
+      }
 
-        spreadsheetImport = await writeDeckSpreadsheetUploadToStorage(part.file, {
-          deckId: null,
-          userId: session.user.id,
-          filename: basename(part.filename),
+      const result = await inspectPendingImport(prisma, session.user.id, spreadsheetImport.id)
+      spreadsheetImport = null
+
+      reply.status(201).send(result)
+    } catch (error) {
+      await deleteFileIfExists(spreadsheetImport?.storagePath)
+      if (spreadsheetImport) {
+        await prisma.spreadsheetImport.deleteMany({
+          where: { id: spreadsheetImport.id, userId: session.user.id },
         })
-
-        if (part.file.truncated || spreadsheetImport.fileSize > DECK_SPREADSHEET_UPLOAD_MAX_BYTES) {
-          throw createHttpError(413, "The uploaded file exceeds the 20MB limit.")
-        }
-
-        const result = await inspectPendingImport(prisma, session.user.id, spreadsheetImport.id)
-        spreadsheetImport = null
-
-        reply.status(201).send(result)
-      } catch (error) {
-        await deleteFileIfExists(spreadsheetImport?.storagePath)
-        if (spreadsheetImport) {
-          await prisma.spreadsheetImport.deleteMany({
-            where: { id: spreadsheetImport.id, userId: session.user.id },
-          })
-        }
-
-        if (
-          typeof error === "object" &&
-          error !== null &&
-          "code" in error &&
-          error.code === "FST_REQ_FILE_TOO_LARGE"
-        ) {
-          throw createHttpError(413, "The uploaded file exceeds the 20MB limit.")
-        }
-
-        if (error instanceof DeckSpreadsheetError) {
-          throw createHttpError(error.code === "NOT_FOUND" ? 404 : 400, error.message)
-        }
-
-        throw error
       }
-    },
-  })
+
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "FST_REQ_FILE_TOO_LARGE"
+      ) {
+        throw createHttpError(413, "The uploaded file exceeds the 20MB limit.")
+      }
+
+      if (error instanceof DeckSpreadsheetError) {
+        throw createHttpError(error.code === "NOT_FOUND" ? 404 : 400, error.message)
+      }
+
+      throw error
+    }
+  },
+})
 ```
 
 - [ ] **Step 5: Typecheck the server**
@@ -1123,6 +1136,7 @@ git commit -m "feat(server): template download + deck-level inspect upload route
 ## Task 10: Deck list — Import deck + Download template buttons
 
 **Files:**
+
 - Modify: `packages/client/src/domains/Decks/DeckListPage.tsx` (import line ~20; `menuItems` block ~277-287)
 
 - [ ] **Step 1: Add the icons to the import**
@@ -1173,6 +1187,7 @@ git commit -m "feat(client): deck list import-deck + download-template menu item
 ## Task 11: New-import route shell + page
 
 **Files:**
+
 - Create: `packages/client/src/routes/(app)/imports.spreadsheet.tsx`
 - Create: `packages/client/src/domains/DeckSpreadsheet/DeckSpreadsheetNewImportPage.tsx`
 
@@ -1457,6 +1472,7 @@ git commit -m "feat(client): new-deck spreadsheet import page"
 ## Task 12: E2E + full QA gate
 
 **Files:**
+
 - Modify: `packages/client/e2e/happy-path.spec.ts`
 
 - [ ] **Step 1: Read the existing e2e to match its login/setup helpers**

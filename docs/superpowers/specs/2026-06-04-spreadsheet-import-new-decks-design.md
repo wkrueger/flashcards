@@ -33,15 +33,15 @@ new deck** from a spreadsheet, and download an **empty template** to fill in.
 
 ### Meta tab (key/value, expanded)
 
-| key                     | value (example)                  | notes                                  |
-| ----------------------- | -------------------------------- | -------------------------------------- |
-| `deckId`                | `clx…` (blank for fresh decks)   | unchanged semantics                    |
-| `name`                  | `German A1`                      | deck name                              |
-| `defaultFrontLanguage`  | `English`                        | `Language.name`; blank = none          |
-| `defaultBackLanguage`   | `Deutsch`                        | `Language.name`; blank = none          |
-| `speechRecognitionEnabled` | `true`                        | bool                                   |
-| `inverseReviewEnabled`  | `false`                          | bool                                   |
-| `sequentialEnabled`     | `false`                          | bool                                   |
+| key                        | value (example)                | notes                         |
+| -------------------------- | ------------------------------ | ----------------------------- |
+| `deckId`                   | `clx…` (blank for fresh decks) | unchanged semantics           |
+| `name`                     | `German A1`                    | deck name                     |
+| `defaultFrontLanguage`     | `English`                      | `Language.name`; blank = none |
+| `defaultBackLanguage`      | `Deutsch`                      | `Language.name`; blank = none |
+| `speechRecognitionEnabled` | `true`                         | bool                          |
+| `inverseReviewEnabled`     | `false`                        | bool                          |
+| `sequentialEnabled`        | `false`                        | bool                          |
 
 - `Card` tab unchanged (same `CARD_HEADERS`).
 - **Export** (`buildDeckSpreadsheetExport`) writes the full Meta config, resolving
@@ -69,7 +69,7 @@ edit flow keeps setting `deckId` immediately.
    `existingDeck` is non-null **only if** `metaDeckId` is present AND owned by the
    current user; otherwise the import is treated as new.
 3. **`deckSpreadsheet.confirmImport`** (tRPC) — `{ importId, mode: "update" |
-   "create", name? }`:
+"create", name? }`:
    - **create**: validate `name` (non-blank, unique per user — reuse the
      `decks.create` conflict check), re-read the stored file for Meta config,
      create an empty deck (name + languages-by-name + toggles), set
@@ -102,7 +102,7 @@ mode that row has no front → existing "front is required" error. Correct.
 
 - **Import deck** (FileUp) → `navigate({ to: "/imports/spreadsheet" })`.
 - **Download template** (FileDown) → `window.location.href =
-  "/api/decks/spreadsheet/template"`.
+"/api/decks/spreadsheet/template"`.
 
 **New route** `routes/(app)/imports/spreadsheet.tsx` → thin shell importing a new
 `DeckSpreadsheetNewImportPage` in `domains/DeckSpreadsheet/`. The existing
@@ -110,16 +110,16 @@ per-deck `DeckSpreadsheetImportPage` is untouched.
 
 **`DeckSpreadsheetNewImportPage` — two phases:**
 
-- *Phase 1 (upload):* file picker (reuse existing dropzone markup) → POST to the
+- _Phase 1 (upload):_ file picker (reuse existing dropzone markup) → POST to the
   deck-level `/import` → store `{ importId, metaDeckId, suggestedName,
-  existingDeck }`.
-- *Phase 2 (prompt):*
+existingDeck }`.
+- _Phase 2 (prompt):_
   - `existingDeck` present → choice: "Update existing deck **{name}**" or
     "Create new deck" (reveals name `Input` prefilled with `suggestedName`).
   - `existingDeck` null → straight to name `Input` prefilled with `suggestedName`
     (create-only).
   - Name validates non-blank; confirm CONFLICT surfaces inline for edit + retry.
-- *Confirm:* call `confirmImport` → poll `getImport` (reuse existing status card:
+- _Confirm:_ call `confirmImport` → poll `getImport` (reuse existing status card:
   created/updated/deleted + errors). On `SUCCEEDED`, "Go to deck" navigates to the
   resolved deckId; invalidate `decks.list` / `decks.get`.
 

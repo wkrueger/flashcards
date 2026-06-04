@@ -300,8 +300,9 @@ model SpreadsheetImport {
   id               String                  @id @default(cuid())
   userId           String
   user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deckId           String
-  deck             Deck                    @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  deckId           String?
+  deck             Deck?                   @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  ignoreRowIds     Boolean                 @default(false)
   status           SpreadsheetImportStatus @default(UPLOADED)
   filename         String
   fileSize         Int

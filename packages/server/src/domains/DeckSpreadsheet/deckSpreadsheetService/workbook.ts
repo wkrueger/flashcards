@@ -91,6 +91,61 @@ export function assertNoDuplicateTagNames(tags: Array<{ id: string; name: string
   }
 }
 
+export const META_CONFIG_KEYS = {
+  deckId: "deckId",
+  name: "name",
+  defaultFrontLanguage: "defaultFrontLanguage",
+  defaultBackLanguage: "defaultBackLanguage",
+  speechRecognitionEnabled: "speechRecognitionEnabled",
+  inverseReviewEnabled: "inverseReviewEnabled",
+  sequentialEnabled: "sequentialEnabled",
+} as const
+
+export type MetaConfig = {
+  deckId: string
+  name: string
+  defaultFrontLanguage: string
+  defaultBackLanguage: string
+  speechRecognitionEnabled: boolean
+  inverseReviewEnabled: boolean
+  sequentialEnabled: boolean
+}
+
+export function readMetaConfig(workbook: ExcelJS.Workbook): MetaConfig {
+  const worksheet = getRequiredWorksheet(workbook, "Meta")
+  const headers = headerMap(worksheet)
+  const keyColumn = requiredHeader(headers, "key")
+  const valueColumn = requiredHeader(headers, "value")
+
+  const values = new Map<string, string>()
+  for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
+    const row = worksheet.getRow(rowNumber)
+    const key = cellText(row, keyColumn)
+    if (key) values.set(key, cellText(row, valueColumn))
+  }
+
+  return {
+    deckId: values.get(META_CONFIG_KEYS.deckId) ?? "",
+    name: values.get(META_CONFIG_KEYS.name) ?? "",
+    defaultFrontLanguage: values.get(META_CONFIG_KEYS.defaultFrontLanguage) ?? "",
+    defaultBackLanguage: values.get(META_CONFIG_KEYS.defaultBackLanguage) ?? "",
+    speechRecognitionEnabled: parseMetaBool(
+      values.get(META_CONFIG_KEYS.speechRecognitionEnabled),
+      true
+    ),
+    inverseReviewEnabled: parseMetaBool(values.get(META_CONFIG_KEYS.inverseReviewEnabled), false),
+    sequentialEnabled: parseMetaBool(values.get(META_CONFIG_KEYS.sequentialEnabled), false),
+  }
+}
+
+function parseMetaBool(raw: string | undefined, fallback: boolean): boolean {
+  const value = (raw ?? "").trim().toLowerCase()
+  if (!value) return fallback
+  if (["true", "1", "yes", "y"].includes(value)) return true
+  if (["false", "0", "no", "n"].includes(value)) return false
+  throw new Error(`Meta value "${raw}" must be true or false.`)
+}
+
 function parseOrderCell(text: string, rowNumber: number, column: string): number | null {
   const trimmed = text.trim()
   if (!trimmed) return null

@@ -37,6 +37,29 @@ export const reorderDecksInput = z.object({
 
 export const idInput = z.object({ id })
 
+export const confirmDeckImportInput = z
+  .object({
+    importId: z.string().min(1).max(64),
+    mode: z.enum(["update", "create"]),
+    name: z.string().trim().min(1).max(100).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.mode === "create" && !data.name) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A deck name is required.",
+        path: ["name"],
+      })
+    }
+  })
+
+export type DeckSpreadsheetInspectResult = {
+  importId: string
+  metaDeckId: string | null
+  suggestedName: string
+  existingDeck: { id: string; name: string } | null
+}
+
 export const subjectAutocompleteInput = z.object({
   deckId: id,
   query: z.string().trim().max(100),
@@ -248,7 +271,7 @@ export type AnkiImportProcessView = {
 export type SpreadsheetImportStatusView = {
   jobId: string
   importId: string | null
-  deckId: string
+  deckId: string | null
   status: "UPLOADED" | "IMPORTING" | "SUCCEEDED" | "FAILED"
   filename: string | null
   rowCount: number

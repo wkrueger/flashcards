@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { FileDown, Plus } from "lucide-react"
+import { FileDown, FileText, FileUp, Plus } from "lucide-react"
 import { useEffect, useState } from "react"
 import { MenuItem, PageHeader } from "../../components/AppShell"
 import { LightbulbIllustration } from "../../components/LightbulbIllustration"
@@ -220,6 +220,22 @@ export function DeckListPage() {
               aria-label="Import Anki file"
             >
               Import Anki
+            </MenuItem>
+            <MenuItem
+              onSelect={() => navigate({ to: "/imports/spreadsheet" })}
+              icon={<FileUp className="h-[18px] w-[18px]" />}
+              aria-label="Import XLS"
+            >
+              Import XLS
+            </MenuItem>
+            <MenuItem
+              onSelect={() => {
+                window.location.href = "/api/decks/spreadsheet/template"
+              }}
+              icon={<FileText className="h-[18px] w-[18px]" />}
+              aria-label="Download XLS template"
+            >
+              Download XLS template
             </MenuItem>
           </>
         }

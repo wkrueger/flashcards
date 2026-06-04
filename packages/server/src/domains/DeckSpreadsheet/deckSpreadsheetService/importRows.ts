@@ -10,6 +10,7 @@ export async function applySpreadsheetRows(
     userId: string
     deckId: string
     rows: SpreadsheetRow[]
+    ignoreRowIds?: boolean
   }
 ): Promise<SpreadsheetImportResult> {
   const touchedSubjectIds = new Set<string>()
@@ -29,20 +30,21 @@ export async function applySpreadsheetRows(
 
   for (const row of input.rows) {
     const logPrefix = `Row ${row.rowNumber}:`
+    const rowId = input.ignoreRowIds ? "" : row.id
 
-    if (row.id && seenIds.has(row.id)) {
-      throw new Error(`${logPrefix} duplicate card id "${row.id}".`)
+    if (rowId && seenIds.has(rowId)) {
+      throw new Error(`${logPrefix} duplicate card id "${rowId}".`)
     }
-    if (row.id) seenIds.add(row.id)
+    if (rowId) seenIds.add(rowId)
 
-    const isDelete = !!row.id && !row.front && !row.back
+    const isDelete = !!rowId && !row.front && !row.back
 
     if (isDelete) {
       const card = await prisma.card.findFirst({
-        where: { id: row.id, deckId: input.deckId, deck: { userId: input.userId } },
+        where: { id: rowId, deckId: input.deckId, deck: { userId: input.userId } },
         select: { id: true, subjectId: true },
       })
-      if (!card) throw new Error(`${logPrefix} card "${row.id}" was not found in this deck.`)
+      if (!card) throw new Error(`${logPrefix} card "${rowId}" was not found in this deck.`)
 
       touchedSubjectIds.add(card.subjectId)
       await prisma.card.delete({ where: { id: card.id } })
@@ -56,7 +58,7 @@ export async function applySpreadsheetRows(
 
     const tagIds = await resolveTags(prisma, input.userId, row.tagNames)
 
-    if (!row.id) {
+    if (!rowId) {
       const subject = await upsertSubjectForImport(
         prisma,
         input.userId,
@@ -90,13 +92,13 @@ export async function applySpreadsheetRows(
     }
 
     const card = await prisma.card.findFirst({
-      where: { id: row.id, deckId: input.deckId, deck: { userId: input.userId } },
+      where: { id: rowId, deckId: input.deckId, deck: { userId: input.userId } },
       include: {
         subject: { select: { id: true, subject: true } },
         cardTags: { select: { tagId: true } },
       },
     })
-    if (!card) throw new Error(`${logPrefix} card "${row.id}" was not found in this deck.`)
+    if (!card) throw new Error(`${logPrefix} card "${rowId}" was not found in this deck.`)
 
     const resolvedSubjectOrder = resolveSubjectOrder(row.subjectName, row.subjectOrder)
     const subject =

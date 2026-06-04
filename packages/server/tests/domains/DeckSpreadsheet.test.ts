@@ -2,16 +2,25 @@ import { mkdir, stat, utimes, writeFile } from "node:fs/promises"
 import path from "node:path"
 import ExcelJS from "exceljs"
 import { beforeEach, describe, expect, it } from "vitest"
-import { WorkerJobStatus, WorkerJobType } from "../../src/generated/prisma/client.js"
+import {
+  SpreadsheetImportStatus,
+  WorkerJobStatus,
+  WorkerJobType,
+} from "../../src/generated/prisma/client.js"
 import { prisma } from "../../src/infra/db.js"
 import { runNextWorkerJob } from "../../src/infra/worker.js"
 import { hashFront, SYSTEM_TAG_OWNER_KEY } from "../../src/domains/Cards/cardsService.js"
 import {
   buildDeckSpreadsheetExport,
+  buildDeckSpreadsheetTemplate,
   cleanupStaleSpreadsheetImports,
+  confirmDeckSpreadsheetImport,
+  inspectPendingImport,
 } from "../../src/domains/DeckSpreadsheet/deckSpreadsheetService/index.js"
+import { readMetaConfig } from "../../src/domains/DeckSpreadsheet/deckSpreadsheetService/workbook.js"
 import { DECK_SPREADSHEET_UPLOAD_DIR } from "../../src/domains/DeckSpreadsheet/deckSpreadsheetShared.js"
 import { subjectKeyFor } from "../../src/domains/Subjects/subjectsService.js"
+import { applySpreadsheetRows } from "../../src/domains/DeckSpreadsheet/deckSpreadsheetService/importRows.js"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 
 async function createUserTag(userId: string, name: string) {
@@ -84,6 +93,39 @@ async function queueSpreadsheetImport(input: {
   return { job, spreadsheetImport }
 }
 
+async function createPendingImport(userId: string, storagePath: string) {
+  return prisma.spreadsheetImport.create({
+    data: {
+      userId,
+      deckId: null,
+      filename: path.basename(storagePath),
+      fileSize: 100,
+      storagePath,
+      status: SpreadsheetImportStatus.UPLOADED,
+    },
+  })
+}
+
+async function writeConfigWorkbook(
+  meta: Record<string, string>,
+  rows: Array<{ id?: string; subjectName?: string; front?: string; back?: string }>
+) {
+  const dir = path.resolve(process.cwd(), DECK_SPREADSHEET_UPLOAD_DIR)
+  await mkdir(dir, { recursive: true })
+  const filePath = path.join(dir, `cfg-${Date.now()}-${Math.random()}.xlsx`)
+  const workbook = new ExcelJS.Workbook()
+  const metaSheet = workbook.addWorksheet("Meta")
+  metaSheet.addRow(["key", "value"])
+  for (const [key, value] of Object.entries(meta)) metaSheet.addRow([key, value])
+  const card = workbook.addWorksheet("Card")
+  card.addRow(["id", "subjectName", "subjectOrder", "front", "back", "cardOrder", "tags"])
+  for (const row of rows) {
+    card.addRow([row.id ?? "", row.subjectName ?? "", "", row.front ?? "", row.back ?? "", "", ""])
+  }
+  await workbook.xlsx.writeFile(filePath)
+  return filePath
+}
+
 describe("deck spreadsheet import/export", () => {
   beforeEach(async () => {
     await resetDomain()
@@ -126,6 +168,43 @@ describe("deck spreadsheet import/export", () => {
     expect(cardSheet.getCell("A2").text).toBe(card.id)
     expect(cardSheet.getCell("B2").text).toBe("Haus")
     expect(cardSheet.getCell("G2").text).toBe("Noun")
+  })
+
+  it("export writes deck config into the Meta tab", async () => {
+    const userId = await makeUser("alice")
+    const trpc = callerFor(userId)
+    const front = await prisma.language.create({ data: { name: "ExportFront", emoji: "🇬🇧" } })
+    const back = await prisma.language.create({ data: { name: "ExportBack", emoji: "🇩🇪" } })
+    const deck = await trpc.decks.create({
+      name: "Configured",
+      defaultFrontLanguageId: front.id,
+      defaultBackLanguageId: back.id,
+      sequentialEnabled: true,
+    })
+
+    const { buffer } = await buildDeckSpreadsheetExport(prisma, userId, deck.id)
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+    const config = readMetaConfig(wb)
+    expect(config).toMatchObject({
+      deckId: deck.id,
+      name: "Configured",
+      defaultFrontLanguage: "ExportFront",
+      defaultBackLanguage: "ExportBack",
+      sequentialEnabled: true,
+    })
+  })
+
+  it("builds an empty template workbook", async () => {
+    const { filename, buffer } = await buildDeckSpreadsheetTemplate()
+    expect(filename).toBe("deck-template.xlsx")
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(buffer as unknown as ArrayBuffer)
+    const config = readMetaConfig(wb)
+    expect(config.deckId).toBe("")
+    expect(config.name).toBe("")
+    expect(config.speechRecognitionEnabled).toBe(true)
+    expect(wb.getWorksheet("Card")?.getCell("A1").text).toBe("id")
   })
 
   it("updates, creates, deletes, and cleans up empty subjects from a spreadsheet import", async () => {
@@ -368,6 +447,156 @@ describe("deck spreadsheet import/export", () => {
     ).resolves.toBeNull()
     await expect(stat(storagePath)).rejects.toThrow()
     await expect(stat(orphanPath)).rejects.toThrow()
+  })
+
+  it("ignoreRowIds treats every row as a new card", async () => {
+    const userId = await makeUser("alice")
+    const deck = await prisma.deck.create({ data: { name: "Fresh", userId } })
+    const result = await prisma.$transaction((tx) =>
+      applySpreadsheetRows(tx, {
+        userId,
+        deckId: deck.id,
+        ignoreRowIds: true,
+        rows: [
+          {
+            rowNumber: 2,
+            id: "source-deck-card-id",
+            subjectName: "S",
+            subjectOrder: null,
+            front: "f1",
+            back: "b1",
+            cardOrder: null,
+            tagNames: [],
+          },
+        ],
+      })
+    )
+    expect(result).toMatchObject({ rowCount: 1, createdCardCount: 1, updatedCardCount: 0 })
+    const cards = await prisma.card.findMany({ where: { deckId: deck.id } })
+    expect(cards).toHaveLength(1)
+    expect(cards[0]!.id).not.toBe("source-deck-card-id")
+  })
+
+  describe("readMetaConfig", () => {
+    it("parses deck config from the Meta tab", async () => {
+      const dir = path.resolve(process.cwd(), DECK_SPREADSHEET_UPLOAD_DIR)
+      await mkdir(dir, { recursive: true })
+      const filePath = path.join(dir, `meta-${Date.now()}-${Math.random()}.xlsx`)
+      const workbook = new ExcelJS.Workbook()
+      const meta = workbook.addWorksheet("Meta")
+      meta.addRow(["key", "value"])
+      meta.addRow(["deckId", "deck-123"])
+      meta.addRow(["name", "German A1"])
+      meta.addRow(["defaultFrontLanguage", "English"])
+      meta.addRow(["defaultBackLanguage", "Deutsch"])
+      meta.addRow(["speechRecognitionEnabled", "false"])
+      meta.addRow(["inverseReviewEnabled", "true"])
+      meta.addRow(["sequentialEnabled", ""])
+      await workbook.xlsx.writeFile(filePath)
+
+      const loaded = new ExcelJS.Workbook()
+      await loaded.xlsx.readFile(filePath)
+      expect(readMetaConfig(loaded)).toEqual({
+        deckId: "deck-123",
+        name: "German A1",
+        defaultFrontLanguage: "English",
+        defaultBackLanguage: "Deutsch",
+        speechRecognitionEnabled: false,
+        inverseReviewEnabled: true,
+        sequentialEnabled: false,
+      })
+    })
+  })
+
+  describe("new deck import", () => {
+    it("creates a new deck and imports its cards, ignoring source ids", async () => {
+      const userId = await makeUser("alice")
+      const storagePath = await writeConfigWorkbook(
+        { deckId: "old-source-deck", name: "Suggested" },
+        [{ id: "old-source-deck-card", subjectName: "S", front: "f", back: "b" }]
+      )
+      const pending = await createPendingImport(userId, storagePath)
+
+      const inspect = await inspectPendingImport(prisma, userId, pending.id)
+      expect(inspect).toMatchObject({ metaDeckId: "old-source-deck", existingDeck: null })
+      expect(inspect.suggestedName).toBe("Suggested")
+
+      const { deckId } = await confirmDeckSpreadsheetImport(prisma, userId, {
+        importId: pending.id,
+        mode: "create",
+        name: "Brand New Deck",
+      })
+      expect(await runNextWorkerJob(prisma)).toBe(true)
+
+      const deck = await prisma.deck.findUniqueOrThrow({ where: { id: deckId } })
+      expect(deck.name).toBe("Brand New Deck")
+      const cards = await prisma.card.findMany({ where: { deckId } })
+      expect(cards).toHaveLength(1)
+      expect(cards[0]!.front).toBe("f")
+    })
+
+    it("returns existingDeck only when the metaDeckId belongs to the user", async () => {
+      const userId = await makeUser("alice")
+      const other = await makeUser("bob")
+      const trpc = callerFor(userId)
+      const mine = await trpc.decks.create({ name: "Mine" })
+      const theirs = await callerFor(other).decks.create({ name: "Theirs" })
+
+      const ownPath = await writeConfigWorkbook({ deckId: mine.id, name: "Mine" }, [])
+      const ownPending = await createPendingImport(userId, ownPath)
+      const ownInspect = await inspectPendingImport(prisma, userId, ownPending.id)
+      expect(ownInspect.existingDeck).toMatchObject({ id: mine.id, name: "Mine" })
+
+      const foreignPath = await writeConfigWorkbook({ deckId: theirs.id, name: "Theirs" }, [])
+      const foreignPending = await createPendingImport(userId, foreignPath)
+      const foreignInspect = await inspectPendingImport(prisma, userId, foreignPending.id)
+      expect(foreignInspect.existingDeck).toBeNull()
+    })
+
+    it("rejects create when the deck name is already taken", async () => {
+      const userId = await makeUser("alice")
+      await callerFor(userId).decks.create({ name: "Dup" })
+      const storagePath = await writeConfigWorkbook({ name: "Dup" }, [])
+      const pending = await createPendingImport(userId, storagePath)
+      await expect(
+        confirmDeckSpreadsheetImport(prisma, userId, {
+          importId: pending.id,
+          mode: "create",
+          name: "Dup",
+        })
+      ).rejects.toMatchObject({ code: "CONFLICT" })
+    })
+
+    it("exposes confirmImport over tRPC and maps conflicts", async () => {
+      const userId = await makeUser("alice")
+      const trpc = callerFor(userId)
+      await trpc.decks.create({ name: "Taken" })
+      const storagePath = await writeConfigWorkbook({ name: "Taken" }, [])
+      const pending = await createPendingImport(userId, storagePath)
+      await expect(
+        trpc.deckSpreadsheet.confirmImport({
+          importId: pending.id,
+          mode: "create",
+          name: "Taken",
+        })
+      ).rejects.toMatchObject({ code: "CONFLICT" })
+    })
+
+    it("rejects create when a Meta language name is unknown", async () => {
+      const userId = await makeUser("alice")
+      const storagePath = await writeConfigWorkbook(
+        { name: "X", defaultFrontLanguage: "Klingon" },
+        []
+      )
+      const pending = await createPendingImport(userId, storagePath)
+      await expect(
+        confirmDeckSpreadsheetImport(prisma, userId, {
+          importId: pending.id,
+          mode: "create",
+          name: "X Deck",
+        })
+      ).rejects.toThrow(/Klingon/)
+    })
   })
 
   describe("order columns", () => {

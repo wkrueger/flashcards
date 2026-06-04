@@ -14,7 +14,7 @@ export type SpreadsheetImportResult = {
 export class DeckSpreadsheetError extends Error {
   constructor(
     message: string,
-    readonly code: "NOT_FOUND"
+    readonly code: "NOT_FOUND" | "BAD_REQUEST" | "CONFLICT"
   ) {
     super(message)
   }
