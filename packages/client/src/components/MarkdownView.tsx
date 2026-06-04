@@ -7,11 +7,34 @@ marked.use({
   renderer: {
     paragraph({ tokens }) {
       const text = this.parser.parseInline(tokens)
-      return `<p class="text-lg leading-relaxed">${text}</p>`
+      return `<p class="leading-relaxed">${text}</p>`
     },
     strong({ tokens }) {
       const text = this.parser.parseInline(tokens)
       return `<strong class="font-semibold text-primary underline underline-offset-4">${text}</strong>`
+    },
+    blockquote({ tokens }) {
+      const content = this.parser.parse(tokens)
+      return `<blockquote class="border-l-4 border-[hsl(28_92%_56%)] bg-[hsl(28_92%_56%/0.12)] pl-4 pr-2 py-1 rounded-r-md italic font-light">${content}</blockquote>`
+    },
+    table(token) {
+      let header = "<thead><tr>"
+      token.header.forEach((cell, i) => {
+        const content = this.parser.parseInline(cell.tokens)
+        const borderL = i === 0 ? "border-l border-border " : ""
+        header += `<th class="${borderL}border-t border-r border-b border-border bg-muted px-2 py-1 text-left align-top">${content}</th>`
+      })
+      header += "</tr></thead><tbody>"
+      for (const row of token.rows) {
+        header += "<tr>"
+        row.forEach((cell, i) => {
+          const content = this.parser.parseInline(cell.tokens)
+          const borderL = i === 0 ? "border-l border-border " : ""
+          header += `<td class="${borderL}border-r border-b border-border px-2 py-1 text-left align-top">${content}</td>`
+        })
+        header += "</tr>"
+      }
+      return `<div class="rounded-md overflow-hidden"><table class="w-full border-separate border-spacing-0 text-xs">${header}</tbody></table></div>`
     },
   },
 })
@@ -29,7 +52,8 @@ export function MarkdownView({ source }: { source: string }) {
 export default MarkdownView
 
 function renderMarkdown(source: string) {
-  const tokens = marked.lexer(source)
+  const noOrderedLists = source.replace(/^(\s*)(\d+)\. /gm, "$1$2\\. ")
+  const tokens = marked.lexer(noOrderedLists)
   return marked.parser(splitParagraphTokens(tokens))
 }
 

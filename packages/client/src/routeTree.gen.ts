@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as MarkdownTestRouteImport } from './routes/markdown-test'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as appRouteRouteImport } from './routes/(app)/route'
@@ -46,6 +47,11 @@ const SignupRoute = SignupRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarkdownTestRoute = MarkdownTestRouteImport.update({
+  id: '/markdown-test',
+  path: '/markdown-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -158,6 +164,7 @@ const appDecksDeckIdCardsCardIdEditRoute =
 export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/markdown-test': typeof MarkdownTestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -182,6 +189,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/markdown-test': typeof MarkdownTestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/(app)': typeof appRouteRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/markdown-test': typeof MarkdownTestRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/forgot-password'
     | '/login'
+    | '/markdown-test'
     | '/reset-password'
     | '/signup'
     | '/verify-email'
@@ -255,6 +265,7 @@ export interface FileRouteTypes {
   to:
     | '/forgot-password'
     | '/login'
+    | '/markdown-test'
     | '/reset-password'
     | '/signup'
     | '/verify-email'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/(app)'
     | '/forgot-password'
     | '/login'
+    | '/markdown-test'
     | '/reset-password'
     | '/signup'
     | '/verify-email'
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   appRouteRoute: typeof appRouteRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  MarkdownTestRoute: typeof MarkdownTestRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
@@ -329,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/markdown-test': {
+      id: '/markdown-test'
+      path: '/markdown-test'
+      fullPath: '/markdown-test'
+      preLoaderRoute: typeof MarkdownTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -552,6 +572,7 @@ const rootRouteChildren: RootRouteChildren = {
   appRouteRoute: appRouteRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  MarkdownTestRoute: MarkdownTestRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   VerifyEmailRoute: VerifyEmailRoute,
