@@ -43,7 +43,7 @@ export function MarkdownView({ source }: { source: string }) {
   const html = useMemo(() => renderMarkdown(source), [source])
   return (
     <div
-      className="max-w-none [&>*+*]:mt-3 [&_li+li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
+      className="max-w-none text-[20px] [&>*+*]:mt-3 [&_li+li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   )
