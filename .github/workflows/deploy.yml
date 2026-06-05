@@ -20,4 +20,4 @@ jobs:
             git pull
             pnpm install --frozen-lockfile
             pnpm build
-            pm2 restart 3 4
+            /home/willian/.npm-global/bin/pm2 restart 3 4
