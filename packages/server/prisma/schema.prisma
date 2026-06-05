@@ -107,7 +107,7 @@ model Deck {
   cards                    Card[]
   reviewStats              ReviewStat[]
   createdAt                DateTime               @default(now())
-  sortOrder                Int                    @default(0)
+  sortOrder                Float                  @default(0)
   reviewStatUniqueCards    ReviewStatUniqueCard[]
   spreadsheetImports       SpreadsheetImport[]
 

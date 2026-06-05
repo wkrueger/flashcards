@@ -31,8 +31,15 @@ export const updateDeckInput = z.object({
   sequentialEnabled: z.boolean().optional(),
 })
 
-export const reorderDecksInput = z.object({
-  ids: z.array(z.string().min(1).max(64)).min(1),
+export const listDecksInput = z.object({
+  cursor: z.number().int().min(0).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+  q: z.string().max(100).optional(),
+})
+
+export const moveDeckInput = z.object({
+  id: z.string().min(1).max(64),
+  afterId: z.string().min(1).max(64).nullable(),
 })
 
 export const idInput = z.object({ id })

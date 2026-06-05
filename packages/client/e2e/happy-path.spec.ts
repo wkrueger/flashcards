@@ -110,6 +110,15 @@ test("signup → deck → card → review → free review → edit → logout", 
   if (!deutschLanguageId) throw new Error("Deutsch language option was not seeded")
   await studyLanguageSelect.selectOption(deutschLanguageId)
   await page.getByRole("button", { name: "Create" }).click()
+
+  // Search expands an input in the header pill.
+  await page.getByRole("button", { name: "Search decks" }).click()
+  const search = page.getByRole("textbox", { name: "Search decks" })
+  await expect(search).toBeFocused()
+  await search.fill("zzz-no-match")
+  await expect(page.getByText(/No decks match/)).toBeVisible()
+  await page.getByRole("button", { name: "Close search" }).click()
+
   await page.getByRole("button", { name: /German A1/ }).click()
   await expect(page.getByRole("checkbox", { name: /Speech recognition/ })).toBeChecked()
 

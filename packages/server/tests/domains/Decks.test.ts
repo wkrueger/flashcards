@@ -16,8 +16,8 @@ describe("decks domain", () => {
     await callerFor(a).decks.create({ name: "MyDeck" })
     await callerFor(b).decks.create({ name: "MyDeck" })
 
-    const aDecks = await callerFor(a).decks.list()
-    const bDecks = await callerFor(b).decks.list()
+    const aDecks = (await callerFor(a).decks.list({})).items
+    const bDecks = (await callerFor(b).decks.list({})).items
     expect(aDecks).toHaveLength(1)
     expect(bDecks).toHaveLength(1)
     expect(aDecks[0]!.id).not.toBe(bDecks[0]!.id)
@@ -234,7 +234,7 @@ describe("decks domain", () => {
       data: { firstSeenAt: now },
     })
 
-    const list = await trpc.decks.list()
+    const list = (await trpc.decks.list({})).items
     const seqEntry = list.find((d) => d.id === seq.id)!
     const normalEntry = list.find((d) => d.id === normal.id)!
     // Sequential: 3 subjects, 1 seen → 2 unseen "to do".
@@ -286,27 +286,108 @@ describe("decks domain", () => {
     })
   })
 
-  describe("reorder", () => {
-    it("persists order and list returns decks in new order", async () => {
-      const u = await makeUser("u")
+  describe("list pagination + search", () => {
+    it("paginates with nextCursor", async () => {
+      const u = await makeUser("pg")
       const caller = callerFor(u)
-      const a = await caller.decks.create({ name: "Alpha" })
-      const b = await caller.decks.create({ name: "Beta" })
-      const c = await caller.decks.create({ name: "Gamma" })
+      for (let i = 0; i < 5; i++) await caller.decks.create({ name: `Deck ${i}` })
 
-      await caller.decks.reorder({ ids: [c.id, a.id, b.id] })
+      const page1 = await caller.decks.list({ limit: 2 })
+      expect(page1.items).toHaveLength(2)
+      expect(page1.nextCursor).toBe(2)
 
-      const list = await caller.decks.list()
-      expect(list.map((d) => d.id)).toEqual([c.id, a.id, b.id])
+      const page2 = await caller.decks.list({ limit: 2, cursor: page1.nextCursor! })
+      expect(page2.items).toHaveLength(2)
+      expect(page2.nextCursor).toBe(4)
+
+      const page3 = await caller.decks.list({ limit: 2, cursor: page2.nextCursor! })
+      expect(page3.items).toHaveLength(1)
+      expect(page3.nextCursor).toBeNull()
     })
 
-    it("rejects IDs belonging to another user", async () => {
-      const u1 = await makeUser("u1")
-      const u2 = await makeUser("u2")
-      const deck = await callerFor(u1).decks.create({ name: "Secret" })
+    it("filters by name (case-insensitive), spanning the whole list", async () => {
+      const u = await makeUser("se")
+      const caller = callerFor(u)
+      await caller.decks.create({ name: "German A1" })
+      await caller.decks.create({ name: "German A2" })
+      await caller.decks.create({ name: "French Basics" })
 
-      await expect(callerFor(u2).decks.reorder({ ids: [deck.id] })).rejects.toMatchObject({
-        code: "BAD_REQUEST",
+      const res = await caller.decks.list({ q: "german" })
+      expect(res.items.map((d) => d.name).sort()).toEqual(["German A1", "German A2"])
+      expect(res.nextCursor).toBeNull()
+    })
+  })
+
+  describe("move", () => {
+    async function orderedNames(caller: ReturnType<typeof callerFor>) {
+      return (await caller.decks.list({ limit: 100 })).items.map((d) => d.name)
+    }
+
+    it("drops a deck after an anchor using the midpoint of real neighbors", async () => {
+      const u = await makeUser("mv")
+      const caller = callerFor(u)
+      const a = await caller.decks.create({ name: "A" })
+      await caller.decks.create({ name: "B" })
+      const c = await caller.decks.create({ name: "C" })
+      // start order: A, B, C — move C to after A → A, C, B
+      await caller.decks.move({ id: c.id, afterId: a.id })
+      expect(await orderedNames(caller)).toEqual(["A", "C", "B"])
+    })
+
+    it("dropping at the top (afterId null) puts the deck first", async () => {
+      const u = await makeUser("mvtop")
+      const caller = callerFor(u)
+      await caller.decks.create({ name: "A" })
+      await caller.decks.create({ name: "B" })
+      const c = await caller.decks.create({ name: "C" })
+      await caller.decks.move({ id: c.id, afterId: null })
+      expect(await orderedNames(caller)).toEqual(["C", "A", "B"])
+    })
+
+    it("dropping after the last deck keeps it last", async () => {
+      const u = await makeUser("mvend")
+      const caller = callerFor(u)
+      const a = await caller.decks.create({ name: "A" })
+      await caller.decks.create({ name: "B" })
+      const c = await caller.decks.create({ name: "C" })
+      // move A after C → B, C, A
+      await caller.decks.move({ id: a.id, afterId: c.id })
+      expect(await orderedNames(caller)).toEqual(["B", "C", "A"])
+    })
+
+    it("uses the real next neighbor even when it is hidden by a search filter", async () => {
+      const u = await makeUser("mvhidden")
+      const caller = callerFor(u)
+      // Order: Apple, Banana, Cherry, Date. User searches "a" (Apple, Banana, Date
+      // visible; Cherry hidden) and drops Date after Apple. Date must land between
+      // Apple and Banana (the real next), i.e. before the hidden Cherry too.
+      const apple = await caller.decks.create({ name: "Apple" })
+      await caller.decks.create({ name: "Banana" })
+      await caller.decks.create({ name: "Cherry" })
+      const date = await caller.decks.create({ name: "Date" })
+      await caller.decks.move({ id: date.id, afterId: apple.id })
+      expect(await orderedNames(caller)).toEqual(["Apple", "Date", "Banana", "Cherry"])
+    })
+
+    it("self-heals tied sortOrders before moving", async () => {
+      const u = await makeUser("mvtie")
+      const caller = callerFor(u)
+      const a = await caller.decks.create({ name: "A" })
+      await caller.decks.create({ name: "B" })
+      const c = await caller.decks.create({ name: "C" })
+      // Force a legacy all-zero tie directly in the DB.
+      await prisma.deck.updateMany({ where: { userId: u }, data: { sortOrder: 0 } })
+      // Move C after A; tie-heal first (A=0,B=1,C=2 by createdAt), then C→1.5 → A,C,B
+      await caller.decks.move({ id: c.id, afterId: a.id })
+      expect(await orderedNames(caller)).toEqual(["A", "C", "B"])
+    })
+
+    it("rejects moving another user's deck", async () => {
+      const u1 = await makeUser("o1")
+      const u2 = await makeUser("o2")
+      const deck = await callerFor(u1).decks.create({ name: "Mine" })
+      await expect(callerFor(u2).decks.move({ id: deck.id, afterId: null })).rejects.toMatchObject({
+        code: "NOT_FOUND",
       })
     })
   })

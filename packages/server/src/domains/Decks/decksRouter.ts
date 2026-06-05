@@ -1,5 +1,11 @@
 import { TRPCError } from "@trpc/server"
-import { createDeckInput, idInput, reorderDecksInput, updateDeckInput } from "@cards/shared"
+import {
+  createDeckInput,
+  idInput,
+  listDecksInput,
+  moveDeckInput,
+  updateDeckInput,
+} from "@cards/shared"
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc.js"
 import { protectedProcedure, router } from "../../infra/trpc.js"
@@ -29,40 +35,46 @@ async function assertLanguagesExist(
 }
 
 export const decksRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: protectedProcedure.input(listDecksInput).query(async ({ ctx, input }) => {
     const now = new Date()
-    const decks = await ctx.prisma.deck.findMany({
-      where: { userId: ctx.user.id },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    const limit = input.limit ?? 30
+    const offset = input.cursor ?? 0
+    const q = input.q?.trim()
+    const where = {
+      userId: ctx.user.id,
+      ...(q ? { name: { contains: q } } : {}),
+    }
+    const rows = await ctx.prisma.deck.findMany({
+      where,
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      skip: offset,
+      take: limit + 1,
     })
+    const hasMore = rows.length > limit
+    const page = hasMore ? rows.slice(0, limit) : rows
     const dueCounts = await Promise.all(
-      decks.map((d) =>
+      page.map((d) =>
         // Sequential decks progress through unseen subjects in order, so the
         // "to do" count is the number of subjects not yet seen rather than the
         // number whose cooldown has elapsed.
         d.sequentialEnabled
           ? ctx.prisma.subject.count({
-              where: {
-                userId: ctx.user.id,
-                deckId: d.id,
-                firstSeenAt: null,
-              },
+              where: { userId: ctx.user.id, deckId: d.id, firstSeenAt: null },
             })
           : ctx.prisma.subject.count({
-              where: {
-                userId: ctx.user.id,
-                deckId: d.id,
-                cooldownAt: { lte: now },
-              },
+              where: { userId: ctx.user.id, deckId: d.id, cooldownAt: { lte: now } },
             })
       )
     )
-    return decks.map((d, i) => ({
-      id: d.id,
-      name: d.name,
-      createdAt: d.createdAt,
-      dueCount: dueCounts[i] ?? 0,
-    }))
+    return {
+      items: page.map((d, i) => ({
+        id: d.id,
+        name: d.name,
+        createdAt: d.createdAt,
+        dueCount: dueCounts[i] ?? 0,
+      })),
+      nextCursor: hasMore ? offset + limit : null,
+    }
   }),
 
   get: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
@@ -275,17 +287,48 @@ export const decksRouter = router({
     })
   }),
 
-  reorder: protectedProcedure.input(reorderDecksInput).mutation(async ({ ctx, input }) => {
-    const owned = await ctx.prisma.deck.findMany({
-      where: { id: { in: input.ids }, userId: ctx.user.id },
+  move: protectedProcedure.input(moveDeckInput).mutation(async ({ ctx, input }) => {
+    const moved = await ctx.prisma.deck.findFirst({
+      where: { id: input.id, userId: ctx.user.id },
       select: { id: true },
     })
-    if (owned.length !== input.ids.length) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid deck IDs." })
+    if (!moved) throw new TRPCError({ code: "NOT_FOUND" })
+
+    // Load all of the user's decks in canonical order (unfiltered, so the "real"
+    // next neighbor is found even when the client is showing a search subset).
+    const all = await ctx.prisma.deck.findMany({
+      where: { userId: ctx.user.id },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      select: { id: true, sortOrder: true },
+    })
+
+    // Tie self-heal: if any two decks share a sortOrder, renormalize ALL of the
+    // user's decks to 0,1,2,... in one transaction before computing the move.
+    const tied = new Set(all.map((d) => d.sortOrder)).size !== all.length
+    if (tied) {
+      await ctx.prisma.$transaction(
+        all.map((d, i) => ctx.prisma.deck.update({ where: { id: d.id }, data: { sortOrder: i } }))
+      )
+      all.forEach((d, i) => (d.sortOrder = i))
     }
-    await ctx.prisma.$transaction(
-      input.ids.map((id, i) => ctx.prisma.deck.update({ where: { id }, data: { sortOrder: i } }))
-    )
+
+    let anchorOrder: number | null = null
+    if (input.afterId) {
+      const anchor = all.find((d) => d.id === input.afterId)
+      if (!anchor) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid anchor." })
+      anchorOrder = anchor.sortOrder
+    }
+
+    let newOrder: number
+    if (anchorOrder === null) {
+      const first = all.find((d) => d.id !== input.id)
+      newOrder = first ? first.sortOrder - 1 : 0
+    } else {
+      const next = all.find((d) => d.sortOrder > anchorOrder! && d.id !== input.id)
+      newOrder = next ? (anchorOrder + next.sortOrder) / 2 : anchorOrder + 1
+    }
+
+    await ctx.prisma.deck.update({ where: { id: input.id }, data: { sortOrder: newOrder } })
     return { ok: true }
   }),
 

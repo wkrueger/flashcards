@@ -18,7 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { FileDown, FileText, FileUp, Plus } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { MenuItem, PageHeader } from "../../components/AppShell"
 import { LightbulbIllustration } from "../../components/LightbulbIllustration"
 import { trpc } from "../../infra/trpc"
@@ -27,6 +27,7 @@ import { Card, CardContent } from "../../ui/Card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../ui/Dialog"
 import { Input } from "../../ui/Input"
 import { Label } from "../../ui/Label"
+import { DeckSearch } from "./DeckSearch"
 import { LanguageSelect } from "./LanguageSelect"
 
 type DeckItem = { id: string; name: string; dueCount: number }
@@ -74,9 +75,19 @@ function SortableDeckItem({ deck }: { deck: DeckItem }) {
 export function DeckListPage() {
   const utils = trpc.useUtils()
   const navigate = useNavigate()
-  const decksQuery = trpc.decks.list.useQuery()
-  const reorder = trpc.decks.reorder.useMutation({
-    onError: () => utils.decks.list.invalidate(),
+  const [rawQuery, setRawQuery] = useState("")
+  const [query, setQuery] = useState("")
+  useEffect(() => {
+    const id = setTimeout(() => setQuery(rawQuery.trim()), 250)
+    return () => clearTimeout(id)
+  }, [rawQuery])
+
+  const decksQuery = trpc.decks.list.useInfiniteQuery(
+    { q: query || undefined, limit: 30 },
+    { getNextPageParam: (last) => last.nextCursor }
+  )
+  const move = trpc.decks.move.useMutation({
+    onSettled: () => utils.decks.list.invalidate(),
   })
   const create = trpc.decks.create.useMutation({
     onSuccess: () => {
@@ -95,15 +106,32 @@ export function DeckListPage() {
   const [open, setOpen] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
 
+  const flatItems = useMemo<DeckItem[]>(
+    () => decksQuery.data?.pages.flatMap((p) => p.items) ?? [],
+    [decksQuery.data]
+  )
   useEffect(() => {
-    if (decksQuery.data) setItems(decksQuery.data)
-  }, [decksQuery.data])
+    setItems(flatItems)
+  }, [flatItems])
 
   useEffect(() => {
     if (!decksQuery.isLoading) return
     const id = setTimeout(() => setShowLoader(true), 1500)
     return () => clearTimeout(id)
   }, [decksQuery.isLoading])
+
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el) return
+    const obs = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && decksQuery.hasNextPage && !decksQuery.isFetchingNextPage) {
+        decksQuery.fetchNextPage()
+      }
+    })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [decksQuery.hasNextPage, decksQuery.isFetchingNextPage, decksQuery.fetchNextPage])
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -134,7 +162,9 @@ export function DeckListPage() {
       const oldIndex = prev.findIndex((d) => d.id === active.id)
       const newIndex = prev.findIndex((d) => d.id === over.id)
       const next = arrayMove(prev, oldIndex, newIndex)
-      reorder.mutate({ ids: next.map((d) => d.id) })
+      const movedIndex = next.findIndex((d) => d.id === active.id)
+      const afterId = movedIndex > 0 ? next[movedIndex - 1]!.id : null
+      move.mutate({ id: String(active.id), afterId })
       return next
     })
   }
@@ -145,6 +175,7 @@ export function DeckListPage() {
         title="Your decks"
         actions={
           <>
+            <DeckSearch value={rawQuery} onChange={setRawQuery} />
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1 px-3">
@@ -273,9 +304,11 @@ export function DeckListPage() {
         </DndContext>
       ) : (
         <p className="animate-reveal text-sm text-muted-foreground">
-          No decks yet — create your first one.
+          {query ? `No decks match “${query}”.` : "No decks yet — create your first one."}
         </p>
       )}
+
+      <div ref={sentinelRef} aria-hidden className="h-1" />
 
       <Card
         className="relative mt-auto overflow-hidden"
