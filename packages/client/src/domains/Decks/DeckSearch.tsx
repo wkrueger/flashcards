@@ -32,7 +32,7 @@ export function DeckSearch({ value, onChange }: { value: string; onChange: (v: s
         onKeyDown={(e) => e.key === "Escape" && close()}
         placeholder="Search decks"
         aria-label="Search decks"
-        className={`h-7 rounded-full bg-transparent text-xs outline-none transition-all duration-200 ${
+        className={`h-7 rounded-full bg-transparent text-xs text-foreground outline-none transition-all duration-200 placeholder:text-muted-foreground ${
           open ? "w-32 px-2 opacity-100" : "w-0 px-0 opacity-0"
         }`}
         tabIndex={open ? 0 : -1}
