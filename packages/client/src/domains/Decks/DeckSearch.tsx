@@ -17,6 +17,14 @@ export function DeckSearch({ value, onChange }: { value: string; onChange: (v: s
 
   return (
     <div className="flex items-center">
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={open ? "Close search" : "Search decks"}
+        onClick={() => (open ? close() : setOpen(true))}
+      >
+        {open ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+      </Button>
       <input
         ref={inputRef}
         value={value}
@@ -29,15 +37,6 @@ export function DeckSearch({ value, onChange }: { value: string; onChange: (v: s
         }`}
         tabIndex={open ? 0 : -1}
       />
-      <Button
-        variant="ghost"
-        size="sm"
-        className="gap-1 px-2"
-        aria-label={open ? "Close search" : "Search decks"}
-        onClick={() => (open ? close() : setOpen(true))}
-      >
-        {open ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
-      </Button>
     </div>
   )
 }
