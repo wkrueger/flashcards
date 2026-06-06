@@ -25,10 +25,7 @@ import { Button, buttonVariants } from "../../ui/Button"
 import { Card, CardContent } from "../../ui/Card"
 import { MarkdownView } from "../../components/MarkdownView"
 import { cn } from "../../Lib/Utils"
-import {
-  displayFrontWithGeneratedTagPrefix,
-  displayWithGeneratedTagPrefix,
-} from "../Cards/CardFrontPrefix"
+import { generatedTagPrefix } from "../Cards/CardFrontPrefix"
 import { SpeechRecognitionCard, type SpeechRecognitionCardHandle } from "./SpeechRecognitionCard"
 import { ReviewSequentialPage } from "./ReviewSequentialPage"
 
@@ -217,9 +214,8 @@ export function ReviewPage({
       Number.isFinite(firstSeenAtMs) &&
       Date.now() - firstSeenAtMs < NEW_SUBJECT_EMOJI_WINDOW_MS)
   const promptTags = showNewSubjectEmoji ? [...card.tags, "review:never-seen"] : card.tags
-  const promptSource = inverse
-    ? displayWithGeneratedTagPrefix(card.back, promptTags)
-    : displayFrontWithGeneratedTagPrefix(card.front, promptTags)
+  const promptPrefix = generatedTagPrefix(promptTags)
+  const promptSource = inverse ? card.back : card.front
   const revealedSource = inverse ? card.front : card.back
   const speechRecognitionLocale = deck.data?.speechRecognitionLocale ?? null
   const hasSpeechRecognitionLocale =
@@ -276,7 +272,7 @@ export function ReviewPage({
       <div key={card.id} className="contents [&>*]:animate-card-in">
         <Card>
           <CardContent className="min-h-[8rem] p-4">
-            <MarkdownView source={promptSource} />
+            <MarkdownView source={promptSource} prefix={promptPrefix} />
           </CardContent>
         </Card>
       </div>

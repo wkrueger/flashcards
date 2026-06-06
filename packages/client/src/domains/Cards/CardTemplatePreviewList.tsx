@@ -4,7 +4,7 @@ import { MarkdownView } from "../../components/MarkdownView"
 import { Button } from "../../ui/Button"
 import { Card, CardContent } from "../../ui/Card"
 import { cn } from "../../Lib/Utils"
-import { displayFrontWithGeneratedTagPrefix } from "./CardFrontPrefix"
+import { generatedTagPrefix } from "./CardFrontPrefix"
 
 function AutoGrowTextarea({
   value,
@@ -135,9 +135,7 @@ function CardTemplatePreviewCard({
                   className="block w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={startEditing}
                 >
-                  <MarkdownView
-                    source={displayFrontWithGeneratedTagPrefix(card.front, card.tags)}
-                  />
+                  <MarkdownView source={card.front} prefix={generatedTagPrefix(card.tags)} />
                 </button>
               )}
             </div>

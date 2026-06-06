@@ -10,7 +10,7 @@ import { Input } from "../../ui/Input"
 import { Label } from "../../ui/Label"
 import { MarkdownView } from "../../components/MarkdownView"
 import { MenuItem, PageHeader } from "../../components/AppShell"
-import { displayFrontWithGeneratedTagPrefix } from "../Cards/CardFrontPrefix"
+import { generatedTagPrefix } from "../Cards/CardFrontPrefix"
 
 const TEMPLATE = "createPhrasesForWords"
 
@@ -384,9 +384,7 @@ function SubjectCardItem({
                   className="block w-full rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   onClick={startEditing}
                 >
-                  <MarkdownView
-                    source={displayFrontWithGeneratedTagPrefix(card.front, card.tags)}
-                  />
+                  <MarkdownView source={card.front} prefix={generatedTagPrefix(card.tags)} />
                 </button>
               )}
             </div>

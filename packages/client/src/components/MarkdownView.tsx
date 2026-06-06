@@ -39,8 +39,8 @@ marked.use({
   },
 })
 
-export function MarkdownView({ source }: { source: string }) {
-  const html = useMemo(() => renderMarkdown(source), [source])
+export function MarkdownView({ source, prefix }: { source: string; prefix?: string }) {
+  const html = useMemo(() => renderMarkdown(source, prefix), [source, prefix])
   return (
     <div
       className="max-w-none text-[20px] [&>*+*]:mt-3 [&_li+li]:mt-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
@@ -51,10 +51,34 @@ export function MarkdownView({ source }: { source: string }) {
 
 export default MarkdownView
 
-function renderMarkdown(source: string) {
+function renderMarkdown(source: string, prefix?: string) {
   const noOrderedLists = source.replace(/^(\s*)(\d+)\. /gm, "$1$2\\. ")
   const tokens = marked.lexer(noOrderedLists)
+  if (prefix) {
+    prependInlinePrefix(tokens, prefix)
+  }
   return marked.parser(splitParagraphTokens(tokens))
+}
+
+// Inject the emoji prefix into the first block's inline tokens so it renders
+// inline with the leading content without disturbing block-level syntax (a
+// `## heading` stays a heading instead of becoming literal text).
+function prependInlinePrefix(tokens: TokensList | Token[], prefix: string) {
+  const first = tokens[0] as (Token & { tokens?: Token[]; text?: string }) | undefined
+  if (first && Array.isArray(first.tokens)) {
+    first.tokens.unshift({ type: "text", raw: prefix, text: prefix } as Tokens.Text)
+    first.raw = `${prefix}${first.raw}`
+    if (typeof first.text === "string") {
+      first.text = `${prefix}${first.text}`
+    }
+    return
+  }
+  tokens.unshift({
+    type: "paragraph",
+    raw: prefix,
+    text: prefix,
+    tokens: Lexer.lexInline(prefix),
+  } as Tokens.Paragraph)
 }
 
 function splitParagraphTokens(tokens: TokensList | Token[]): TokensList | Token[] {

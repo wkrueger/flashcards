@@ -4,14 +4,12 @@ const GENERATED_FRONT_PREFIX: Record<string, string> = {
   "review:never-seen": "🌱 ",
 }
 
-export function displayWithGeneratedTagPrefix(text: string, tags: readonly string[]) {
-  const prefix = Object.entries(GENERATED_FRONT_PREFIX)
+// Emoji prefix for the given tags, rendered as a separate element rather than
+// concatenated into the markdown source (which would break leading block
+// syntax such as `## heading`).
+export function generatedTagPrefix(tags: readonly string[]): string {
+  return Object.entries(GENERATED_FRONT_PREFIX)
     .filter(([tag]) => tags.includes(tag))
     .map(([, emoji]) => emoji)
     .join("")
-  return prefix ? `${prefix}${text}` : text
-}
-
-export function displayFrontWithGeneratedTagPrefix(front: string, tags: readonly string[]) {
-  return displayWithGeneratedTagPrefix(front, tags)
 }

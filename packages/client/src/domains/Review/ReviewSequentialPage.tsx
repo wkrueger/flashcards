@@ -15,7 +15,7 @@ import { Card, CardContent } from "../../ui/Card"
 import { MarkdownView } from "../../components/MarkdownView"
 import { cn } from "../../Lib/Utils"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../../ui/Dialog"
-import { displayFrontWithGeneratedTagPrefix } from "../Cards/CardFrontPrefix"
+import { generatedTagPrefix } from "../Cards/CardFrontPrefix"
 
 const LEVEL_COLOR: Record<FixationLevel, string> = {
   "1": "bg-red-500 hover:bg-red-600 text-white",
@@ -162,7 +162,8 @@ export function ReviewSequentialPage() {
     ? (card.subject.fixationLevel as FixationLevel)
     : "1"
   const options = buttonsForPrevious(prev)
-  const promptSource = displayFrontWithGeneratedTagPrefix(card.front, card.tags)
+  const promptSource = card.front
+  const promptPrefix = generatedTagPrefix(card.tags)
   // Only gate on navigation. Mutations run in the background; gating on their
   // isPending would re-block consecutive fast advances.
   const pending = navigating
@@ -212,7 +213,7 @@ export function ReviewSequentialPage() {
       <div key={card.id} className="contents [&>*]:animate-card-in">
         <Card>
           <CardContent className="min-h-[8rem] p-4">
-            <MarkdownView source={promptSource} />
+            <MarkdownView source={promptSource} prefix={promptPrefix} />
           </CardContent>
         </Card>
       </div>
