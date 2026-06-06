@@ -25,6 +25,7 @@ import {
   enqueueDeckSpreadsheetImportJob,
   inspectPendingImport,
 } from "./domains/DeckSpreadsheet/deckSpreadsheetService/index.js"
+import { extractSpreadsheetArchive } from "./domains/DeckSpreadsheet/deckSpreadsheetService/archive.js"
 import {
   DECK_SPREADSHEET_UPLOAD_DIR,
   DECK_SPREADSHEET_UPLOAD_MAX_BYTES,
@@ -38,6 +39,12 @@ const spreadsheetUploadMimeTypes = new Set([
   "application/octet-stream",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/zip",
+])
+const zipUploadMimeTypes = new Set([
+  "application/octet-stream",
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/x-zip",
 ])
 
 type HttpError = Error & {
@@ -331,9 +338,81 @@ export async function buildServer() {
     },
   })
 
+  app.route({
+    method: "POST",
+    url: "/api/decks/spreadsheet/import-archive",
+    bodyLimit: DECK_SPREADSHEET_UPLOAD_MAX_BYTES,
+    async handler(req, reply) {
+      const session = await getSessionFromRawHeaders(req.headers)
+      if (!session?.user) {
+        reply.status(401).send({ message: "Unauthorized." })
+        return
+      }
+
+      let archivePath: string | null = null
+
+      try {
+        const part = await req.file()
+        if (!part) throw createHttpError(400, "No file was uploaded.")
+        const normalizedMime = (part.mimetype ?? "").toLowerCase()
+        if (
+          !part.filename ||
+          extname(part.filename).toLowerCase() !== ".zip" ||
+          (normalizedMime && !zipUploadMimeTypes.has(normalizedMime))
+        ) {
+          part.file.resume()
+          throw createHttpError(400, "Only .zip archives are supported here.")
+        }
+
+        archivePath = await writeArchiveUploadToStorage(part.file)
+        if (part.file.truncated) {
+          throw createHttpError(413, "The uploaded file exceeds the 20MB limit.")
+        }
+
+        const result = await extractSpreadsheetArchive(prisma, {
+          userId: session.user.id,
+          archivePath,
+        })
+
+        reply.status(201).send(result)
+      } catch (error) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "FST_REQ_FILE_TOO_LARGE"
+        ) {
+          throw createHttpError(413, "The uploaded file exceeds the 20MB limit.")
+        }
+
+        if (error instanceof DeckSpreadsheetError) {
+          throw createHttpError(error.code === "NOT_FOUND" ? 404 : 400, error.message)
+        }
+
+        throw error
+      } finally {
+        await deleteFileIfExists(archivePath)
+      }
+    },
+  })
+
   app.get("/health", async () => ({ ok: true }))
 
   return app
+}
+
+async function writeArchiveUploadToStorage(fileStream: NodeJS.ReadableStream) {
+  const uploadDir = resolve(process.cwd(), DECK_SPREADSHEET_UPLOAD_DIR)
+  await mkdir(uploadDir, { recursive: true })
+
+  const storagePath = join(uploadDir, `${Date.now()}-${randomUUID()}.zip`)
+  try {
+    await pipeline(fileStream, createWriteStream(storagePath))
+    return storagePath
+  } catch (error) {
+    await deleteFileIfExists(storagePath)
+    throw error
+  }
 }
 
 function createHttpError(statusCode: number, message: string): HttpError {

@@ -37,20 +37,37 @@ export function DeckSpreadsheetImportPage() {
     setPending(true)
     setError(null)
 
+    const isZip = file.name.toLowerCase().endsWith(".zip")
+
     try {
       const formData = new FormData()
       formData.set("file", file)
 
-      const response = await fetch(`/api/decks/${deckId}/spreadsheet/import`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      })
+      const response = await fetch(
+        isZip ? "/api/decks/spreadsheet/import-archive" : `/api/decks/${deckId}/spreadsheet/import`,
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        }
+      )
 
       const payload = (await response.json().catch(() => null)) as {
         importId?: string
+        batchId?: string
         message?: string
       } | null
+
+      if (isZip) {
+        if (!response.ok || !payload?.batchId) {
+          throw new Error(payload?.message ?? "Could not read the zip archive.")
+        }
+        navigate({
+          to: "/imports/spreadsheet-batch",
+          search: { batchId: payload.batchId, deckId },
+        })
+        return
+      }
 
       if (!response.ok || !payload?.importId) {
         throw new Error(payload?.message ?? "Could not upload the spreadsheet.")
@@ -77,7 +94,7 @@ export function DeckSpreadsheetImportPage() {
           ref={inputRef}
           id="spreadsheet-file"
           type="file"
-          accept=".xlsx"
+          accept=".xlsx,.zip"
           className="sr-only"
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
           disabled={pending || !!importId}
@@ -93,7 +110,7 @@ export function DeckSpreadsheetImportPage() {
             {file ? "Choose a different file" : "Tap to choose a file"}
           </span>
           <span className="text-xs">
-            Single <code>.xlsx</code> file, up to 20MB.
+            A single <code>.xlsx</code> file, or a <code>.zip</code> of several. Up to 20MB.
           </span>
         </button>
       </div>

@@ -13,6 +13,10 @@ import {
   handleDeckSpreadsheetImportWorkerJobError,
   runDeckSpreadsheetImportJob,
 } from "../domains/DeckSpreadsheet/deckSpreadsheetService/index.js"
+import {
+  handleDeckSpreadsheetImportBatchWorkerJobError,
+  runDeckSpreadsheetImportBatchJob,
+} from "../domains/DeckSpreadsheet/deckSpreadsheetService/batch.js"
 
 const WORKER_POLL_INTERVAL_MS = 1_000
 
@@ -52,6 +56,14 @@ const workerJobHandlers: Record<WorkerJobType, WorkerJobHandler> = {
     },
     async onError(prisma, job, message) {
       await handleDeckSpreadsheetImportWorkerJobError(prisma, job.id, message)
+    },
+  },
+  [WorkerJobType.RUN_DECK_SPREADSHEET_IMPORT_BATCH]: {
+    async run(prisma, job) {
+      await runDeckSpreadsheetImportBatchJob(prisma, job.id)
+    },
+    async onError(prisma, job, message) {
+      await handleDeckSpreadsheetImportBatchWorkerJobError(prisma, job.id, message)
     },
   },
 }
