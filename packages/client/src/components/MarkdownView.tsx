@@ -5,6 +5,10 @@ marked.use({
   gfm: true,
   breaks: false,
   renderer: {
+    heading({ tokens, depth }) {
+      const text = this.parser.parseInline(tokens)
+      return `<h${depth} class="italic text-muted-foreground">${text}</h${depth}>`
+    },
     paragraph({ tokens }) {
       const text = this.parser.parseInline(tokens)
       return `<p class="leading-relaxed">${text}</p>`
