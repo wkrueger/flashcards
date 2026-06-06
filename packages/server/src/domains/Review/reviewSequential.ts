@@ -44,9 +44,10 @@ export async function sequentialCard(args: {
   userId: string
   deckId: string
   cardId?: string
+  subjectId?: string
   move: SequentialMove
 }): Promise<SequentialResult> {
-  const { prisma, userId, deckId, cardId, move } = args
+  const { prisma, userId, deckId, cardId, subjectId, move } = args
   const deck = await prisma.deck.findFirst({ where: { id: deckId, userId }, select: { id: true } })
   if (!deck) throw Object.assign(new Error("Deck not found"), { code: "DECK_NOT_FOUND" })
 
@@ -57,6 +58,10 @@ export async function sequentialCard(args: {
     targetId = await resumeCardId(prisma, userId, deckId)
   } else if (move === "current") {
     targetId = cardId ?? (await firstCardId(prisma, userId, deckId))
+  } else if (move === "subjectStart") {
+    targetId = subjectId
+      ? await firstCardOfOwnedSubject(prisma, userId, deckId, subjectId)
+      : await firstCardId(prisma, userId, deckId)
   } else if (move === "subjectFirst") {
     targetId = cardId
       ? await subjectFirstCardId(prisma, userId, deckId, cardId)
@@ -269,6 +274,20 @@ async function subjectFirstCardId(
   })
   if (!current) return null
   return edgeCardOfSubject(prisma, current.subjectId, "first")
+}
+
+async function firstCardOfOwnedSubject(
+  prisma: PrismaClient,
+  userId: string,
+  deckId: string,
+  subjectId: string
+) {
+  const subject = await prisma.subject.findFirst({
+    where: { id: subjectId, userId, deckId },
+    select: { id: true },
+  })
+  if (!subject) return null
+  return edgeCardOfSubject(prisma, subject.id, "first")
 }
 
 async function firstCardId(prisma: PrismaClient, userId: string, deckId: string) {

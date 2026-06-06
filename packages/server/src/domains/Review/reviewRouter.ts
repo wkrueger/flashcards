@@ -60,6 +60,7 @@ export const reviewRouter = router({
         userId: ctx.user.id,
         deckId: input.deckId,
         cardId: input.cardId,
+        subjectId: input.subjectId,
         move: input.move,
       })
     } catch (err) {

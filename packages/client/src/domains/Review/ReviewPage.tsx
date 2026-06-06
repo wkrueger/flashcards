@@ -154,8 +154,10 @@ export function ReviewPage({
     initialConsumed,
   ])
 
-  if (deck.data?.sequentialEnabled && !initialSubjectId && !initialCardId && mode === "normal") {
-    return <ReviewSequentialPage />
+  if (deck.data?.sequentialEnabled && mode === "normal") {
+    return (
+      <ReviewSequentialPage initialCardId={initialCardId} initialSubjectId={initialSubjectId} />
+    )
   }
 
   if (next.isLoading || (next.isFetching && !hasFreshCardForScope)) return <p></p>

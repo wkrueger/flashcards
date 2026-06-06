@@ -156,6 +156,48 @@ describe("review.sequential", () => {
     expect(res.card?.id).toBe(a1.id)
   })
 
+  it("subjectStart returns the first card of the given subject", async () => {
+    const userId = await makeUser()
+    const { deck, sB, b1 } = await seed(userId)
+    const res = await callerFor(userId).review.sequential({
+      deckId: deck.id,
+      subjectId: sB.id,
+      move: "subjectStart",
+    })
+    expect(res.card?.id).toBe(b1.id)
+  })
+
+  it("subjectStart falls back to the first card when subjectId is omitted", async () => {
+    const userId = await makeUser()
+    const { deck, a1 } = await seed(userId)
+    const res = await callerFor(userId).review.sequential({ deckId: deck.id, move: "subjectStart" })
+    expect(res.card?.id).toBe(a1.id)
+  })
+
+  it("subjectStart ignores a subject that belongs to another deck", async () => {
+    const userId = await makeUser()
+    const { deck } = await seed(userId)
+    const otherDeck = await prisma.deck.create({
+      data: { name: "Other", userId, sequentialEnabled: true },
+    })
+    const foreignSubject = await prisma.subject.create({
+      data: {
+        deckId: otherDeck.id,
+        userId,
+        subject: "X",
+        subjectKey: subjectKeyFor("X"),
+        randomKey: 3,
+        order: 1,
+      },
+    })
+    const res = await callerFor(userId).review.sequential({
+      deckId: deck.id,
+      subjectId: foreignSubject.id,
+      move: "subjectStart",
+    })
+    expect(res.card).toBeNull()
+  })
+
   it("subjectFirst returns to the first card of the current card's subject", async () => {
     const userId = await makeUser()
     const { deck, a1, a2 } = await seed(userId)

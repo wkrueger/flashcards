@@ -133,12 +133,14 @@ export const sequentialMoveSchema = z.enum([
   "first",
   "current",
   "subjectFirst",
+  "subjectStart",
 ])
 export type SequentialMove = z.infer<typeof sequentialMoveSchema>
 
 export const reviewSequentialInput = z.object({
   deckId: id,
   cardId: id.optional(),
+  subjectId: id.optional(),
   move: sequentialMoveSchema,
 })
 

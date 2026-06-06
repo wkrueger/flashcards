@@ -26,7 +26,13 @@ const LEVEL_COLOR: Record<FixationLevel, string> = {
   "6": "bg-emerald-700 hover:bg-emerald-800 text-white",
 }
 
-export function ReviewSequentialPage() {
+export function ReviewSequentialPage({
+  initialCardId,
+  initialSubjectId,
+}: {
+  initialCardId?: string
+  initialSubjectId?: string
+} = {}) {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
   const navigate = useNavigate()
   const utils = trpc.useUtils()
@@ -48,7 +54,11 @@ export function ReviewSequentialPage() {
   // displayed result. This keeps a single source of truth (no query-key churn)
   // so "first" always lands on the first card and prev/next traverse subjects.
   const go = useCallback(
-    async (move: "resume" | "next" | "prev" | "first" | "subjectFirst", cardId?: string) => {
+    async (
+      move: "resume" | "next" | "prev" | "first" | "subjectFirst" | "current" | "subjectStart",
+      cardId?: string,
+      subjectId?: string
+    ) => {
       setNavigating(true)
       try {
         const pf = prefetchedNext.current
@@ -58,7 +68,10 @@ export function ReviewSequentialPage() {
           res = await pf.promise
         }
         if (!res) {
-          res = await utils.review.sequential.fetch({ deckId, cardId, move }, { staleTime: 0 })
+          res = await utils.review.sequential.fetch(
+            { deckId, cardId, subjectId, move },
+            { staleTime: 0 }
+          )
         }
         setResult(res)
         setRevealed(false)
@@ -83,8 +96,10 @@ export function ReviewSequentialPage() {
   )
 
   useEffect(() => {
-    go("resume")
-  }, [go])
+    if (initialCardId) go("current", initialCardId)
+    else if (initialSubjectId) go("subjectStart", undefined, initialSubjectId)
+    else go("resume")
+  }, [go, initialCardId, initialSubjectId])
 
   const card = result?.card ?? null
 
