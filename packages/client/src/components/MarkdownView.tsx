@@ -38,7 +38,7 @@ marked.use({
         })
         header += "</tr>"
       }
-      return `<div class="rounded-md overflow-hidden"><table class="w-full border-separate border-spacing-0 text-xs">${header}</tbody></table></div>`
+      return `<div class="rounded-md overflow-x-auto"><table class="w-max min-w-full border-separate border-spacing-0 text-xs">${header}</tbody></table></div>`
     },
   },
 })
