@@ -1,14 +1,17 @@
 import { useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { ArrowLeft, Moon, Sun, LogOut, MoreVertical } from "lucide-react"
+import { ArrowLeft, Moon, Sun, LogOut, MoreVertical, WifiOff } from "lucide-react"
 import { useTheme } from "../infra/theme"
 import { Button } from "../ui/Button"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog"
 import { invalidateSessionCache, signOut, useSession } from "../infra/authClient"
 import { cn } from "../Lib/Utils"
+import { useOnline } from "../domains/Offline/useOnline"
+import { useOfflineSync } from "../domains/Offline/sync"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  useOfflineSync()
   return (
     <div className="min-h-dvh w-full">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x sm:pt-[var(--app-shell-top-offset)]">
@@ -22,12 +25,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 export function PageHeader({
   title,
+  titleAdornment,
   subtitle,
   onBack,
   actions,
   menuItems,
 }: {
   title?: string
+  titleAdornment?: React.ReactNode
   subtitle?: string
   onBack?: () => void
   actions?: React.ReactNode
@@ -85,6 +90,9 @@ export function PageHeader({
           style={{ viewTransitionName: "page-title" }}
         >
           {title}
+          {titleAdornment && (
+            <span className="ml-1.5 inline-flex align-middle">{titleAdornment}</span>
+          )}
         </h1>
       ) : !stacked && subtitle ? (
         <span className="flex-1 text-xs uppercase text-muted-foreground">{subtitle}</span>
@@ -123,6 +131,9 @@ export function PageHeader({
             style={{ viewTransitionName: "page-title" }}
           >
             {title}
+            {titleAdornment && (
+              <span className="ml-1.5 inline-flex align-middle">{titleAdornment}</span>
+            )}
           </h1>
         </div>
       )}
@@ -145,12 +156,14 @@ export function MenuItem({
   destructive,
   onSelect,
   testId,
+  className,
 }: {
   icon?: React.ReactNode
   children: React.ReactNode
   destructive?: boolean
   onSelect?: () => void
   testId?: string
+  className?: string
 }) {
   return (
     <button
@@ -159,7 +172,8 @@ export function MenuItem({
         "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors",
         destructive
           ? "text-destructive hover:bg-destructive/10 active:bg-destructive/15"
-          : "hover:bg-accent/70 active:bg-accent"
+          : "hover:bg-accent/70 active:bg-accent",
+        className
       )}
       onClick={onSelect}
     >
@@ -176,11 +190,22 @@ function MenuDivider() {
 function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
   const { theme, toggle } = useTheme()
   const { data: session } = useSession()
+  const online = useOnline()
   const [menuOpen, setMenuOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   return (
     <>
+      {!online && (
+        <span
+          data-testid="offline-indicator"
+          aria-label="Offline"
+          title="Offline"
+          className="flex items-center px-1 text-amber-600 dark:text-amber-400"
+        >
+          <WifiOff className="h-4 w-4" />
+        </span>
+      )}
       <Popover open={menuOpen} onOpenChange={setMenuOpen}>
         <PopoverTrigger asChild>
           <Button

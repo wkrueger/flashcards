@@ -5,6 +5,7 @@ import { cardsRouter } from "./Cards/cardsRouter.js"
 import { deckSpreadsheetRouter } from "./DeckSpreadsheet/deckSpreadsheetRouter.js"
 import { decksRouter } from "./Decks/decksRouter.js"
 import { languagesRouter } from "./Languages/languagesRouter.js"
+import { offlineRouter } from "./Offline/offlineRouter.js"
 import { reviewRouter } from "./Review/reviewRouter.js"
 import { subjectsRouter } from "./Subjects/subjectsRouter.js"
 
@@ -17,6 +18,7 @@ export const appRouter = router({
   subjects: subjectsRouter,
   cards: cardsRouter,
   review: reviewRouter,
+  offline: offlineRouter,
 })
 
 export type AppRouter = typeof appRouter

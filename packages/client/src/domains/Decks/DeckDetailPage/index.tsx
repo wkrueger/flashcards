@@ -4,15 +4,19 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  CloudDownload,
   Download,
   LoaderCircle,
   Pencil,
   Plus,
+  RefreshCw,
   Sparkles,
   Trash2,
   Upload,
+  WifiOff,
 } from "lucide-react"
 import { handleTRPCError, trpc } from "../../../infra/trpc"
+import { useOfflineDeck } from "../../Offline/useOfflineDeck"
 import { Button, buttonVariants } from "../../../ui/Button"
 import { cn } from "../../../Lib/Utils"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../../../ui/Dialog"
@@ -41,6 +45,7 @@ export function DeckDetailPage() {
   const subjects = isSequential ? orderedSubjects.data : randomSubjects.data
   const reviewStats = trpc.decks.reviewStats.useQuery({ id: deckId })
   const dueCount = deck.data ? deck.data.wordCount - deck.data.cooldownCount : 0
+  const offline = useOfflineDeck(deckId)
 
   const deleteDeck = trpc.decks.delete.useMutation({
     onSuccess: () => {
@@ -66,6 +71,7 @@ export function DeckDetailPage() {
   const [inverseReviewEnabled, setInverseReviewEnabled] = useState(false)
   const [sequentialEnabled, setSequentialEnabled] = useState(false)
   const [optionsExpanded, setOptionsExpanded] = useState(false)
+  const [exportExpanded, setExportExpanded] = useState(false)
 
   useEffect(() => {
     if (editOpen && deck.data) {
@@ -161,6 +167,15 @@ export function DeckDetailPage() {
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title={deck.data?.name ?? ""}
+        titleAdornment={
+          offline.isOffline ? (
+            <CloudDownload
+              className="h-4 w-4 text-primary"
+              aria-label="Available offline"
+              role="img"
+            />
+          ) : null
+        }
         onBack={() => navigate({ to: "/" })}
         actions={
           <>
@@ -202,36 +217,83 @@ export function DeckDetailPage() {
               Options
             </MenuItem>
             {optionsExpanded && (
-              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 pl-6 text-[15px] font-medium transition-colors hover:bg-accent/70">
-                <span>Sequential deck</span>
-                <input
-                  type="checkbox"
-                  checked={sequentialEnabled}
-                  onChange={(e) => setSequentialEnabled(e.target.checked)}
-                  className="peer sr-only"
-                />
-                <span
-                  aria-hidden="true"
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
-                >
-                  <Check className="h-4 w-4" />
-                </span>
-              </label>
+              <>
+                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 pl-6 text-[15px] font-medium transition-colors hover:bg-accent/70">
+                  <span>Sequential deck</span>
+                  <input
+                    type="checkbox"
+                    checked={sequentialEnabled}
+                    onChange={(e) => setSequentialEnabled(e.target.checked)}
+                    className="peer sr-only"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-border bg-background text-transparent transition-colors peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground"
+                  >
+                    <Check className="h-4 w-4" />
+                  </span>
+                </label>
+                {offline.online && !offline.isOffline && (
+                  <MenuItem
+                    className="pl-6"
+                    icon={<CloudDownload className="h-[18px] w-[18px]" />}
+                    onSelect={() => void offline.enable()}
+                  >
+                    {offline.busy ? "Saving…" : "Make available offline"}
+                  </MenuItem>
+                )}
+                {offline.isOffline && (
+                  <>
+                    {offline.online && (
+                      <MenuItem
+                        className="pl-6"
+                        icon={<RefreshCw className="h-[18px] w-[18px]" />}
+                        onSelect={() => void offline.refresh()}
+                      >
+                        {offline.busy ? "Updating…" : "Update offline data"}
+                      </MenuItem>
+                    )}
+                    <MenuItem
+                      className="pl-6"
+                      icon={<WifiOff className="h-[18px] w-[18px]" />}
+                      onSelect={() => void offline.disable()}
+                    >
+                      Remove from offline
+                    </MenuItem>
+                  </>
+                )}
+              </>
             )}
             <MenuItem
-              icon={<Upload className="h-[18px] w-[18px]" />}
-              onSelect={() => {
-                window.location.href = `/api/decks/${deckId}/spreadsheet/export`
-              }}
+              icon={
+                exportExpanded ? (
+                  <ChevronDown className="h-[18px] w-[18px]" />
+                ) : (
+                  <ChevronRight className="h-[18px] w-[18px]" />
+                )
+              }
+              onSelect={() => setExportExpanded((v) => !v)}
             >
-              Export spreadsheet
+              Export
             </MenuItem>
-            <MenuItem
-              icon={<Download className="h-[18px] w-[18px]" />}
-              onSelect={() => navigate({ to: "/decks/$deckId/import", params: { deckId } })}
-            >
-              Import spreadsheet
-            </MenuItem>
+            {exportExpanded && (
+              <>
+                <MenuItem
+                  icon={<Upload className="h-[18px] w-[18px]" />}
+                  onSelect={() => {
+                    window.location.href = `/api/decks/${deckId}/spreadsheet/export`
+                  }}
+                >
+                  Export spreadsheet
+                </MenuItem>
+                <MenuItem
+                  icon={<Download className="h-[18px] w-[18px]" />}
+                  onSelect={() => navigate({ to: "/decks/$deckId/import", params: { deckId } })}
+                >
+                  Import spreadsheet
+                </MenuItem>
+              </>
+            )}
             <MenuItem
               icon={<Trash2 className="h-[18px] w-[18px]" />}
               destructive

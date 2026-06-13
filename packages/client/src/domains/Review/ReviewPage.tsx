@@ -28,16 +28,54 @@ import { cn } from "../../Lib/Utils"
 import { generatedTagPrefix } from "../Cards/CardFrontPrefix"
 import { SpeechRecognitionCard, type SpeechRecognitionCardHandle } from "./SpeechRecognitionCard"
 import { ReviewSequentialPage } from "./ReviewSequentialPage"
+import { OfflineReviewPage } from "./OfflineReviewPage"
+import { useOnline } from "../Offline/useOnline"
+import { isDeckOffline } from "../Offline/db"
 
-export function ReviewPage({
-  mode,
-  initialSubjectId,
-  initialCardId,
-}: {
+type ReviewPageProps = {
   mode: ReviewMode
   initialSubjectId?: string
   initialCardId?: string
-}) {
+}
+
+// Dispatch to the offline experience only when actually offline AND the deck has a snapshot;
+// otherwise the normal online flow (with its prefetch/optimistic logic) runs unchanged.
+export function ReviewPage(props: ReviewPageProps) {
+  const { deckId } = useParams({ strict: false }) as { deckId: string }
+  const online = useOnline()
+  const [deckOffline, setDeckOffline] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void isDeckOffline(deckId).then((value) => {
+      if (!cancelled) setDeckOffline(value)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [deckId])
+
+  if (online) return <OnlineReviewPage {...props} />
+  if (deckOffline === null) return <p></p>
+  if (deckOffline) return <OfflineReviewPage {...props} />
+  return (
+    <div className="space-y-4 text-center">
+      <h1 className="text-xl font-semibold">Offline</h1>
+      <p className="text-sm text-muted-foreground">
+        This deck isn’t available offline. Mark it for offline use while connected.
+      </p>
+      <Link
+        to="/decks/$deckId"
+        params={{ deckId }}
+        className={cn(buttonVariants({ variant: "outline" }))}
+      >
+        Back to deck
+      </Link>
+    </div>
+  )
+}
+
+function OnlineReviewPage({ mode, initialSubjectId, initialCardId }: ReviewPageProps) {
   const { deckId } = useParams({ strict: false }) as { deckId: string }
   const navigate = useNavigate()
   const utils = trpc.useUtils()
