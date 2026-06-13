@@ -25,12 +25,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 export function PageHeader({
   title,
+  titleAdornment,
   subtitle,
   onBack,
   actions,
   menuItems,
 }: {
   title?: string
+  titleAdornment?: React.ReactNode
   subtitle?: string
   onBack?: () => void
   actions?: React.ReactNode
@@ -88,6 +90,9 @@ export function PageHeader({
           style={{ viewTransitionName: "page-title" }}
         >
           {title}
+          {titleAdornment && (
+            <span className="ml-1.5 inline-flex align-middle">{titleAdornment}</span>
+          )}
         </h1>
       ) : !stacked && subtitle ? (
         <span className="flex-1 text-xs uppercase text-muted-foreground">{subtitle}</span>
@@ -126,6 +131,9 @@ export function PageHeader({
             style={{ viewTransitionName: "page-title" }}
           >
             {title}
+            {titleAdornment && (
+              <span className="ml-1.5 inline-flex align-middle">{titleAdornment}</span>
+            )}
           </h1>
         </div>
       )}

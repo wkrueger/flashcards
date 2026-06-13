@@ -167,6 +167,15 @@ export function DeckDetailPage() {
     <div className="flex flex-1 flex-col gap-4">
       <PageHeader
         title={deck.data?.name ?? ""}
+        titleAdornment={
+          offline.isOffline ? (
+            <CloudDownload
+              className="h-4 w-4 text-primary"
+              aria-label="Available offline"
+              role="img"
+            />
+          ) : null
+        }
         onBack={() => navigate({ to: "/" })}
         actions={
           <>
