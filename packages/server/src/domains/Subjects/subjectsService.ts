@@ -1,8 +1,10 @@
 import { randomInt } from "node:crypto"
+import { SUBJECT_RANDOM_KEY_RANGE, randomSubjectKeyFromRng } from "@cards/shared"
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js"
 import { markDeckCompletionStale } from "../Decks/deckCompletionService.js"
 
-export const SUBJECT_RANDOM_KEY_RANGE = 2_147_483_647
+// Re-exported from shared so existing importers keep working off a single source of truth.
+export { SUBJECT_RANDOM_KEY_RANGE, randomSubjectKeyFromRng }
 
 export function normalizeSubjectText(text: string) {
   return text.trim()
@@ -14,10 +16,6 @@ export function subjectKeyFor(text: string) {
 
 export function randomSubjectKey() {
   return randomInt(SUBJECT_RANDOM_KEY_RANGE)
-}
-
-export function randomSubjectKeyFromRng(rng: () => number) {
-  return Math.floor(rng() * SUBJECT_RANDOM_KEY_RANGE)
 }
 
 type SubjectDb = PrismaClient | Prisma.TransactionClient

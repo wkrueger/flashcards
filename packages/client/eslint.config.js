@@ -5,7 +5,14 @@ import reactHooks from "eslint-plugin-react-hooks"
 
 export default [
   {
-    ignores: ["dist", "src/routeTree.gen.ts", "node_modules", "playwright-report"],
+    ignores: [
+      "dist",
+      "src/routeTree.gen.ts",
+      "node_modules",
+      "playwright-report",
+      "e2e",
+      "*.config.ts",
+    ],
   },
   {
     files: ["src/**/*.{ts,tsx}"],

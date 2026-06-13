@@ -27,13 +27,73 @@ import { Card, CardContent } from "../../ui/Card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../../ui/Dialog"
 import { Input } from "../../ui/Input"
 import { Label } from "../../ui/Label"
+import { cn } from "../../Lib/Utils"
 import { DeckSearch } from "./DeckSearch"
 import { LanguageSelect } from "./LanguageSelect"
+import { useOnline } from "../Offline/useOnline"
+import { getSnapshot, listOfflineDecks } from "../Offline/db"
 
 type DeckItem = { id: string; name: string; dueCount: number }
 
 const cardClass =
   "flex min-h-[88px] items-center justify-between rounded-md border bg-card px-4 py-4 text-sm"
+
+// When offline, the trpc-backed deck list can't load — show the decks saved for offline use instead,
+// linking straight into review (deck detail also needs the network).
+export function DeckListPage() {
+  const online = useOnline()
+  if (online) return <OnlineDeckListPage />
+  return <OfflineDeckListPage />
+}
+
+function OfflineDeckListPage() {
+  const [decks, setDecks] = useState<{ id: string; name: string }[] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const marks = await listOfflineDecks()
+      const resolved = await Promise.all(
+        marks.map(async (m) => ({
+          id: m.deckId,
+          name: (await getSnapshot(m.deckId))?.deck.name ?? "Deck",
+        }))
+      )
+      if (!cancelled) setDecks(resolved)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  return (
+    <div className="flex flex-1 flex-col gap-4">
+      <PageHeader title="Offline decks" />
+      {decks === null ? (
+        <p></p>
+      ) : decks.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No decks saved for offline use. Connect, open a deck, and choose “Make available offline”.
+        </p>
+      ) : (
+        <ul className="animate-reveal space-y-2">
+          {decks.map((d) => (
+            <li key={d.id}>
+              <Link
+                to="/decks/$deckId/review"
+                params={{ deckId: d.id }}
+                className={cn(cardClass, "transition hover:bg-accent")}
+              >
+                <span className="min-w-0 flex-1 font-medium">{d.name}</span>
+                <span className="ml-3 shrink-0 text-xs text-muted-foreground">offline</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 function DeckCardBody({ deck }: { deck: DeckItem }) {
   return (
@@ -72,7 +132,7 @@ function SortableDeckItem({ deck }: { deck: DeckItem }) {
   )
 }
 
-export function DeckListPage() {
+function OnlineDeckListPage() {
   const utils = trpc.useUtils()
   const navigate = useNavigate()
   const [rawQuery, setRawQuery] = useState("")
@@ -121,17 +181,18 @@ export function DeckListPage() {
   }, [decksQuery.isLoading])
 
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = decksQuery
   useEffect(() => {
     const el = sentinelRef.current
     if (!el) return
     const obs = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting && decksQuery.hasNextPage && !decksQuery.isFetchingNextPage) {
-        decksQuery.fetchNextPage()
+      if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage()
       }
     })
     obs.observe(el)
     return () => obs.disconnect()
-  }, [decksQuery.hasNextPage, decksQuery.isFetchingNextPage, decksQuery.fetchNextPage])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),

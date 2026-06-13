@@ -146,6 +146,29 @@ export const reviewSequentialInput = z.object({
 
 export const reviewAdvanceInput = z.object({ cardId: id })
 
+export const offlineSnapshotInput = z.object({ deckId: id })
+
+const offlineReviewItemSchema = z
+  .object({
+    cardId: id,
+    chosenLevel: fixationLevelSchema.optional(),
+    inverse: z.boolean().optional(),
+    advance: z.boolean().optional(),
+    completedAt: z.string().datetime(),
+  })
+  .refine(
+    (item) => item.advance === true || item.inverse === true || item.chosenLevel !== undefined,
+    {
+      message: "chosenLevel is required when not in inverse or advance mode.",
+      path: ["chosenLevel"],
+    }
+  )
+export type OfflineReviewItem = z.infer<typeof offlineReviewItemSchema>
+
+export const offlineSyncReviewsInput = z.object({
+  reviews: z.array(offlineReviewItemSchema).max(2000),
+})
+
 export const reorderCardInput = z.object({
   cardId: id,
   direction: z.enum(["up", "down"]),

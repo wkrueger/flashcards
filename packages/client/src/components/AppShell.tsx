@@ -7,11 +7,23 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover"
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "../ui/Dialog"
 import { invalidateSessionCache, signOut, useSession } from "../infra/authClient"
 import { cn } from "../Lib/Utils"
+import { useOnline } from "../domains/Offline/useOnline"
+import { useOfflineSync } from "../domains/Offline/sync"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  useOfflineSync()
+  const online = useOnline()
   return (
     <div className="min-h-dvh w-full">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x sm:pt-[var(--app-shell-top-offset)]">
+        {!online && (
+          <div
+            data-testid="offline-banner"
+            className="bg-amber-500/15 py-1 text-center text-xs font-medium text-amber-700 dark:text-amber-400"
+          >
+            Offline — reviewing from saved decks
+          </div>
+        )}
         <main className="flex flex-1 flex-col p-3 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
           {children}
         </main>
@@ -145,12 +157,14 @@ export function MenuItem({
   destructive,
   onSelect,
   testId,
+  className,
 }: {
   icon?: React.ReactNode
   children: React.ReactNode
   destructive?: boolean
   onSelect?: () => void
   testId?: string
+  className?: string
 }) {
   return (
     <button
@@ -159,7 +173,8 @@ export function MenuItem({
         "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors",
         destructive
           ? "text-destructive hover:bg-destructive/10 active:bg-destructive/15"
-          : "hover:bg-accent/70 active:bg-accent"
+          : "hover:bg-accent/70 active:bg-accent",
+        className
       )}
       onClick={onSelect}
     >

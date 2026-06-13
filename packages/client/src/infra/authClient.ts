@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { createAuthClient } from "better-auth/react"
+import { clearSession, getStoredSession, saveSession } from "../domains/Offline/db"
 
 export const authClient = createAuthClient({
   baseURL:
@@ -35,10 +36,22 @@ export function getSessionCached(): Promise<SessionResult> {
         .getSession()
         .then((res) => {
           notify(res.data)
+          // Persist the last good session so the app can boot offline; drop it once logged out.
+          if (res.data) void saveSession(res.data)
+          else void clearSession()
           return res
         })
-        .catch((err) => {
+        .catch(async (err) => {
+          // Network unreachable: fall back to the stored session so the route guard doesn't
+          // bounce an offline user to /login. A real logout clears the store, so this only
+          // revives a session that was valid when last online.
+          const stored = (await getStoredSession()) as SessionData
+          if (stored) {
+            notify(stored)
+            return { data: stored, error: null } as unknown as SessionResult
+          }
           sessionCache = null
+          notify(null)
           throw err
         }),
       expiresAt: now + SESSION_TTL_MS,
@@ -49,6 +62,7 @@ export function getSessionCached(): Promise<SessionResult> {
 
 export function invalidateSessionCache() {
   sessionCache = null
+  void clearSession()
   notify(null)
 }
 

@@ -1,16 +1,23 @@
 import type { PrismaClient } from "../../generated/prisma/client.js"
-import { Prisma } from "../../generated/prisma/client.js"
-import { COOLDOWN_MS, fixationLevelSchema, nextCooldownAt, type FixationLevel } from "@cards/shared"
+import {
+  COOLDOWN_MS,
+  fixationLevelSchema,
+  nextCooldownAt,
+  pickNextCard as pickNextCardShared,
+  type FixationLevel,
+} from "@cards/shared"
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc.js"
-import { deleteEmptySubjectsForDeck, randomSubjectKeyFromRng } from "../Subjects/subjectsService.js"
 import { pointsFor, recomputeDeckCompletion } from "../Decks/deckCompletionService.js"
+import { PrismaReviewStore } from "./PrismaReviewStore.js"
 
 dayjs.extend(utc)
 
 const REVIEW_STATS_RETENTION_DAYS = 15
 
-export interface PickArgs {
+// Thin wrapper: build the Prisma-backed store and delegate to the shared selection logic
+// (packages/shared/src/Review/ReviewSelection.ts), which the offline client runs identically.
+export function pickNextCard(args: {
   prisma: PrismaClient
   userId: string
   deckId?: string
@@ -21,216 +28,20 @@ export interface PickArgs {
   now?: Date
   rng?: () => number
   inverseRng?: () => number
-  cleanupRetried?: boolean
-}
-
-export interface PickResult {
-  card:
-    | (Awaited<ReturnType<PrismaClient["card"]["findFirst"]>> & {
-        subject: {
-          id: string
-          subject: string
-          fixationLevel: string
-          inverseReviewed: boolean
-          firstSeenAt: Date | null
-          lastSeenAt: Date | null
-        }
-        tags: string[]
-      })
-    | null
-  inverse: boolean
-}
-
-export const INVERSE_REVIEW_PROBABILITY = 0.2
-const LONG_TEXT_TAG = "gen:bigger"
-const MEANING_TAG = "gen:meaning"
-
-type ReviewCard = Prisma.CardGetPayload<{
-  include: {
-    subject: {
-      select: {
-        id: true
-        subject: true
-        fixationLevel: true
-        inverseReviewed: true
-        firstSeenAt: true
-        lastSeenAt: true
-      }
-    }
-    cardTags: { include: { tag: true } }
-  }
-}>
-
-export async function pickNextCard({
-  prisma,
-  userId,
-  deckId,
-  includeOnCooldown,
-  excludeCardId,
-  subjectId,
-  cardId,
-  now = new Date(),
-  rng = Math.random,
-  inverseRng = Math.random,
-  cleanupRetried = false,
-}: PickArgs): Promise<PickResult> {
-  const deck = deckId
-    ? await prisma.deck.findFirst({
-        where: { id: deckId, userId },
-        select: { inverseReviewEnabled: true, inverseReviewStreak: true },
-      })
-    : null
-  const inverseEnabled = Boolean(deck?.inverseReviewEnabled)
-  const inverseReviewStreak = deck?.inverseReviewStreak ?? 0
-
-  if (cardId) {
-    return pickSpecificCard({
-      prisma,
-      userId,
-      deckId,
-      cardId,
-      inverseEnabled,
-      inverseReviewStreak,
-      inverseRng,
-    })
-  }
-
-  const pinnedToSubject = Boolean(subjectId)
-  const subjectWhere: Prisma.SubjectWhereInput = { userId }
-  if (!includeOnCooldown && !pinnedToSubject) subjectWhere.cooldownAt = { lte: now }
-  if (deckId) subjectWhere.deckId = deckId
-  if (subjectId) subjectWhere.id = subjectId
-  let excludedSubjectId: string | undefined
-  if (excludeCardId && !pinnedToSubject) {
-    const excluded = await prisma.card.findFirst({
-      where: { id: excludeCardId, deck: { userId } },
-      select: { subjectId: true },
-    })
-    if (excluded) {
-      excludedSubjectId = excluded.subjectId
-      subjectWhere.id = { not: excludedSubjectId }
-    }
-  }
-  if (!subjectId) {
-    subjectWhere.lastSeenAt = { not: null }
-  }
-
-  const candidates1 = await prisma.subject.findMany({
-    where: subjectWhere,
-    orderBy: includeOnCooldown
-      ? { cooldownAt: "asc" }
-      : [{ lastSeenShuffle: { sort: "desc", nulls: "last" } }, { lastSeenAt: "desc" }],
-    select: { id: true, cooldownAt: true, randomKey: true },
-    take: 4,
+}) {
+  const store = new PrismaReviewStore(args.prisma, args.userId)
+  return pickNextCardShared({
+    store,
+    userId: args.userId,
+    deckId: args.deckId,
+    includeOnCooldown: args.includeOnCooldown,
+    excludeCardId: args.excludeCardId,
+    subjectId: args.subjectId,
+    cardId: args.cardId,
+    now: args.now,
+    rng: args.rng,
+    inverseRng: args.inverseRng,
   })
-
-  let candidates2: { id: string; cooldownAt: Date; randomKey: number }[] = []
-  if (!pinnedToSubject) {
-    // Include some candidates from outside the recents list.
-    const excludeIds = [
-      ...(excludedSubjectId ? [excludedSubjectId] : []),
-      ...candidates1.map((c) => c.id),
-    ]
-    const candidate2Where: Prisma.SubjectWhereInput = {
-      userId,
-      ...(deckId ? { deckId } : {}),
-      ...(includeOnCooldown ? {} : { cooldownAt: { lte: now } }),
-      ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
-    }
-
-    const candidate2Target = randomSubjectKeyFromRng(rng)
-    const candidate2OrderBy: Prisma.SubjectOrderByWithRelationInput[] = [
-      { randomKey: "asc" },
-      { id: "asc" },
-    ]
-    candidates2 = await prisma.subject.findMany({
-      where: {
-        ...candidate2Where,
-        randomKey: { gte: candidate2Target },
-      },
-      orderBy: candidate2OrderBy,
-      select: { id: true, cooldownAt: true, randomKey: true },
-      take: 1,
-    })
-
-    if (candidates2.length === 0) {
-      candidates2 = await prisma.subject.findMany({
-        where: {
-          ...candidate2Where,
-          randomKey: { lt: candidate2Target },
-        },
-        orderBy: candidate2OrderBy,
-        select: { id: true, cooldownAt: true, randomKey: true },
-        take: 1,
-      })
-    }
-  }
-
-  const candidates = [...candidates1, ...candidates2]
-
-  if (candidates.length === 0) return { card: null, inverse: false }
-
-  const chosen = candidates[Math.floor(rng() * candidates.length)]!
-
-  let selectedCard = await prisma.card.findFirst({
-    where: {
-      subjectId: chosen.id,
-      ...(deckId ? { deckId } : {}),
-      ...(pinnedToSubject && excludeCardId ? { id: { not: excludeCardId } } : {}),
-    },
-    orderBy: [{ lastSeenAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
-    include: {
-      subject: {
-        select: {
-          id: true,
-          subject: true,
-          fixationLevel: true,
-          inverseReviewed: true,
-          firstSeenAt: true,
-          lastSeenAt: true,
-        },
-      },
-      cardTags: {
-        include: { tag: true },
-      },
-    },
-  })
-
-  if (!selectedCard) {
-    if (deckId && !cleanupRetried) {
-      await deleteEmptySubjectsForDeck(prisma, userId, deckId)
-      return pickNextCard({
-        prisma,
-        userId,
-        deckId,
-        includeOnCooldown,
-        excludeCardId,
-        subjectId,
-        now,
-        rng,
-        inverseRng,
-        cleanupRetried: true,
-      })
-    }
-    return { card: null, inverse: false }
-  }
-
-  let isInverse = false
-  if (inverseEnabled) {
-    const { isInverse: isInverseResp, cardFallback } = await getIsInverse(
-      prisma,
-      selectedCard,
-      inverseReviewStreak,
-      inverseRng
-    )
-    isInverse = isInverseResp
-    if (cardFallback) {
-      selectedCard = cardFallback
-    }
-  }
-  const { cardTags, ...rest } = selectedCard
-  const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
-  return { card: { ...rest, tags } as PickResult["card"], inverse: isInverse }
 }
 
 export async function completeReview(
@@ -410,133 +221,3 @@ export async function advanceCard(
   await prisma.card.update({ where: { id: card.id }, data: { lastSeenAt: now } })
   return { ok: true }
 }
-
-async function pickSpecificCard({
-  prisma,
-  userId,
-  deckId,
-  cardId,
-  inverseEnabled,
-  inverseReviewStreak,
-  inverseRng,
-}: {
-  prisma: PrismaClient
-  userId: string
-  deckId?: string
-  cardId: string
-  inverseEnabled: boolean
-  inverseReviewStreak: number
-  inverseRng: () => number
-}): Promise<PickResult> {
-  let selectedCard = await prisma.card.findFirst({
-    where: {
-      id: cardId,
-      deck: { userId },
-      ...(deckId ? { deckId } : {}),
-    },
-    include: {
-      subject: {
-        select: {
-          id: true,
-          subject: true,
-          fixationLevel: true,
-          inverseReviewed: true,
-          firstSeenAt: true,
-          lastSeenAt: true,
-        },
-      },
-      cardTags: {
-        include: { tag: true },
-      },
-    },
-  })
-
-  if (!selectedCard) return { card: null, inverse: false }
-
-  let isInverse = false
-  if (inverseEnabled) {
-    const { isInverse: isInverseResp, cardFallback } = await getIsInverse(
-      prisma,
-      selectedCard,
-      inverseReviewStreak,
-      inverseRng
-    )
-    isInverse = isInverseResp
-    if (cardFallback) {
-      selectedCard = cardFallback
-    }
-  }
-
-  const { cardTags, ...rest } = selectedCard
-  const tags = cardTags.map((cardTag) => cardTag.tag.name).sort()
-  return { card: { ...rest, tags } as PickResult["card"], inverse: isInverse }
-}
-
-async function getIsInverse(
-  prisma: PrismaClient,
-  card: ReviewCard,
-  inverseReviewStreak: number,
-  inverseRng: () => number
-) {
-  let cardFallback: ReviewCard | null = null
-  let inverseProbability: number
-  try {
-    inverseProbability = inverseReviewProbabilityForCard(card)
-  } catch (err) {
-    if (err instanceof RerollError) {
-      cardFallback = await prisma.card.findFirst({
-        where: {
-          subjectId: card.subject.id,
-          cardTags: {
-            none: { tag: { name: "gen:meaning" } },
-          },
-        },
-        include: {
-          subject: {
-            select: {
-              id: true,
-              subject: true,
-              fixationLevel: true,
-              inverseReviewed: true,
-              firstSeenAt: true,
-              lastSeenAt: true,
-            },
-          },
-          cardTags: {
-            include: { tag: true },
-          },
-        },
-      })
-      inverseProbability = 0
-    } else {
-      throw err
-    }
-  }
-  inverseProbability = applyInverseStreakPenalty(inverseProbability, inverseReviewStreak)
-  const inverseRoll = inverseRng()
-  return { isInverse: inverseRoll < inverseProbability, cardFallback }
-}
-
-function inverseReviewProbabilityForCard(card: ReviewCard) {
-  const inverseReviewed = card.subject.inverseReviewed
-  const tags = card.cardTags.map((x) => x.tag.name)
-  const fixationLevel = card.subject.fixationLevel
-  const neverSeen = card.subject.lastSeenAt === null
-  if (inverseReviewed) {
-    if (tags.includes(MEANING_TAG)) throw new RerollError()
-    return 0
-  }
-  if (tags.includes(LONG_TEXT_TAG)) return 0.7
-  if (tags.includes(MEANING_TAG)) return 1
-  if (!neverSeen && fixationLevel === "1") return 0.7
-  if (!neverSeen && fixationLevel === "2") return 0.4
-  return INVERSE_REVIEW_PROBABILITY
-}
-
-function applyInverseStreakPenalty(probability: number, inverseReviewStreak: number) {
-  if (probability <= 0) return 0
-  if (inverseReviewStreak <= 0) return probability
-  return probability / (inverseReviewStreak + 1) ** 2
-}
-
-class RerollError extends Error {}
