@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
-import { ArrowLeft, Moon, Sun, LogOut, MoreVertical } from "lucide-react"
+import { ArrowLeft, Moon, Sun, LogOut, MoreVertical, WifiOff } from "lucide-react"
 import { useTheme } from "../infra/theme"
 import { Button } from "../ui/Button"
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover"
@@ -12,18 +12,9 @@ import { useOfflineSync } from "../domains/Offline/sync"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useOfflineSync()
-  const online = useOnline()
   return (
     <div className="min-h-dvh w-full">
       <div className="mx-auto flex min-h-dvh max-w-md flex-col bg-background sm:border-x sm:pt-[var(--app-shell-top-offset)]">
-        {!online && (
-          <div
-            data-testid="offline-banner"
-            className="bg-amber-500/15 py-1 text-center text-xs font-medium text-amber-700 dark:text-amber-400"
-          >
-            Offline — reviewing from saved decks
-          </div>
-        )}
         <main className="flex flex-1 flex-col p-3 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
           {children}
         </main>
@@ -191,11 +182,22 @@ function MenuDivider() {
 function GlobalMenu({ menuItems }: { menuItems?: React.ReactNode }) {
   const { theme, toggle } = useTheme()
   const { data: session } = useSession()
+  const online = useOnline()
   const [menuOpen, setMenuOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   return (
     <>
+      {!online && (
+        <span
+          data-testid="offline-indicator"
+          aria-label="Offline"
+          title="Offline"
+          className="flex items-center px-1 text-amber-600 dark:text-amber-400"
+        >
+          <WifiOff className="h-4 w-4" />
+        </span>
+      )}
       <Popover open={menuOpen} onOpenChange={setMenuOpen}>
         <PopoverTrigger asChild>
           <Button

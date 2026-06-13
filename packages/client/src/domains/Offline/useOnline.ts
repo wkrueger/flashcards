@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 
 // Network status from the browser plus a lightweight reachability probe. `navigator.onLine` only
-// tells us the OS thinks it has a link; a probe against /health catches captive portals / dead APIs.
+// tells us the OS thinks it has a link; the probe catches captive portals / a dead backend.
 const subscribers = new Set<(online: boolean) => void>()
 let current = typeof navigator === "undefined" ? true : navigator.onLine
 
@@ -13,8 +13,11 @@ function setOnline(value: boolean) {
 
 export async function probeReachable(): Promise<boolean> {
   try {
-    const res = await fetch("/health", { method: "GET", cache: "no-store" })
-    return res.ok
+    // Probe /trpc: it's same-origin wherever the app works (the app already calls it) and is never
+    // service-worker cached, so any resolved response — even a 4xx — means the backend is reachable.
+    // Only a thrown network error means we're truly offline.
+    await fetch("/trpc", { method: "HEAD", cache: "no-store" })
+    return true
   } catch {
     return false
   }

@@ -43,7 +43,7 @@ test("offline review queues locally and syncs on reconnect", async ({ page, cont
 
   // Go offline and review from the snapshot.
   await context.setOffline(true)
-  await expect(page.getByTestId("offline-banner")).toBeVisible()
+  await expect(page.getByTestId("offline-indicator")).toBeVisible()
   await page
     .getByRole("link", { name: /Review/ })
     .first()
@@ -58,7 +58,7 @@ test("offline review queues locally and syncs on reconnect", async ({ page, cont
   const reviewsSynced = page.waitForResponse((r) => r.url().includes("syncReviews"))
   await context.setOffline(false)
   await reviewsSynced
-  await expect(page.getByTestId("offline-banner")).toBeHidden()
+  await expect(page.getByTestId("offline-indicator")).toBeHidden()
 
   // Server now has the card on cooldown: the deck shows no cards due (was 1 due before).
   await page.goto("/")
@@ -118,7 +118,7 @@ test("offline sequential deck walks cards in order and syncs", async ({ page, co
 
   // Go offline and walk the deck in order.
   await context.setOffline(true)
-  await expect(page.getByTestId("offline-banner")).toBeVisible()
+  await expect(page.getByTestId("offline-indicator")).toBeVisible()
   await page.getByRole("link", { name: "Review", exact: true }).click()
 
   await expect(page.getByText("AlphaFront")).toBeVisible()
@@ -137,5 +137,5 @@ test("offline sequential deck walks cards in order and syncs", async ({ page, co
   const reviewsSynced = page.waitForResponse((r) => r.url().includes("syncReviews"))
   await context.setOffline(false)
   await reviewsSynced
-  await expect(page.getByTestId("offline-banner")).toBeHidden()
+  await expect(page.getByTestId("offline-indicator")).toBeHidden()
 })

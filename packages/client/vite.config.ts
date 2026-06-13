@@ -45,7 +45,6 @@ export default defineConfig(({ command }) => ({
     proxy: {
       "/api": serverOrigin,
       "/trpc": serverOrigin,
-      "/health": serverOrigin,
     },
   },
 }))

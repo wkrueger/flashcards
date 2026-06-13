@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { trpcClient } from "../../infra/trpc"
+import { useSession } from "../../infra/authClient"
 import { deleteOutboxItems, getOutbox, listOfflineDecks, reviveSnapshot, saveSnapshot } from "./db"
 import { isOnlineNow, useOnline } from "./useOnline"
 
@@ -39,10 +40,12 @@ export async function syncOffline(): Promise<void> {
   }
 }
 
-// Runs a sync whenever connectivity returns (and once on mount when already online).
+// Runs a sync whenever connectivity returns (and once on mount when already online), but only for
+// an authenticated user — there's nothing to sync on the login/signup screens.
 export function useOfflineSync(): void {
   const online = useOnline()
+  const authed = Boolean(useSession().data?.user)
   useEffect(() => {
-    if (online) void syncOffline().catch(() => {})
-  }, [online])
+    if (online && authed) void syncOffline().catch(() => {})
+  }, [online, authed])
 }
