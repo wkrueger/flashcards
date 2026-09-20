@@ -129,7 +129,9 @@ export function BookReaderPage() {
         <Card>
           <CardContent className="min-h-[10rem] p-4">
             {data ? (
-              <MarkdownView source={data.markdown} />
+              <div className="font-serif">
+                <MarkdownView source={data.markdown} />
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">Loading…</p>
             )}
@@ -215,7 +217,12 @@ function TranslationBody({
   retrying: boolean
   onRetry: () => void
 }) {
-  if (translation) return <MarkdownView source={translation} />
+  if (translation)
+    return (
+      <div className="font-serif">
+        <MarkdownView source={translation} />
+      </div>
+    )
 
   if (status === "FAILED") {
     return (

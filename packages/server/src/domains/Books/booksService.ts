@@ -40,6 +40,8 @@ export async function runParseEpubJob(prisma: PrismaClient, bookId: string) {
   })
 
   const parsed = parseEpub(await readFile(book.storagePath))
+  // A name the user typed at upload wins over the one inside the file.
+  const title = book.titleLocked ? book.title : parsed.title || book.title
 
   await prisma.$transaction(async (tx) => {
     await tx.bookPage.deleteMany({ where: { bookId: book.id } })
@@ -72,7 +74,7 @@ export async function runParseEpubJob(prisma: PrismaClient, bookId: string) {
     await tx.book.update({
       where: { id: book.id },
       data: {
-        title: parsed.title || book.title,
+        title,
         author: parsed.author,
         epubLanguage: parsed.language,
         pageCount: parsed.pages.length,
@@ -83,7 +85,7 @@ export async function runParseEpubJob(prisma: PrismaClient, bookId: string) {
     // The library row shows the real title once it is known.
     await tx.deck.update({
       where: { id: book.deckId },
-      data: { name: await availableName(tx, book.userId, parsed.title || book.title, book.deckId) },
+      data: { name: await availableName(tx, book.userId, title, book.deckId) },
     })
   })
 }

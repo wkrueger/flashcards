@@ -4,10 +4,14 @@ export const BOOK_UPLOAD_DIR = ".uploads/books"
 export const BOOK_UPLOAD_MAX_BYTES = 50 * 1024 * 1024
 
 // Pages are chunked at import so page turns never wait on parsing. The target is
-// a comfortable mobile screenful; chunks only ever end on a paragraph or
-// sentence boundary, so the number is approximate.
-export const BOOK_PAGE_TARGET_CHARS = 900
-export const BOOK_PAGE_MAX_CHARS = 1400
+// what fits the reader's two cards (original + translation) on a phone screen:
+// measured at 20px serif in the ~332px column of a 390pt phone, 280 chars is
+// about eight lines per card, which fills the screen between the header and the
+// bottom bar. Chunks only ever end on a paragraph or sentence boundary, so the
+// number is approximate — a single sentence longer than the max is the only
+// thing that gets broken mid-sentence.
+export const BOOK_PAGE_TARGET_CHARS = 280
+export const BOOK_PAGE_MAX_CHARS = 440
 
 // How many pages ahead of the reader we keep translated.
 export const BOOK_TRANSLATION_LOOKAHEAD = 5

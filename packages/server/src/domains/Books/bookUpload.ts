@@ -24,6 +24,8 @@ export interface BookUploadPart {
   filename?: string
   mimetype?: string
   file: NodeJS.ReadableStream & { truncated?: boolean }
+  // Multipart fields parsed before the file part; carries the optional name.
+  fields?: Record<string, unknown>
 }
 
 export function isSupportedEpubUpload(filename: string, mimetype: string | undefined) {
@@ -59,7 +61,12 @@ export async function handleBookUpload(
       throw new BookError("BAD_REQUEST", "The uploaded file exceeds the 50MB limit.")
     }
 
-    const name = await availableDeckName(prisma, input.userId, filenameToTitle(filename))
+    const givenTitle = uploadedTitle(part)
+    const name = await availableDeckName(
+      prisma,
+      input.userId,
+      givenTitle || filenameToTitle(filename)
+    )
     const book = await prisma.$transaction(async (tx) => {
       const deck = await tx.deck.create({
         data: { name, userId: input.userId, kind: LibraryItemKind.BOOK },
@@ -69,6 +76,7 @@ export async function handleBookUpload(
           deckId: deck.id,
           userId: input.userId,
           title: name,
+          titleLocked: Boolean(givenTitle),
           filename,
           fileSize: written.fileSize,
           storagePath: written.storagePath,
@@ -102,6 +110,14 @@ async function writeUploadToStorage(fileStream: NodeJS.ReadableStream) {
 
   await pipeline(fileStream, countBytes, createWriteStream(storagePath))
   return { fileSize, storagePath }
+}
+
+// The client sends the optional name before the file, so @fastify/multipart has
+// already parsed it onto the file part by the time we get here.
+function uploadedTitle(part: BookUploadPart) {
+  const field = part.fields?.name
+  const value = (Array.isArray(field) ? field[0] : field) as { value?: unknown } | undefined
+  return typeof value?.value === "string" ? value.value.trim().slice(0, 100) : ""
 }
 
 function filenameToTitle(filename: string) {

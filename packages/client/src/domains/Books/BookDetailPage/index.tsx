@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "@tanstack/react-router"
-import { BookOpen, ChevronDown, ChevronRight, LoaderCircle, Pencil, Trash2 } from "lucide-react"
+import { BookOpen, LoaderCircle, Pencil, Trash2 } from "lucide-react"
 import { MenuItem, PageHeader } from "../../../components/AppShell"
 import { LanguageSelect } from "../../../components/LanguageSelect"
 import { handleTRPCError, trpc } from "../../../infra/trpc"
@@ -36,7 +36,6 @@ export function BookDetailPage() {
   const bookmarks = trpc.books.bookmarks.useQuery({ bookId }, { enabled: isReady })
   const readingStats = trpc.books.readingStats.useQuery({ bookId }, { enabled: isReady })
 
-  const [optionsExpanded, setOptionsExpanded] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editTitle, setEditTitle] = useState("")
@@ -44,13 +43,10 @@ export function BookDetailPage() {
   const [targetLanguageId, setTargetLanguageId] = useState("")
 
   useEffect(() => {
-    if (!book.data) return
+    if (!editOpen || !book.data) return
+    setEditTitle(book.data.title)
     setSourceLanguageId(book.data.sourceLanguageId ? String(book.data.sourceLanguageId) : "")
     setTargetLanguageId(book.data.targetLanguageId ? String(book.data.targetLanguageId) : "")
-  }, [book.data])
-
-  useEffect(() => {
-    if (editOpen && book.data) setEditTitle(book.data.title)
   }, [editOpen, book.data])
 
   const update = trpc.books.update.useMutation({
@@ -138,6 +134,8 @@ export function BookDetailPage() {
             Continue reading
           </Link>
 
+          {readingStats.data && <BookProgressChart data={readingStats.data} />}
+
           <BookChapterList
             bookId={bookId}
             chapters={chapters.data ?? []}
@@ -145,51 +143,6 @@ export function BookDetailPage() {
           />
 
           <BookBookmarkList bookId={bookId} bookmarks={bookmarks.data ?? []} />
-
-          {readingStats.data && <BookProgressChart data={readingStats.data} />}
-
-          <section className="rounded-md border bg-card">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium"
-              onClick={() => setOptionsExpanded((value) => !value)}
-            >
-              Options
-              {optionsExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </button>
-            {optionsExpanded && (
-              <div className="space-y-3 border-t px-3 py-3">
-                <div className="space-y-1">
-                  <Label>Book language (optional)</Label>
-                  <LanguageSelect
-                    value={sourceLanguageId}
-                    onChange={(next) => {
-                      setSourceLanguageId(next)
-                      update.mutate({ bookId, sourceLanguageId: next ? Number(next) : null })
-                    }}
-                    placeholder="Detect from the file"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Translate into (optional)</Label>
-                  <LanguageSelect
-                    value={targetLanguageId}
-                    onChange={(next) => {
-                      setTargetLanguageId(next)
-                      update.mutate({ bookId, targetLanguageId: next ? Number(next) : null })
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Changing this clears the translations already made for this book.
-                  </p>
-                </div>
-              </div>
-            )}
-          </section>
         </>
       )}
 
@@ -203,7 +156,12 @@ export function BookDetailPage() {
             onSubmit={(event) => {
               event.preventDefault()
               if (!editTitle.trim()) return
-              update.mutate({ bookId, title: editTitle.trim() })
+              update.mutate({
+                bookId,
+                title: editTitle.trim(),
+                sourceLanguageId: sourceLanguageId ? Number(sourceLanguageId) : null,
+                targetLanguageId: targetLanguageId ? Number(targetLanguageId) : null,
+              })
             }}
           >
             <div className="space-y-1">
@@ -215,9 +173,31 @@ export function BookDetailPage() {
                 onChange={(event) => setEditTitle(event.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={update.isPending}>
-              {update.isPending ? "Saving…" : "Save"}
-            </Button>
+            <div className="space-y-1">
+              <Label>Book language (optional)</Label>
+              <LanguageSelect
+                value={sourceLanguageId}
+                onChange={setSourceLanguageId}
+                placeholder="Detect from the file"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Translate into (optional)</Label>
+              <LanguageSelect value={targetLanguageId} onChange={setTargetLanguageId} />
+              <p className="text-xs text-muted-foreground">
+                Changing this clears the translations already made for this book.
+              </p>
+            </div>
+            <div className="mt-4 flex gap-2">
+              <DialogClose asChild>
+                <Button type="button" variant="outline" className="flex-1">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" className="flex-1" disabled={update.isPending}>
+                {update.isPending ? "Saving…" : "Save"}
+              </Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

@@ -28,7 +28,12 @@ function createTurndown() {
     strongDelimiter: "**",
   })
 
-  turndown.remove((node) => REMOVED_TAGS.has(node.nodeName.toLowerCase()))
+  // addRule, not remove(): turndown checks its own rules first, so `remove` never
+  // fires for a tag that has a built-in rule (img would come back as markdown).
+  turndown.addRule("strip", {
+    filter: (node) => REMOVED_TAGS.has(node.nodeName.toLowerCase()),
+    replacement: () => "",
+  })
 
   // Footnote/cross-reference links have no target inside the reader, so keep the
   // link text and drop the anchor.

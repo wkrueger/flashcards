@@ -61,7 +61,9 @@ export async function createOpenAIStructuredResponse({
     })
   }
 
-  const model = process.env.OPENAI_MODEL ?? "gpt-5.4"
+  // Cheapest tier by default: translating a whole book is the heavy user of this
+  // and the flagship costs ~25x for prose it translates no better.
+  const model = process.env.OPENAI_MODEL ?? "gpt-5.6-luna"
   const startedAt = performance.now()
   const client = new OpenAI({ apiKey })
   logOpenAI("info", "request_started", {

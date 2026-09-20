@@ -10,9 +10,10 @@ import {
 import { prisma } from "../../src/infra/db.js"
 import { runNextWorkerJob } from "../../src/infra/worker.js"
 import { parseEpub } from "../../src/domains/Books/bookEpubParser/index.js"
+import { htmlToMarkdown } from "../../src/domains/Books/bookEpubParser/htmlToMarkdown.js"
 import { paginateMarkdown } from "../../src/domains/Books/bookEpubParser/paginate.js"
 import { handleBookUpload } from "../../src/domains/Books/bookUpload.js"
-import { BOOK_PAGE_MAX_CHARS } from "../../src/domains/Books/bookShared.js"
+import { BOOK_PAGE_MAX_CHARS, BOOK_PAGE_TARGET_CHARS } from "../../src/domains/Books/bookShared.js"
 import { buildEpubFixture, loremParagraph } from "../epubFixture.js"
 import { callerFor, makeUser, resetDomain } from "../helpers.js"
 
@@ -89,6 +90,38 @@ describe("epub parsing", () => {
     }
   })
 
+  it("splits a paragraph that is over one page on its own", () => {
+    const sentence = "This sentence is exactly the kind of prose a novel is made of. "
+    const paragraph = sentence.repeat(8).trim()
+    expect(paragraph.length).toBeGreaterThan(BOOK_PAGE_TARGET_CHARS)
+
+    const pages = paginateMarkdown(paragraph)
+
+    expect(pages.length).toBeGreaterThan(1)
+    for (const page of pages) expect(page.length).toBeLessThanOrEqual(BOOK_PAGE_TARGET_CHARS)
+  })
+
+  it("drops images so a cover page imports as nothing at all", () => {
+    const markdown = htmlToMarkdown('<body><p>Prose.</p><img src="cover.jpg"/></body>')
+
+    expect(markdown).toBe("Prose.")
+    expect(htmlToMarkdown('<body><img src="cover.jpg"/></body>')).toBe("")
+  })
+
+  it("skips pages that have nothing to read", () => {
+    expect(paginateMarkdown("* * *")).toEqual([])
+    expect(paginateMarkdown("* * *\n\nReal prose here.")).toEqual(["* * *\n\nReal prose here."])
+  })
+
+  it("carries a chapter number onto the page it belongs to", () => {
+    const pages = paginateMarkdown(
+      ["30", loremParagraph("one"), loremParagraph("two")].join("\n\n")
+    )
+
+    expect(pages[0]!.startsWith("30\n\n")).toBe(true)
+    expect(pages.some((page) => page.trim() === "30")).toBe(false)
+  })
+
   it("keeps a heading with the text that follows it", () => {
     const pages = paginateMarkdown(
       [loremParagraph("one"), loremParagraph("two"), "## A Heading", loremParagraph("three")].join(
@@ -126,6 +159,27 @@ describe("book upload and parse job", () => {
     // The library row takes the real title from the file.
     const renamed = await prisma.deck.findUniqueOrThrow({ where: { id: deckId } })
     expect(renamed.name).toBe("The Test Book")
+  })
+
+  it("keeps a name given at upload instead of the title inside the file", async () => {
+    const buffer = fixture()
+    const stream = Readable.from(buffer) as NodeJS.ReadableStream
+    const { bookId, deckId } = await handleBookUpload(prisma, {
+      userId,
+      part: {
+        filename: "the-test-book.epub",
+        mimetype: "application/epub+zip",
+        file: stream,
+        fields: { name: { value: "  My Own Name  " } },
+      },
+    })
+
+    await drainWorker()
+
+    const book = await prisma.book.findUniqueOrThrow({ where: { id: bookId } })
+    expect(book.title).toBe("My Own Name")
+    const deck = await prisma.deck.findUniqueOrThrow({ where: { id: deckId } })
+    expect(deck.name).toBe("My Own Name")
   })
 
   it("rejects a non-epub upload", async () => {

@@ -11,11 +11,11 @@ export function paginateMarkdown(markdown: string): string[] {
 
   for (const block of blocks) {
     const projected = current.length === 0 ? block.length : length + 2 + block.length
-    if (current.length > 0 && projected > BOOK_PAGE_TARGET_CHARS) {
-      // A heading that landed at the bottom of a full page belongs to the text
-      // that follows it, so carry it over instead of orphaning it.
-      const carried =
-        current.length > 1 && isHeading(current[current.length - 1]!) ? current.pop() : undefined
+    if (current.length > 0 && projected > BOOK_PAGE_TARGET_CHARS && !current.every(isCarried)) {
+      // A heading or a bare marker ("30", "* * *") that landed at the bottom of a
+      // full page belongs to the text that follows it, so carry it over instead
+      // of orphaning it — and never flush a page made of nothing else.
+      const carried = isCarried(current[current.length - 1]!) ? current.pop() : undefined
       pages.push(current.join("\n\n"))
       current = carried ? [carried] : []
       length = carried ? carried.length : 0
@@ -25,7 +25,9 @@ export function paginateMarkdown(markdown: string): string[] {
   }
 
   if (current.length > 0) pages.push(current.join("\n\n"))
-  return pages
+  // A page of pure punctuation or leftover markup has nothing to read or
+  // translate, so it never becomes a page.
+  return pages.filter((page) => /[\p{L}\p{N}]/u.test(page))
 }
 
 function splitBlocks(markdown: string) {
@@ -35,8 +37,10 @@ function splitBlocks(markdown: string) {
     .filter((block) => block.length > 0)
 }
 
+// A paragraph longer than one page is cut at sentence boundaries; anything at or
+// under the target is left whole so short paragraphs still share a page.
 function splitOversizedBlock(block: string): string[] {
-  if (block.length <= BOOK_PAGE_MAX_CHARS) return [block]
+  if (block.length <= BOOK_PAGE_TARGET_CHARS) return [block]
 
   const chunks: string[] = []
   let current = ""
@@ -73,6 +77,10 @@ function splitOnWhitespaceIfHuge(sentence: string): string[] {
   return parts
 }
 
-function isHeading(block: string) {
-  return /^#{1,6}\s/.test(block)
+// A block too small to be a page of its own: a heading, a chapter number, a
+// scene separator.
+const CARRIED_BLOCK_MAX_CHARS = 40
+
+function isCarried(block: string) {
+  return /^#{1,6}\s/.test(block) || block.length <= CARRIED_BLOCK_MAX_CHARS
 }

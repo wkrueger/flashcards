@@ -398,6 +398,8 @@ model Book {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title            String
+  // Set when the user named the book at upload, so parsing keeps their name.
+  titleLocked      Boolean   @default(false)
   author           String?
   epubLanguage     String?
   sourceLanguageId Int?

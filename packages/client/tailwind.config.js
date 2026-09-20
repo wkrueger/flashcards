@@ -4,6 +4,11 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        // The reader's book text. New York is the serif Apple Books reads in;
+        // the rest are the same fallbacks its font picker offers.
+        serif: ['"New York"', '"Iowan Old Style"', "Charter", "Palatino", "Georgia", "serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

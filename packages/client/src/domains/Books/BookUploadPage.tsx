@@ -3,10 +3,13 @@ import { useNavigate, useRouter } from "@tanstack/react-router"
 import { BookUp, Upload } from "lucide-react"
 import { PageHeader } from "../../components/AppShell"
 import { Button } from "../../ui/Button"
+import { Input } from "../../ui/Input"
 import { Label } from "../../ui/Label"
 
-async function uploadEpubFile(file: File) {
+async function uploadEpubFile(file: File, name: string) {
   const formData = new FormData()
+  // The name goes first so the server sees it on the file part's fields.
+  if (name.trim()) formData.set("name", name.trim())
   formData.set("file", file)
 
   const response = await fetch("/api/books/upload", {
@@ -32,6 +35,7 @@ export function BookUploadPage() {
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
+  const [name, setName] = useState("")
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,7 +44,7 @@ export function BookUploadPage() {
     setPending(true)
     setError(null)
     try {
-      const bookId = await uploadEpubFile(file)
+      const bookId = await uploadEpubFile(file, name)
       navigate({ to: "/books/$bookId", params: { bookId } })
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "Could not upload the file.")
@@ -69,16 +73,23 @@ export function BookUploadPage() {
         <Button
           type="button"
           variant="outline"
-          className="w-full justify-start gap-2"
+          className="h-auto min-h-10 w-full justify-start gap-2 whitespace-normal break-words py-2 text-left"
           onClick={() => inputRef.current?.click()}
         >
-          <BookUp className="h-4 w-4" />
+          <BookUp className="h-4 w-4 shrink-0" />
           {file ? file.name : "Choose an .epub file"}
         </Button>
-        <p className="text-xs text-muted-foreground">
-          The book is split into reading pages on the server. Translation happens while you read, a
-          few pages ahead.
-        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="epub-name">Name (optional)</Label>
+        <Input
+          id="epub-name"
+          value={name}
+          maxLength={100}
+          placeholder="Taken from the file when empty"
+          onChange={(event) => setName(event.target.value)}
+        />
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
