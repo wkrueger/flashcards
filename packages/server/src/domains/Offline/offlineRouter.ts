@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server"
 import { offlineSnapshotInput, offlineSyncReviewsInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
+import { LibraryItemKind } from "../../generated/prisma/client.js"
 import { advanceCard, completeReview } from "../Review/reviewService.js"
 
 function isCardNotFound(err: unknown): boolean {
@@ -15,7 +16,7 @@ export const offlineRouter = router({
   // (with selection fields) + every card (with tags). Scoped to the authenticated user.
   snapshot: protectedProcedure.input(offlineSnapshotInput).query(async ({ ctx, input }) => {
     const deck = await ctx.prisma.deck.findFirst({
-      where: { id: input.deckId, userId: ctx.user.id },
+      where: { id: input.deckId, userId: ctx.user.id, kind: LibraryItemKind.DECK },
       include: { defaultBackLanguage: { select: { speechRecognitionLocale: true } } },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })

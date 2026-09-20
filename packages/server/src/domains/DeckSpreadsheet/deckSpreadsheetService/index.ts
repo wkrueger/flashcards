@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs"
 import { TRPCError } from "@trpc/server"
 import {
+  LibraryItemKind,
   Prisma,
   SpreadsheetImportStatus,
   WorkerJobType,
@@ -28,7 +29,7 @@ export async function buildDeckSpreadsheetExport(
   deckId: string
 ) {
   const deck = await prisma.deck.findFirst({
-    where: { id: deckId, userId },
+    where: { id: deckId, userId, kind: LibraryItemKind.DECK },
     include: {
       defaultFrontLanguage: { select: { name: true } },
       defaultBackLanguage: { select: { name: true } },
@@ -318,7 +319,7 @@ export async function inspectPendingImport(
   let existingDeck: { id: string; name: string } | null = null
   if (config.deckId) {
     existingDeck = await prisma.deck.findFirst({
-      where: { id: config.deckId, userId },
+      where: { id: config.deckId, userId, kind: LibraryItemKind.DECK },
       select: { id: true, name: true },
     })
   }
@@ -389,7 +390,7 @@ export async function confirmDeckSpreadsheetImport(
       throw new DeckSpreadsheetError("The spreadsheet has no deckId to update.", "BAD_REQUEST")
     }
     const deck = await prisma.deck.findFirst({
-      where: { id: config.deckId, userId },
+      where: { id: config.deckId, userId, kind: LibraryItemKind.DECK },
       select: { id: true },
     })
     if (!deck) throw new DeckSpreadsheetError("Deck not found.", "NOT_FOUND")
@@ -425,7 +426,7 @@ async function resolveLanguageIdByName(prisma: DbClient, name: string): Promise<
 
 async function assertOwnDeck(prisma: DbClient, userId: string, deckId: string) {
   const deck = await prisma.deck.findFirst({
-    where: { id: deckId, userId },
+    where: { id: deckId, userId, kind: LibraryItemKind.DECK },
     select: { id: true, name: true },
   })
 

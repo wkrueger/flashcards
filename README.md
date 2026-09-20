@@ -116,6 +116,25 @@ OPENAI_MODEL=gpt-5.4-mini
 `OPENAI_MODEL` is optional; the server defaults to `gpt-5.4-mini` when it is not set.
 Restart `pnpm dev` after changing `.env`.
 
+### EPUB reader translation
+
+Uploaded books are translated page by page while you read. The provider is chosen with
+`TRANSLATION_PROVIDER` in `packages/server/.env`:
+
+```env
+TRANSLATION_PROVIDER=openai       # openai (default) | deepl | stub
+BOOK_DEFAULT_TARGET_LANGUAGE=Portuguese
+DEEPL_API_KEY=                    # only for TRANSLATION_PROVIDER=deepl
+```
+
+`openai` reuses `OPENAI_API_KEY` and is the default because it keeps the page's markdown intact.
+`deepl` translates better prose but does not understand markdown, so emphasis markers may shift.
+`stub` echoes the original text and exists for the test suites.
+
+A book's own language options (set on the book's detail page) override
+`BOOK_DEFAULT_TARGET_LANGUAGE`. Translation runs in the worker, so `pnpm dev` (which starts the
+worker) or a running `pnpm --filter server worker` is required.
+
 ## Develop
 
 ```bash

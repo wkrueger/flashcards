@@ -31,6 +31,8 @@ import {
   DeckSpreadsheetError,
   deleteFileIfExists,
 } from "./domains/DeckSpreadsheet/deckSpreadsheetShared.js"
+import { BOOK_UPLOAD_MAX_BYTES, BookError } from "./domains/Books/bookShared.js"
+import { handleBookUpload } from "./domains/Books/bookUpload.js"
 
 const port = Number(process.env.SERVER_PORT ?? 3001)
 const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:5173"
@@ -326,6 +328,40 @@ export async function buildServer() {
           throw createHttpError(404, error.message)
         }
 
+        throw error
+      }
+    },
+  })
+
+  app.route({
+    method: "POST",
+    url: "/api/books/upload",
+    bodyLimit: BOOK_UPLOAD_MAX_BYTES,
+    async handler(req, reply) {
+      const session = await getSessionFromRawHeaders(req.headers)
+      if (!session?.user) {
+        reply.status(401).send({ message: "Unauthorized." })
+        return
+      }
+
+      try {
+        const body = await handleBookUpload(prisma, {
+          userId: session.user.id,
+          part: await req.file(),
+        })
+        reply.status(201).send(body)
+      } catch (error) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          error.code === "FST_REQ_FILE_TOO_LARGE"
+        ) {
+          throw createHttpError(413, "The uploaded file exceeds the 50MB limit.")
+        }
+        if (error instanceof BookError) {
+          throw createHttpError(error.code === "NOT_FOUND" ? 404 : 400, error.message)
+        }
         throw error
       }
     },

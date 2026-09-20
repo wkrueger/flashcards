@@ -30,6 +30,7 @@ packages/
 │   │   │   ├── AnkiImport/{ankiImportRouter.ts, ankiImportService.ts, ankiImportArchive.ts, ankiImportMapping.ts, ankiImportShared.ts, ankiImportUpload.ts}
 │   │   │   ├── CardTemplate/{cardTemplateRouter.ts, cardTemplateService.ts}
 │   │   │   ├── DeckSpreadsheet/{deckSpreadsheetRouter.ts, deckSpreadsheetShared.ts, deckSpreadsheetService/}
+│   │   │   ├── Books/{booksRouter.ts, booksService.ts, bookTranslationService.ts, bookUpload.ts, bookShared.ts, bookEpubParser/}
 │   │   │   └── _appRouter.ts        # merges domain routers; exports AppRouter type
 │   │   └── generated/prisma/        # Prisma client output (gitignored)
 │   └── tests/{setup.ts, helpers.ts, domains/*.test.ts, auth/*.test.ts}
@@ -40,14 +41,15 @@ packages/
     │   ├── infra/{trpc.ts, authClient.ts, theme.tsx}
     │   ├── ui/                      # shadcn primitives (Button, Input, Card, etc.)
     │   ├── Lib/Utils.ts             # cn() helper
-    │   ├── components/              # cross-domain (AppShell, MarkdownView)
-    │   ├── domains/                 # Auth, Decks, Cards, Review — pages + sub-components
+    │   ├── components/              # cross-domain (AppShell, MarkdownView, LanguageSelect)
+    │   ├── domains/                 # Auth, Decks, Cards, Review, Books — pages + sub-components
     │   │   ├── Auth/{LoginPage.tsx, SignupPage.tsx, ForgotPasswordPage.tsx, ResetPasswordPage.tsx, VerifyEmailPage.tsx}
     │   │   ├── Cards/{CardEditPage.tsx, CardNewPage.tsx, CardTemplateGeneratePage.tsx, CardForm.tsx, CardFrontPrefix.ts, ...}
     │   │   ├── Decks/{DeckListPage.tsx, DeckDetailPage/, LanguageSelect.tsx}
     │   │   ├── Review/{ReviewPage.tsx, ReviewSequentialPage.tsx, SpeechRecognitionCard.tsx}
     │   │   ├── Subjects/SubjectCardsPage.tsx
     │   │   ├── AnkiImport/{AnkiImportListPage.tsx, AnkiImportProcessPage.tsx, AnkiImportUploadPage.tsx}
+    │   │   ├── Books/{BookUploadPage.tsx, BookDetailPage/, BookReaderPage/}
     │   │   └── DeckSpreadsheet/DeckSpreadsheetImportPage.tsx
     │   └── routes/                  # thin file-based route shells → import domain pages
     └── e2e/happy-path.spec.ts
@@ -70,6 +72,21 @@ packages/
 - **Card uniqueness**: `(subjectId, frontHash)` where `frontHash = sha256(front)`. Surfaced as tRPC `CONFLICT`.
 - **Per-user scoping** is enforced in every router by filtering on `userId` (or via deck/card → deck → user joins). Tests cover this.
 - **Languages** are admin-only (no UI). Seeded with English 🇬🇧 and Deutsch 🇩🇪. Add new ones by editing the SQLite `Language` table directly.
+
+### Library items (decks and books)
+
+- The home list is a list of **library items**, not just decks. `Deck.kind` is the discriminator (`DECK` | `BOOK`); a book is a `Deck` with `kind = BOOK` plus a 1:1 `Book` satellite row. That keeps `sortOrder`, search, paging and drag-and-drop shared between both types.
+- **Every deck-only lookup must filter `kind: LibraryItemKind.DECK`** — `decksRouter` (all but `list`, `create` and `move`), `cardsRouter`, `offlineRouter`, `PrismaReviewStore`, `deckSpreadsheetService`. `Books.test.ts` covers this. `move` deliberately does _not_ filter: books are reorderable on the home list too.
+- Name uniqueness (`Deck.userId + name`) spans both kinds, so name-conflict checks stay unfiltered.
+
+### EPUB reader
+
+- **Ingestion**: `POST /api/books/upload` (multipart, `.epub`, 50 MB) creates the `Deck` + `Book` + a `PARSE_EPUB` worker job. The worker parses with `adm-zip` + `fast-xml-parser` (container.xml → OPF → spine; EPUB 3 nav doc or EPUB 2 NCX for the TOC) and `turndown` (XHTML → simplified markdown: prose only, no images/tables/links).
+- **Pagination happens at import**, never at read time: `paginateMarkdown` chunks each spine document to ~900 chars (`BOOK_PAGE_TARGET_CHARS`), breaking only at paragraph — or, for an oversized paragraph, sentence — boundaries, and carries a trailing heading to the next page. One `BookPage` row per page. Chapters come from the TOC; a spine document without its own TOC entry continues the previous chapter.
+- **Translation is lazy**: `books.prefetchTranslations({ bookId, fromIndex })` (called on every page turn) queues one `TRANSLATE_BOOK_PAGES` job per book covering `fromIndex .. fromIndex + 5`, widening the queued job's window instead of piling up jobs. Pages move `PENDING → TRANSLATING → DONE|FAILED`; a crashed job's `TRANSLATING` pages are handed back to `PENDING` by the job's `onError` and by the next lookahead. A provider failure marks that batch `FAILED` instead of throwing, so one bad page never stalls the book — the reader shows the error with a retry.
+- **Advancing must never block on a translation.** The reader's primary button is never disabled; the bottom card shows "Translating…" until the text lands.
+- **Providers** live in `infra/translator.ts` behind a `Translator` interface, selected with `TRANSLATION_PROVIDER`: `openai` (default — the only one that reliably preserves markdown), `deepl` (REST, no SDK), `stub` (echo; used by Vitest and Playwright).
+- **Reader UI** (`BookReaderPage`): the page index lives in the URL (`?page=N`, navigated with `replace` so browser-back leaves the reader instead of walking pages), two cards (original on top, translation revealed on demand), and one bottom bar holding the icon-only previous-page button, the progress counter and the reveal→next action.
 
 ## Frontend specifics
 

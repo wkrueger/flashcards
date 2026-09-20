@@ -38,6 +38,8 @@ export default defineConfig({
         SERVER_PORT: serverPort,
         CLIENT_ORIGIN: clientOrigin,
         AUTH_E2E_AUTOVERIFY: "1",
+        // Keep the reader's translation pipeline deterministic and offline.
+        TRANSLATION_PROVIDER: "stub",
       },
     },
     {
