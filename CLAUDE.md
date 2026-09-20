@@ -2,6 +2,11 @@
 
 Mobile-first vocabulary flashcards app with spaced-repetition cooldowns. Multi-user (email + password). Greenfield project, see `initspec.md` for the original brief and `README.md` for user-facing setup.
 
+## Agent rules
+
+- Don't commit unless requested
+- Don't mention yourself in commits and PRs
+
 ## Stack
 
 - **Monorepo**: pnpm workspaces. Three packages: `shared`, `server`, `client`.

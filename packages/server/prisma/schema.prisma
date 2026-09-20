@@ -220,6 +220,7 @@ enum WorkerJobType {
   ANALYZE_ANKI_IMPORT
   RUN_ANKI_IMPORT
   RUN_DECK_SPREADSHEET_IMPORT
+  RUN_DECK_SPREADSHEET_IMPORT_BATCH
   PARSE_EPUB
   TRANSLATE_BOOK_PAGES
 }
@@ -321,6 +322,8 @@ model SpreadsheetImport {
   user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   deckId           String?
   deck             Deck?                   @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  batchId          String?
+  pendingDeckName  String?
   ignoreRowIds     Boolean                 @default(false)
   status           SpreadsheetImportStatus @default(UPLOADED)
   filename         String
@@ -341,6 +344,7 @@ model SpreadsheetImport {
   @@index([deckId, createdAt])
   @@index([status, createdAt])
   @@index([workerJobId])
+  @@index([batchId])
 }
 
 model ReviewStat {
