@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server"
-import { Prisma } from "../../generated/prisma/client.js"
+import { LibraryItemKind, Prisma } from "../../generated/prisma/client.js"
 import { createCardInput, idInput, updateCardInput } from "@cards/shared"
 import { protectedProcedure, router } from "../../infra/trpc.js"
 import { deleteSubjectIfEmpty, upsertSubjectByText } from "../Subjects/subjectsService.js"
@@ -51,7 +51,7 @@ function isUniqueConstraintError(err: unknown) {
 
 async function ownDeck(prisma: Db, userId: string, deckId: string) {
   const deck = await prisma.deck.findFirst({
-    where: { id: deckId, userId },
+    where: { id: deckId, userId, kind: LibraryItemKind.DECK },
   })
   if (!deck) throw new TRPCError({ code: "NOT_FOUND", message: "Deck not found" })
   return deck

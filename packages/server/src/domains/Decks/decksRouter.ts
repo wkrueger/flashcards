@@ -9,6 +9,8 @@ import {
 import dayjs from "dayjs"
 import utc from "dayjs/plugin/utc.js"
 import { protectedProcedure, router } from "../../infra/trpc.js"
+import { LibraryItemKind } from "../../generated/prisma/client.js"
+import { progressPercent as bookProgressPercent } from "../Books/booksRouter.js"
 import { randomSubjectKey } from "../Subjects/subjectsService.js"
 import {
   COMPLETION_STALE_MS,
@@ -44,34 +46,49 @@ export const decksRouter = router({
       userId: ctx.user.id,
       ...(q ? { name: { contains: q } } : {}),
     }
+    // The home list holds every library item — decks and books alike — so the
+    // shared ordering, search and drag-and-drop keep working across both.
     const rows = await ctx.prisma.deck.findMany({
       where,
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }],
       skip: offset,
       take: limit + 1,
+      include: {
+        book: { select: { id: true, status: true, furthestPageIndex: true, pageCount: true } },
+      },
     })
     const hasMore = rows.length > limit
     const page = hasMore ? rows.slice(0, limit) : rows
     const dueCounts = await Promise.all(
       page.map((d) =>
-        // Sequential decks progress through unseen subjects in order, so the
-        // "to do" count is the number of subjects not yet seen rather than the
-        // number whose cooldown has elapsed.
-        d.sequentialEnabled
-          ? ctx.prisma.subject.count({
-              where: { userId: ctx.user.id, deckId: d.id, firstSeenAt: null },
-            })
-          : ctx.prisma.subject.count({
-              where: { userId: ctx.user.id, deckId: d.id, cooldownAt: { lte: now } },
-            })
+        d.kind === LibraryItemKind.BOOK
+          ? Promise.resolve(0)
+          : // Sequential decks progress through unseen subjects in order, so the
+            // "to do" count is the number of subjects not yet seen rather than the
+            // number whose cooldown has elapsed.
+            d.sequentialEnabled
+            ? ctx.prisma.subject.count({
+                where: { userId: ctx.user.id, deckId: d.id, firstSeenAt: null },
+              })
+            : ctx.prisma.subject.count({
+                where: { userId: ctx.user.id, deckId: d.id, cooldownAt: { lte: now } },
+              })
       )
     )
     return {
       items: page.map((d, i) => ({
         id: d.id,
         name: d.name,
+        kind: d.kind,
         createdAt: d.createdAt,
         dueCount: dueCounts[i] ?? 0,
+        book: d.book
+          ? {
+              id: d.book.id,
+              status: d.book.status,
+              progressPercent: bookProgressPercent(d.book.furthestPageIndex, d.book.pageCount),
+            }
+          : null,
       })),
       nextCursor: hasMore ? offset + limit : null,
     }
@@ -82,7 +99,7 @@ export const decksRouter = router({
     const [deck, cardCount, wordCount, cooldownCount, seenSubjectCount, unseenSubjectCount] =
       await Promise.all([
         ctx.prisma.deck.findFirst({
-          where: { id: input.id, userId: ctx.user.id },
+          where: { id: input.id, userId: ctx.user.id, kind: LibraryItemKind.DECK },
           include: {
             defaultBackLanguage: {
               select: { speechRecognitionLocale: true },
@@ -163,7 +180,7 @@ export const decksRouter = router({
 
   update: protectedProcedure.input(updateDeckInput).mutation(async ({ ctx, input }) => {
     const deck = await ctx.prisma.deck.findFirst({
-      where: { id: input.id, userId: ctx.user.id },
+      where: { id: input.id, userId: ctx.user.id, kind: LibraryItemKind.DECK },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
     if (input.name !== undefined && input.name !== deck.name) {
@@ -199,7 +216,7 @@ export const decksRouter = router({
 
   upcomingDueCounts: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const deck = await ctx.prisma.deck.findFirst({
-      where: { id: input.id, userId: ctx.user.id },
+      where: { id: input.id, userId: ctx.user.id, kind: LibraryItemKind.DECK },
       select: { id: true },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
@@ -219,7 +236,7 @@ export const decksRouter = router({
 
   randomSubjects: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const deck = await ctx.prisma.deck.findFirst({
-      where: { id: input.id, userId: ctx.user.id },
+      where: { id: input.id, userId: ctx.user.id, kind: LibraryItemKind.DECK },
       select: { id: true },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
@@ -248,7 +265,7 @@ export const decksRouter = router({
   // sequential review walks). Mirrors the subject ordering in reviewSequential.
   orderedSubjects: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const deck = await ctx.prisma.deck.findFirst({
-      where: { id: input.id, userId: ctx.user.id },
+      where: { id: input.id, userId: ctx.user.id, kind: LibraryItemKind.DECK },
       select: { id: true },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
@@ -262,7 +279,7 @@ export const decksRouter = router({
 
   reviewStats: protectedProcedure.input(idInput).query(async ({ ctx, input }) => {
     const deck = await ctx.prisma.deck.findFirst({
-      where: { id: input.id, userId: ctx.user.id },
+      where: { id: input.id, userId: ctx.user.id, kind: LibraryItemKind.DECK },
       select: { id: true },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
@@ -288,6 +305,7 @@ export const decksRouter = router({
   }),
 
   move: protectedProcedure.input(moveDeckInput).mutation(async ({ ctx, input }) => {
+    // Books are library items too, so reordering is not restricted by kind.
     const moved = await ctx.prisma.deck.findFirst({
       where: { id: input.id, userId: ctx.user.id },
       select: { id: true },
@@ -334,7 +352,7 @@ export const decksRouter = router({
 
   delete: protectedProcedure.input(idInput).mutation(async ({ ctx, input }) => {
     const deck = await ctx.prisma.deck.findFirst({
-      where: { id: input.id, userId: ctx.user.id },
+      where: { id: input.id, userId: ctx.user.id, kind: LibraryItemKind.DECK },
     })
     if (!deck) throw new TRPCError({ code: "NOT_FOUND" })
 

@@ -1,5 +1,6 @@
 import { router } from "../infra/trpc.js"
 import { ankiImportRouter } from "./AnkiImport/ankiImportRouter.js"
+import { booksRouter } from "./Books/booksRouter.js"
 import { cardTemplateRouter } from "./CardTemplate/cardTemplateRouter.js"
 import { cardsRouter } from "./Cards/cardsRouter.js"
 import { deckSpreadsheetRouter } from "./DeckSpreadsheet/deckSpreadsheetRouter.js"
@@ -15,6 +16,7 @@ export const appRouter = router({
   deckSpreadsheet: deckSpreadsheetRouter,
   languages: languagesRouter,
   decks: decksRouter,
+  books: booksRouter,
   subjects: subjectsRouter,
   cards: cardsRouter,
   review: reviewRouter,

@@ -1,4 +1,5 @@
 import type { CardRow, DeckMeta, ReviewStore, SubjectRow } from "@cards/shared"
+import { LibraryItemKind } from "../../generated/prisma/client.js"
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js"
 import { deleteEmptySubjectsForDeck } from "../Subjects/subjectsService.js"
 
@@ -49,7 +50,7 @@ export class PrismaReviewStore implements ReviewStore {
 
   async getDeckMeta(deckId: string): Promise<DeckMeta | null> {
     const deck = await this.prisma.deck.findFirst({
-      where: { id: deckId, userId: this.userId },
+      where: { id: deckId, userId: this.userId, kind: LibraryItemKind.DECK },
       select: { inverseReviewEnabled: true, inverseReviewStreak: true },
     })
     return deck

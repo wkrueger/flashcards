@@ -20,12 +20,16 @@ import { Route as appIndexRouteImport } from './routes/(app)/index'
 import { Route as appImportsSpreadsheetRouteImport } from './routes/(app)/imports.spreadsheet'
 import { Route as appImportsAnkiRouteImport } from './routes/(app)/imports.anki'
 import { Route as appDecksDeckIdRouteImport } from './routes/(app)/decks.$deckId'
+import { Route as appBooksNewRouteImport } from './routes/(app)/books.new'
+import { Route as appBooksBookIdRouteImport } from './routes/(app)/books.$bookId'
 import { Route as appImportsAnkiIndexRouteImport } from './routes/(app)/imports.anki.index'
 import { Route as appDecksDeckIdIndexRouteImport } from './routes/(app)/decks.$deckId.index'
+import { Route as appBooksBookIdIndexRouteImport } from './routes/(app)/books.$bookId.index'
 import { Route as appImportsAnkiNewRouteImport } from './routes/(app)/imports.anki.new'
 import { Route as appImportsAnkiProcessIdRouteImport } from './routes/(app)/imports.anki.$processId'
 import { Route as appDecksDeckIdReviewRouteImport } from './routes/(app)/decks.$deckId.review'
 import { Route as appDecksDeckIdImportRouteImport } from './routes/(app)/decks.$deckId.import'
+import { Route as appBooksBookIdReadRouteImport } from './routes/(app)/books.$bookId.read'
 import { Route as appDecksDeckIdReviewIndexRouteImport } from './routes/(app)/decks.$deckId.review.index'
 import { Route as appDecksDeckIdSubjectsSubjectIdRouteImport } from './routes/(app)/decks.$deckId.subjects.$subjectId'
 import { Route as appDecksDeckIdReviewFreeRouteImport } from './routes/(app)/decks.$deckId.review.free'
@@ -89,6 +93,16 @@ const appDecksDeckIdRoute = appDecksDeckIdRouteImport.update({
   path: '/decks/$deckId',
   getParentRoute: () => appRouteRoute,
 } as any)
+const appBooksNewRoute = appBooksNewRouteImport.update({
+  id: '/books/new',
+  path: '/books/new',
+  getParentRoute: () => appRouteRoute,
+} as any)
+const appBooksBookIdRoute = appBooksBookIdRouteImport.update({
+  id: '/books/$bookId',
+  path: '/books/$bookId',
+  getParentRoute: () => appRouteRoute,
+} as any)
 const appImportsAnkiIndexRoute = appImportsAnkiIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -98,6 +112,11 @@ const appDecksDeckIdIndexRoute = appDecksDeckIdIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => appDecksDeckIdRoute,
+} as any)
+const appBooksBookIdIndexRoute = appBooksBookIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => appBooksBookIdRoute,
 } as any)
 const appImportsAnkiNewRoute = appImportsAnkiNewRouteImport.update({
   id: '/new',
@@ -118,6 +137,11 @@ const appDecksDeckIdImportRoute = appDecksDeckIdImportRouteImport.update({
   id: '/import',
   path: '/import',
   getParentRoute: () => appDecksDeckIdRoute,
+} as any)
+const appBooksBookIdReadRoute = appBooksBookIdReadRouteImport.update({
+  id: '/read',
+  path: '/read',
+  getParentRoute: () => appBooksBookIdRoute,
 } as any)
 const appDecksDeckIdReviewIndexRoute =
   appDecksDeckIdReviewIndexRouteImport.update({
@@ -175,13 +199,17 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/': typeof appIndexRoute
+  '/books/$bookId': typeof appBooksBookIdRouteWithChildren
+  '/books/new': typeof appBooksNewRoute
   '/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
   '/imports/anki': typeof appImportsAnkiRouteWithChildren
   '/imports/spreadsheet': typeof appImportsSpreadsheetRoute
+  '/books/$bookId/read': typeof appBooksBookIdReadRoute
   '/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
   '/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
   '/imports/anki/new': typeof appImportsAnkiNewRoute
+  '/books/$bookId/': typeof appBooksBookIdIndexRoute
   '/decks/$deckId/': typeof appDecksDeckIdIndexRoute
   '/imports/anki/': typeof appImportsAnkiIndexRoute
   '/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
@@ -201,10 +229,13 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/': typeof appIndexRoute
+  '/books/new': typeof appBooksNewRoute
   '/imports/spreadsheet': typeof appImportsSpreadsheetRoute
+  '/books/$bookId/read': typeof appBooksBookIdReadRoute
   '/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
   '/imports/anki/new': typeof appImportsAnkiNewRoute
+  '/books/$bookId': typeof appBooksBookIdIndexRoute
   '/decks/$deckId': typeof appDecksDeckIdIndexRoute
   '/imports/anki': typeof appImportsAnkiIndexRoute
   '/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
@@ -226,13 +257,17 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/(app)/': typeof appIndexRoute
+  '/(app)/books/$bookId': typeof appBooksBookIdRouteWithChildren
+  '/(app)/books/new': typeof appBooksNewRoute
   '/(app)/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
   '/(app)/imports/anki': typeof appImportsAnkiRouteWithChildren
   '/(app)/imports/spreadsheet': typeof appImportsSpreadsheetRoute
+  '/(app)/books/$bookId/read': typeof appBooksBookIdReadRoute
   '/(app)/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/(app)/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
   '/(app)/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
   '/(app)/imports/anki/new': typeof appImportsAnkiNewRoute
+  '/(app)/books/$bookId/': typeof appBooksBookIdIndexRoute
   '/(app)/decks/$deckId/': typeof appDecksDeckIdIndexRoute
   '/(app)/imports/anki/': typeof appImportsAnkiIndexRoute
   '/(app)/decks/$deckId/cards/generate': typeof appDecksDeckIdCardsGenerateRoute
@@ -254,13 +289,17 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/'
+    | '/books/$bookId'
+    | '/books/new'
     | '/decks/$deckId'
     | '/imports/anki'
     | '/imports/spreadsheet'
+    | '/books/$bookId/read'
     | '/decks/$deckId/import'
     | '/decks/$deckId/review'
     | '/imports/anki/$processId'
     | '/imports/anki/new'
+    | '/books/$bookId/'
     | '/decks/$deckId/'
     | '/imports/anki/'
     | '/decks/$deckId/cards/generate'
@@ -280,10 +319,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/'
+    | '/books/new'
     | '/imports/spreadsheet'
+    | '/books/$bookId/read'
     | '/decks/$deckId/import'
     | '/imports/anki/$processId'
     | '/imports/anki/new'
+    | '/books/$bookId'
     | '/decks/$deckId'
     | '/imports/anki'
     | '/decks/$deckId/cards/generate'
@@ -304,13 +346,17 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/(app)/'
+    | '/(app)/books/$bookId'
+    | '/(app)/books/new'
     | '/(app)/decks/$deckId'
     | '/(app)/imports/anki'
     | '/(app)/imports/spreadsheet'
+    | '/(app)/books/$bookId/read'
     | '/(app)/decks/$deckId/import'
     | '/(app)/decks/$deckId/review'
     | '/(app)/imports/anki/$processId'
     | '/(app)/imports/anki/new'
+    | '/(app)/books/$bookId/'
     | '/(app)/decks/$deckId/'
     | '/(app)/imports/anki/'
     | '/(app)/decks/$deckId/cards/generate'
@@ -412,6 +458,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof appDecksDeckIdRouteImport
       parentRoute: typeof appRouteRoute
     }
+    '/(app)/books/new': {
+      id: '/(app)/books/new'
+      path: '/books/new'
+      fullPath: '/books/new'
+      preLoaderRoute: typeof appBooksNewRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/books/$bookId': {
+      id: '/(app)/books/$bookId'
+      path: '/books/$bookId'
+      fullPath: '/books/$bookId'
+      preLoaderRoute: typeof appBooksBookIdRouteImport
+      parentRoute: typeof appRouteRoute
+    }
     '/(app)/imports/anki/': {
       id: '/(app)/imports/anki/'
       path: '/'
@@ -425,6 +485,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/decks/$deckId/'
       preLoaderRoute: typeof appDecksDeckIdIndexRouteImport
       parentRoute: typeof appDecksDeckIdRoute
+    }
+    '/(app)/books/$bookId/': {
+      id: '/(app)/books/$bookId/'
+      path: '/'
+      fullPath: '/books/$bookId/'
+      preLoaderRoute: typeof appBooksBookIdIndexRouteImport
+      parentRoute: typeof appBooksBookIdRoute
     }
     '/(app)/imports/anki/new': {
       id: '/(app)/imports/anki/new'
@@ -453,6 +520,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/decks/$deckId/import'
       preLoaderRoute: typeof appDecksDeckIdImportRouteImport
       parentRoute: typeof appDecksDeckIdRoute
+    }
+    '/(app)/books/$bookId/read': {
+      id: '/(app)/books/$bookId/read'
+      path: '/read'
+      fullPath: '/books/$bookId/read'
+      preLoaderRoute: typeof appBooksBookIdReadRouteImport
+      parentRoute: typeof appBooksBookIdRoute
     }
     '/(app)/decks/$deckId/review/': {
       id: '/(app)/decks/$deckId/review/'
@@ -512,6 +586,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface appBooksBookIdRouteChildren {
+  appBooksBookIdReadRoute: typeof appBooksBookIdReadRoute
+  appBooksBookIdIndexRoute: typeof appBooksBookIdIndexRoute
+}
+
+const appBooksBookIdRouteChildren: appBooksBookIdRouteChildren = {
+  appBooksBookIdReadRoute: appBooksBookIdReadRoute,
+  appBooksBookIdIndexRoute: appBooksBookIdIndexRoute,
+}
+
+const appBooksBookIdRouteWithChildren = appBooksBookIdRoute._addFileChildren(
+  appBooksBookIdRouteChildren,
+)
 
 interface appDecksDeckIdReviewRouteChildren {
   appDecksDeckIdReviewFreeRoute: typeof appDecksDeckIdReviewFreeRoute
@@ -573,6 +661,8 @@ const appImportsAnkiRouteWithChildren = appImportsAnkiRoute._addFileChildren(
 
 interface appRouteRouteChildren {
   appIndexRoute: typeof appIndexRoute
+  appBooksBookIdRoute: typeof appBooksBookIdRouteWithChildren
+  appBooksNewRoute: typeof appBooksNewRoute
   appDecksDeckIdRoute: typeof appDecksDeckIdRouteWithChildren
   appImportsAnkiRoute: typeof appImportsAnkiRouteWithChildren
   appImportsSpreadsheetRoute: typeof appImportsSpreadsheetRoute
@@ -580,6 +670,8 @@ interface appRouteRouteChildren {
 
 const appRouteRouteChildren: appRouteRouteChildren = {
   appIndexRoute: appIndexRoute,
+  appBooksBookIdRoute: appBooksBookIdRouteWithChildren,
+  appBooksNewRoute: appBooksNewRoute,
   appDecksDeckIdRoute: appDecksDeckIdRouteWithChildren,
   appImportsAnkiRoute: appImportsAnkiRouteWithChildren,
   appImportsSpreadsheetRoute: appImportsSpreadsheetRoute,

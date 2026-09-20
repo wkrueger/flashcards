@@ -13,6 +13,8 @@ import {
   handleDeckSpreadsheetImportWorkerJobError,
   runDeckSpreadsheetImportJob,
 } from "../domains/DeckSpreadsheet/deckSpreadsheetService/index.js"
+import { handleBookWorkerJobError, runParseEpubJob } from "../domains/Books/booksService.js"
+import { runTranslateBookPagesJob } from "../domains/Books/bookTranslationService.js"
 
 const WORKER_POLL_INTERVAL_MS = 1_000
 
@@ -52,6 +54,26 @@ const workerJobHandlers: Record<WorkerJobType, WorkerJobHandler> = {
     },
     async onError(prisma, job, message) {
       await handleDeckSpreadsheetImportWorkerJobError(prisma, job.id, message)
+    },
+  },
+  [WorkerJobType.PARSE_EPUB]: {
+    async run(prisma, job) {
+      if (!job.bookId) {
+        throw new Error("Worker job is missing its book id.")
+      }
+
+      await runParseEpubJob(prisma, job.bookId)
+    },
+    async onError(prisma, job, message) {
+      await handleBookWorkerJobError(prisma, job.bookId, job.type, message)
+    },
+  },
+  [WorkerJobType.TRANSLATE_BOOK_PAGES]: {
+    async run(prisma, job) {
+      await runTranslateBookPagesJob(prisma, job)
+    },
+    async onError(prisma, job, message) {
+      await handleBookWorkerJobError(prisma, job.bookId, job.type, message)
     },
   },
 }

@@ -17,7 +17,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { Link, useNavigate } from "@tanstack/react-router"
-import { FileDown, FileText, FileUp, Plus } from "lucide-react"
+import { BookOpen, BookUp, FileDown, FileText, FileUp, Layers, Plus } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { MenuItem, PageHeader } from "../../components/AppShell"
 import { LightbulbIllustration } from "../../components/LightbulbIllustration"
@@ -29,11 +29,17 @@ import { Input } from "../../ui/Input"
 import { Label } from "../../ui/Label"
 import { cn } from "../../Lib/Utils"
 import { DeckSearch } from "./DeckSearch"
-import { LanguageSelect } from "./LanguageSelect"
+import { LanguageSelect } from "../../components/LanguageSelect"
 import { useOnline } from "../Offline/useOnline"
 import { getSnapshot, listOfflineDecks } from "../Offline/db"
 
-type DeckItem = { id: string; name: string; dueCount: number }
+type DeckItem = {
+  id: string
+  name: string
+  dueCount: number
+  kind: "DECK" | "BOOK"
+  book: { id: string; status: string; progressPercent: number } | null
+}
 
 const cardClass =
   "flex min-h-[88px] items-center justify-between rounded-md border bg-card px-4 py-4 text-sm"
@@ -95,15 +101,30 @@ function OfflineDeckListPage() {
   )
 }
 
+// Every home row carries a type icon on the right so decks and books are
+// distinguishable at a glance.
 function DeckCardBody({ deck }: { deck: DeckItem }) {
+  const isBook = deck.kind === "BOOK"
   return (
     <>
       <span className="min-w-0 flex-1 font-medium">{deck.name}</span>
       <span className="ml-3 shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-        {deck.dueCount} to do
+        {isBook ? bookStatusLabel(deck.book) : `${deck.dueCount} to do`}
       </span>
+      {isBook ? (
+        <BookOpen aria-label="Book" className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+      ) : (
+        <Layers aria-label="Deck" className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+      )}
     </>
   )
+}
+
+function bookStatusLabel(book: DeckItem["book"]) {
+  if (!book) return ""
+  if (book.status === "FAILED") return "failed"
+  if (book.status !== "READY") return "preparing…"
+  return `${book.progressPercent}%`
 }
 
 function SortableDeckItem({ deck }: { deck: DeckItem }) {
@@ -115,19 +136,33 @@ function SortableDeckItem({ deck }: { deck: DeckItem }) {
     transition,
     opacity: isDragging ? 0.4 : undefined,
   }
+  const linkClass = `${cardClass} cursor-grab select-none transition duration-150 [-webkit-touch-callout:none] hover:bg-accent active:cursor-grabbing active:bg-[hsl(var(--accent-strong))] active:opacity-80`
 
   return (
     <li ref={setNodeRef} style={style}>
-      <Link
-        to="/decks/$deckId"
-        params={{ deckId: deck.id }}
-        onContextMenu={(e) => e.preventDefault()}
-        className={`${cardClass} cursor-grab select-none transition duration-150 [-webkit-touch-callout:none] hover:bg-accent active:cursor-grabbing active:bg-[hsl(var(--accent-strong))] active:opacity-80`}
-        {...attributes}
-        {...listeners}
-      >
-        <DeckCardBody deck={deck} />
-      </Link>
+      {deck.kind === "BOOK" && deck.book ? (
+        <Link
+          to="/books/$bookId"
+          params={{ bookId: deck.book.id }}
+          onContextMenu={(e) => e.preventDefault()}
+          className={linkClass}
+          {...attributes}
+          {...listeners}
+        >
+          <DeckCardBody deck={deck} />
+        </Link>
+      ) : (
+        <Link
+          to="/decks/$deckId"
+          params={{ deckId: deck.id }}
+          onContextMenu={(e) => e.preventDefault()}
+          className={linkClass}
+          {...attributes}
+          {...listeners}
+        >
+          <DeckCardBody deck={deck} />
+        </Link>
+      )}
     </li>
   )
 }
@@ -306,6 +341,13 @@ function OnlineDeckListPage() {
         }
         menuItems={
           <>
+            <MenuItem
+              onSelect={() => navigate({ to: "/books/new" })}
+              icon={<BookUp className="h-[18px] w-[18px]" />}
+              aria-label="Import EPUB book"
+            >
+              Import EPUB
+            </MenuItem>
             <MenuItem
               onSelect={() => navigate({ to: "/imports/anki/new" })}
               icon={<FileDown className="h-[18px] w-[18px]" />}

@@ -29,6 +29,11 @@ export function callerFor(userId: string) {
 
 export async function resetDomain() {
   await prisma.workerJob.deleteMany()
+  await prisma.bookReadingStat.deleteMany()
+  await prisma.bookBookmark.deleteMany()
+  await prisma.bookPage.deleteMany()
+  await prisma.bookChapter.deleteMany()
+  await prisma.book.deleteMany()
   await prisma.spreadsheetImport.deleteMany()
   await prisma.importCardType.deleteMany()
   await prisma.importProcess.deleteMany()

@@ -23,11 +23,12 @@ model User {
   sessions Session[]
   accounts Account[]
 
-  decks           Deck[]
-  subjects        Subject[]
-  tags            Tag[]
-  importProcesses ImportProcess[]
+  decks              Deck[]
+  subjects           Subject[]
+  tags               Tag[]
+  importProcesses    ImportProcess[]
   spreadsheetImports SpreadsheetImport[]
+  books              Book[]
 }
 
 enum TagOwnerType {
@@ -86,11 +87,22 @@ model Language {
   decksAsDefaultBack            Deck[]          @relation("DeckDefaultBackLanguage")
   importProcessesAsDefaultFront ImportProcess[] @relation("ImportProcessDefaultFrontLanguage")
   importProcessesAsDefaultBack  ImportProcess[] @relation("ImportProcessDefaultBackLanguage")
+  booksAsSource                 Book[]          @relation("BookSourceLanguage")
+  booksAsTarget                 Book[]          @relation("BookTargetLanguage")
+}
+
+// Home listing rows are Decks. A book is a Deck with kind = BOOK plus a Book
+// satellite row; that keeps ordering, search, paging and drag-and-drop shared,
+// while every book-specific field and screen stays in the Books domain.
+enum LibraryItemKind {
+  DECK
+  BOOK
 }
 
 model Deck {
   id                       String                 @id @default(cuid())
   name                     String
+  kind                     LibraryItemKind        @default(DECK)
   userId                   String
   user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   defaultFrontLanguageId   Int?
@@ -110,6 +122,7 @@ model Deck {
   sortOrder                Float                  @default(0)
   reviewStatUniqueCards    ReviewStatUniqueCard[]
   spreadsheetImports       SpreadsheetImport[]
+  book                     Book?
 
   @@unique([userId, name])
 }
@@ -207,6 +220,8 @@ enum WorkerJobType {
   ANALYZE_ANKI_IMPORT
   RUN_ANKI_IMPORT
   RUN_DECK_SPREADSHEET_IMPORT
+  PARSE_EPUB
+  TRANSLATE_BOOK_PAGES
 }
 
 enum WorkerJobStatus {
@@ -275,7 +290,10 @@ model WorkerJob {
   id          String          @id @default(cuid())
   processId   String?
   process     ImportProcess?  @relation(fields: [processId], references: [id], onDelete: Cascade)
+  bookId      String?
+  book        Book?           @relation(fields: [bookId], references: [id], onDelete: Cascade)
   type        WorkerJobType
+  payloadJson String?
   status      WorkerJobStatus @default(PENDING)
   attempts    Int             @default(0)
   error       String?
@@ -287,6 +305,7 @@ model WorkerJob {
 
   @@index([status, availableAt, createdAt])
   @@index([processId])
+  @@index([bookId, type, status])
 }
 
 enum SpreadsheetImportStatus {
@@ -349,4 +368,112 @@ model ReviewStatUniqueCard {
 
   @@unique([deckId, cardId])
   @@index([deckId, cardId])
+}
+
+// ---------- books (epub reader) ----------
+
+enum BookStatus {
+  UPLOADED
+  PARSING
+  READY
+  FAILED
+}
+
+enum BookTranslationStatus {
+  PENDING
+  TRANSLATING
+  DONE
+  FAILED
+}
+
+model Book {
+  id     String @id @default(cuid())
+  deckId String @unique
+  deck   Deck   @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title            String
+  author           String?
+  epubLanguage     String?
+  sourceLanguageId Int?
+  sourceLanguage   Language? @relation("BookSourceLanguage", fields: [sourceLanguageId], references: [id], onDelete: SetNull)
+  targetLanguageId Int?
+  targetLanguage   Language? @relation("BookTargetLanguage", fields: [targetLanguageId], references: [id], onDelete: SetNull)
+
+  filename    String
+  fileSize    Int
+  storagePath String
+
+  status            BookStatus @default(UPLOADED)
+  // pageCount is the number of BookPage rows; currentPageIndex is where
+  // "continue reading" resumes, furthestPageIndex drives overall progress.
+  pageCount         Int        @default(0)
+  currentPageIndex  Int        @default(0)
+  furthestPageIndex Int        @default(0)
+  lastReadAt        DateTime?
+  errorSummary      String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  chapters     BookChapter[]
+  pages        BookPage[]
+  bookmarks    BookBookmark[]
+  readingStats BookReadingStat[]
+  workerJobs   WorkerJob[]
+
+  @@index([userId, createdAt])
+}
+
+model BookChapter {
+  id             String     @id @default(cuid())
+  bookId         String
+  book           Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  title          String
+  order          Int
+  startPageIndex Int
+  pages          BookPage[]
+
+  @@unique([bookId, order])
+  @@index([bookId, startPageIndex])
+}
+
+model BookPage {
+  id        String       @id @default(cuid())
+  bookId    String
+  book      Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  index     Int
+  chapterId String?
+  chapter   BookChapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+
+  markdown          String
+  charCount         Int
+  translation       String?
+  translationStatus BookTranslationStatus @default(PENDING)
+  translationError  String?
+
+  @@unique([bookId, index])
+  @@index([bookId, translationStatus])
+}
+
+model BookBookmark {
+  id        String   @id @default(cuid())
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  pageIndex Int
+  name      String
+  createdAt DateTime @default(now())
+
+  @@index([bookId, pageIndex])
+}
+
+model BookReadingStat {
+  id        String   @id @default(cuid())
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  date      DateTime
+  pagesRead Int      @default(0)
+
+  @@unique([bookId, date])
+  @@index([bookId, date])
 }

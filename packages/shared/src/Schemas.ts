@@ -313,3 +313,39 @@ export type SpreadsheetImportStatusView = {
   errorSummary: string | null
   errorDetails: string[]
 }
+
+// ---------- books ----------
+
+export const bookStatusSchema = z.enum(["UPLOADED", "PARSING", "READY", "FAILED"])
+export type BookStatusValue = z.infer<typeof bookStatusSchema>
+
+export const bookTranslationStatusSchema = z.enum(["PENDING", "TRANSLATING", "DONE", "FAILED"])
+export type BookTranslationStatusValue = z.infer<typeof bookTranslationStatusSchema>
+
+const pageIndex = z.number().int().min(0).max(1_000_000)
+
+export const bookIdInput = z.object({ bookId: id })
+
+export const bookPageInput = z.object({ bookId: id, index: pageIndex })
+
+export const bookProgressInput = z.object({ bookId: id, pageIndex })
+
+export const bookPrefetchInput = z.object({ bookId: id, fromIndex: pageIndex })
+
+export const createBookBookmarkInput = z.object({
+  bookId: id,
+  pageIndex,
+  name: z.string().trim().min(1).max(80),
+})
+
+export const renameBookBookmarkInput = z.object({
+  id,
+  name: z.string().trim().min(1).max(80),
+})
+
+export const updateBookInput = z.object({
+  bookId: id,
+  title: z.string().trim().min(1).max(100).optional(),
+  sourceLanguageId: languageId.nullish(),
+  targetLanguageId: languageId.nullish(),
+})
