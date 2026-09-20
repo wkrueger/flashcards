@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as appRouteRouteImport } from './routes/(app)/route'
 import { Route as appIndexRouteImport } from './routes/(app)/index'
+import { Route as appImportsSpreadsheetBatchRouteImport } from './routes/(app)/imports.spreadsheet-batch'
 import { Route as appImportsSpreadsheetRouteImport } from './routes/(app)/imports.spreadsheet'
 import { Route as appImportsAnkiRouteImport } from './routes/(app)/imports.anki'
 import { Route as appDecksDeckIdRouteImport } from './routes/(app)/decks.$deckId'
@@ -74,6 +75,12 @@ const appIndexRoute = appIndexRouteImport.update({
   path: '/',
   getParentRoute: () => appRouteRoute,
 } as any)
+const appImportsSpreadsheetBatchRoute =
+  appImportsSpreadsheetBatchRouteImport.update({
+    id: '/imports/spreadsheet-batch',
+    path: '/imports/spreadsheet-batch',
+    getParentRoute: () => appRouteRoute,
+  } as any)
 const appImportsSpreadsheetRoute = appImportsSpreadsheetRouteImport.update({
   id: '/imports/spreadsheet',
   path: '/imports/spreadsheet',
@@ -178,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
   '/imports/anki': typeof appImportsAnkiRouteWithChildren
   '/imports/spreadsheet': typeof appImportsSpreadsheetRoute
+  '/imports/spreadsheet-batch': typeof appImportsSpreadsheetBatchRoute
   '/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
   '/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
@@ -202,6 +210,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/': typeof appIndexRoute
   '/imports/spreadsheet': typeof appImportsSpreadsheetRoute
+  '/imports/spreadsheet-batch': typeof appImportsSpreadsheetBatchRoute
   '/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
   '/imports/anki/new': typeof appImportsAnkiNewRoute
@@ -229,6 +238,7 @@ export interface FileRoutesById {
   '/(app)/decks/$deckId': typeof appDecksDeckIdRouteWithChildren
   '/(app)/imports/anki': typeof appImportsAnkiRouteWithChildren
   '/(app)/imports/spreadsheet': typeof appImportsSpreadsheetRoute
+  '/(app)/imports/spreadsheet-batch': typeof appImportsSpreadsheetBatchRoute
   '/(app)/decks/$deckId/import': typeof appDecksDeckIdImportRoute
   '/(app)/decks/$deckId/review': typeof appDecksDeckIdReviewRouteWithChildren
   '/(app)/imports/anki/$processId': typeof appImportsAnkiProcessIdRoute
@@ -257,6 +267,7 @@ export interface FileRouteTypes {
     | '/decks/$deckId'
     | '/imports/anki'
     | '/imports/spreadsheet'
+    | '/imports/spreadsheet-batch'
     | '/decks/$deckId/import'
     | '/decks/$deckId/review'
     | '/imports/anki/$processId'
@@ -281,6 +292,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/'
     | '/imports/spreadsheet'
+    | '/imports/spreadsheet-batch'
     | '/decks/$deckId/import'
     | '/imports/anki/$processId'
     | '/imports/anki/new'
@@ -307,6 +319,7 @@ export interface FileRouteTypes {
     | '/(app)/decks/$deckId'
     | '/(app)/imports/anki'
     | '/(app)/imports/spreadsheet'
+    | '/(app)/imports/spreadsheet-batch'
     | '/(app)/decks/$deckId/import'
     | '/(app)/decks/$deckId/review'
     | '/(app)/imports/anki/$processId'
@@ -389,6 +402,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof appIndexRouteImport
+      parentRoute: typeof appRouteRoute
+    }
+    '/(app)/imports/spreadsheet-batch': {
+      id: '/(app)/imports/spreadsheet-batch'
+      path: '/imports/spreadsheet-batch'
+      fullPath: '/imports/spreadsheet-batch'
+      preLoaderRoute: typeof appImportsSpreadsheetBatchRouteImport
       parentRoute: typeof appRouteRoute
     }
     '/(app)/imports/spreadsheet': {
@@ -576,6 +596,7 @@ interface appRouteRouteChildren {
   appDecksDeckIdRoute: typeof appDecksDeckIdRouteWithChildren
   appImportsAnkiRoute: typeof appImportsAnkiRouteWithChildren
   appImportsSpreadsheetRoute: typeof appImportsSpreadsheetRoute
+  appImportsSpreadsheetBatchRoute: typeof appImportsSpreadsheetBatchRoute
 }
 
 const appRouteRouteChildren: appRouteRouteChildren = {
@@ -583,6 +604,7 @@ const appRouteRouteChildren: appRouteRouteChildren = {
   appDecksDeckIdRoute: appDecksDeckIdRouteWithChildren,
   appImportsAnkiRoute: appImportsAnkiRouteWithChildren,
   appImportsSpreadsheetRoute: appImportsSpreadsheetRoute,
+  appImportsSpreadsheetBatchRoute: appImportsSpreadsheetBatchRoute,
 }
 
 const appRouteRouteWithChildren = appRouteRoute._addFileChildren(

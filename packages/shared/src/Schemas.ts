@@ -67,6 +67,60 @@ export type DeckSpreadsheetInspectResult = {
   existingDeck: { id: string; name: string } | null
 }
 
+export const batchIdInput = z.object({ batchId: z.string().min(1).max(64) })
+
+export const confirmDeckImportBatchInput = z.object({
+  items: z
+    .array(
+      z
+        .object({
+          importId: z.string().min(1).max(64),
+          mode: z.enum(["update", "create"]),
+          name: z.string().trim().min(1).max(100).optional(),
+        })
+        .superRefine((data, ctx) => {
+          if (data.mode === "create" && !data.name) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "A deck name is required.",
+              path: ["name"],
+            })
+          }
+        })
+    )
+    .min(1)
+    .max(100),
+})
+
+// A single spreadsheet extracted from an uploaded zip. Before the batch is
+// confirmed the inspect fields drive the per-file review UI; afterwards the
+// status/count fields report the import outcome.
+export type DeckSpreadsheetBatchItem = {
+  importId: string
+  filename: string | null
+  status: "UPLOADED" | "IMPORTING" | "SUCCEEDED" | "FAILED"
+  metaDeckId: string | null
+  suggestedName: string
+  existingDeck: { id: string; name: string } | null
+  rowCount: number
+  createdCardCount: number
+  updatedCardCount: number
+  deletedCardCount: number
+  errorSummary: string | null
+}
+
+export type DeckSpreadsheetBatchView = {
+  batchId: string
+  status: "UPLOADED" | "IMPORTING" | "SUCCEEDED" | "FAILED"
+  errorSummary: string | null
+  items: DeckSpreadsheetBatchItem[]
+}
+
+export type DeckSpreadsheetArchiveUploadResult = {
+  batchId: string
+  items: DeckSpreadsheetBatchItem[]
+}
+
 export const subjectAutocompleteInput = z.object({
   deckId: id,
   query: z.string().trim().max(100),

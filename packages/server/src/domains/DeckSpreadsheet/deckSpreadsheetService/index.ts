@@ -410,7 +410,10 @@ export async function confirmDeckSpreadsheetImport(
   return { importId: item.id, deckId }
 }
 
-async function resolveLanguageIdByName(prisma: DbClient, name: string): Promise<number | null> {
+export async function resolveLanguageIdByName(
+  prisma: DbClient,
+  name: string
+): Promise<number | null> {
   const trimmed = name.trim()
   if (!trimmed) return null
   const language = await prisma.language.findFirst({
@@ -423,7 +426,7 @@ async function resolveLanguageIdByName(prisma: DbClient, name: string): Promise<
   return language.id
 }
 
-async function assertOwnDeck(prisma: DbClient, userId: string, deckId: string) {
+export async function assertOwnDeck(prisma: DbClient, userId: string, deckId: string) {
   const deck = await prisma.deck.findFirst({
     where: { id: deckId, userId },
     select: { id: true, name: true },
